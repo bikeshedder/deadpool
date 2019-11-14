@@ -1,6 +1,5 @@
-#[tokio::main]
 #[cfg(feature = "postgres")]
-async fn main() {
+async fn bench_postgres() {
     use std::env;
     use std::time::{Instant};
     use deadpool::Pool;
@@ -49,4 +48,10 @@ async fn main() {
     println!("With pool: {}ms", d2.as_millis());
     println!("Speedup: {}%", 100 * d1.as_millis() / d2.as_millis());
     assert!(d1 > d2);
+}
+
+#[tokio::main]
+async fn main() {
+    #[cfg(feature = "postgres")]
+    bench_postgres().await;
 }
