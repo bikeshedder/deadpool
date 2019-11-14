@@ -7,9 +7,7 @@ of any type.
 
 Feature             | Description
 ------------------- | --------------------------------------
-`postgres`          | Enable support for `tokio-postgres` connection
-                    | pooling. This feature also includes a `statement`
-                    | cache.
+`postgres`          | Enable support for `tokio-postgres` connection pooling. This feature also includes a `statement` cache.
 
 ## Example (using `postgres` feature)
 
