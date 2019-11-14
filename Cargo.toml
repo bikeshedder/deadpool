@@ -11,7 +11,6 @@ edition = "2018"
 
 [dependencies]
 async-trait = "0.1.17"
-futures = "0.3.1"
 tokio = "0.2.0-alpha.6"
 
 [workspace]
