@@ -1,14 +1,13 @@
-#[cfg(feature = "postgres")]
-async fn bench_postgres() {
+#[tokio::main]
+async fn main() {
     use std::env;
     use std::time::{Instant};
-    use deadpool::Pool;
-    use deadpool::postgres::Manager as PgManager;
+    use deadpool_postgres::{Manager, Pool};
     let mut cfg = tokio_postgres::Config::new();
     cfg.host("/var/run/postgresql");
     cfg.user(env::var("USER").unwrap().as_str());
     cfg.dbname("deadpool");
-    let mgr = PgManager::new(cfg, tokio_postgres::NoTls);
+    let mgr = Manager::new(cfg, tokio_postgres::NoTls);
     let pool = Pool::new(mgr, 16);
     // without pool (just using one client of it)
     let now = Instant::now();
@@ -48,10 +47,4 @@ async fn bench_postgres() {
     println!("With pool: {}ms", d2.as_millis());
     println!("Speedup: {}%", 100 * d1.as_millis() / d2.as_millis());
     assert!(d1 > d2);
-}
-
-#[tokio::main]
-async fn main() {
-    #[cfg(feature = "postgres")]
-    bench_postgres().await;
 }
