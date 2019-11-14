@@ -7,7 +7,7 @@ of any type.
 
 Backend                                                     | Crate
 ----------------------------------------------------------- | -----
-[tokio-postgres]((https://crates.io/crates/tokio-postrges)  | [deadpool-postgres](https://crates.io/crates/deadpool-postgres)
+[tokio-postgres](https://crates.io/crates/tokio-postrges)   | [deadpool-postgres](https://crates.io/crates/deadpool-postgres)
 
 ## Example (using `deadpool-postgres`)
 
