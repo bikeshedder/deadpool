@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, Weak};
 use std::sync::atomic::{AtomicIsize, AtomicUsize, Ordering};
@@ -16,13 +15,13 @@ pub trait Manager<T, E> {
     async fn recycle(&self, obj: T) -> Result<T, E>;
 }
 
-pub struct Object<T, E, M> where M: Manager<T, E> + Sized {
+pub struct Object<T, E> {
     obj: Option<T>,
-    pool: Weak<PoolInner<T, E, M>>
+    pool: Weak<PoolInner<T, E>>
 }
 
-impl<T, E, M: Manager<T, E>> Object<T, E, M> {
-    fn new(pool: &Pool<T, E, M>, obj: T) -> Object<T, E, M> {
+impl<T, E> Object<T, E> {
+    fn new(pool: &Pool<T, E>, obj: T) -> Object<T, E> {
         Object {
             obj: Some(obj),
             pool: Arc::downgrade(&pool.inner),
@@ -30,7 +29,7 @@ impl<T, E, M: Manager<T, E>> Object<T, E, M> {
     }
 }
 
-impl<T, E, M: Manager<T, E>> Drop for Object<T, E, M> {
+impl<T, E> Drop for Object<T, E> {
     fn drop(&mut self) {
         if let Some(pool) = self.pool.upgrade() {
             pool.return_obj(self.obj.take().unwrap());
@@ -38,14 +37,14 @@ impl<T, E, M: Manager<T, E>> Drop for Object<T, E, M> {
     }
 }
 
-impl<T, E, M: Manager<T, E>> Deref for Object<T, E, M> {
+impl<T, E> Deref for Object<T, E> {
     type Target = T;
     fn deref(&self) -> &T {
         self.obj.as_ref().unwrap()
     }
 }
 
-impl<T, E, M: Manager<T, E>> DerefMut for Object<T, E, M> {
+impl<T, E> DerefMut for Object<T, E> {
     fn deref_mut(&mut self) -> &mut T {
         self.obj.as_mut().unwrap()
     }
@@ -57,44 +56,48 @@ pub struct PoolSize {
     available: AtomicIsize,
 }
 
-pub struct PoolInner<T, E, M: Manager<T, E> + Sized> {
-    manager: M,
+pub struct PoolInner<T, E>
+{
+    manager: Box<dyn Manager<T, E> + Sync + Send>,
     max_size: usize,
     obj_sender: Sender<T>,
     obj_receiver: Mutex<Receiver<T>>,
     size: PoolSize,
-    //
-    _error: PhantomData<E>
 }
 
-impl<T, E, M: Manager<T, E>> PoolInner<T, E, M> {
+impl<T, E> PoolInner<T, E> {
     fn return_obj(&self, obj: T) {
         self.size.available.fetch_add(1, Ordering::SeqCst);
         self.obj_sender.clone().try_send(obj).map_err(|_| ()).unwrap();
     }
 }
 
-#[derive(Clone)]
-pub struct Pool<T, E, M: Manager<T, E> + Sized> {
-    inner: Arc<PoolInner<T, E, M>>
+pub struct Pool<T, E> {
+    inner: Arc<PoolInner<T, E>>
 }
 
-impl<T, E, M: Manager<T, E>> Pool<T, E, M> {
-    pub fn new(manager: M, max_size: usize) -> Pool<T, E, M> {
+impl<T, E> Clone for Pool<T, E> {
+    fn clone(&self) -> Pool<T, E> {
+        Pool {
+            inner: self.inner.clone()
+        }
+    }
+}
+
+impl<T, E> Pool<T, E> {
+    pub fn new(manager: impl Manager<T, E> + Send + Sync + 'static, max_size: usize) -> Pool<T, E> {
         let (obj_sender, obj_receiver) = channel::<T>(max_size);
         Pool {
             inner: Arc::new(PoolInner {
                 max_size: max_size,
-                manager: manager,
+                manager: Box::new(manager),
                 obj_sender: obj_sender,
                 obj_receiver: Mutex::new(obj_receiver),
                 size: PoolSize::default(),
-                _error: PhantomData
             })
         }
     }
-
-    pub async fn get(&self) -> Result<Object<T, E, M>, E> {
+    pub async fn get(&self) -> Result<Object<T, E>, E> {
         let available = self.inner.size.available.fetch_sub(1, Ordering::SeqCst);
         if available <= 0 && self.inner.size.current.load(Ordering::SeqCst) < self.inner.max_size {
             let current = self.inner.size.current.fetch_add(1, Ordering::SeqCst);

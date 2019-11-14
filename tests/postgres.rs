@@ -9,7 +9,7 @@ async fn test_postgres() {
     cfg.host("/var/run/postgresql");
     cfg.user(env::var("USER").unwrap().as_str());
     cfg.dbname("deadpool");
-    let mgr = PgManager::new(cfg);
+    let mgr = PgManager::new(cfg, tokio_postgres::NoTls);
     let pool = Pool::new(mgr, 16);
     let mut client = pool.get().await.unwrap();
     let stmt = client.prepare("SELECT 1 + 2").await.unwrap();

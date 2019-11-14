@@ -11,22 +11,22 @@ Feature             | Description
                     | pooling. This feature also includes a `statement`
                     | cache.
 
-## Example
+## Example (using `postgres` feature)
 
 ```rust
 use std::env;
 
 use deadpool::Pool;
-use deadpool::postgres::Manager as PgManager;
+use deadpool::postgres::Manager;
 use tokio_postgres::Config;
 
 #[tokio::main]
-fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let mut cfg = tokio_postgres::Config::new();
+fn main() {
+    let mut cfg = Config::new();
     cfg.host("/var/run/postgresql");
     cfg.user(env::var("USER").unwrap().as_str());
     cfg.dbname("deadpool");
-    let mgr = PgManager::new(cfg);
+    let mgr = Manager::new(cfg tokio_postgres::NoTls);
     let pool = Pool::new(mgr, 16);
     loop {
         let mut client = pool.get().await.unwrap();

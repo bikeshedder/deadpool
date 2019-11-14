@@ -9,26 +9,36 @@ use tokio_postgres::{
     Client as PgClient,
     Config as PgConfig,
     Error,
-    NoTls,
-    Statement
+    Socket,
+    Statement,
+    tls::MakeTlsConnect,
+    tls::TlsConnect,
 };
 
-pub struct Manager {
-    config: PgConfig
+pub struct Manager<T: MakeTlsConnect<Socket>> {
+    config: PgConfig,
+    tls: T
 }
 
-impl Manager {
-    pub fn new(config: PgConfig) -> Manager {
+impl <T: MakeTlsConnect<Socket>> Manager<T> {
+    pub fn new(config: PgConfig, tls: T) -> Manager<T> {
         Manager {
-            config: config
+            config: config,
+            tls: tls
         }
     }
 }
 
 #[async_trait]
-impl crate::Manager<Client, Error> for Manager {
+impl<T> crate::Manager<Client, Error> for Manager<T>
+where
+    T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
+    T::Stream: Sync + Send,
+    T::TlsConnect: Sync + Send,
+    <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
+{
     async fn create(&self) -> Result<Client, Error> {
-        let (client, connection) = self.config.connect(NoTls).await?;
+        let (client, connection) = self.config.connect(self.tls.clone()).await?;
         let connection = connection.map(|r| {
             if let Err(e) = r {
                 warn!(target: "deadpool.postgres", "Connection error: {}", e);
