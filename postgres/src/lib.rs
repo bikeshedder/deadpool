@@ -11,6 +11,7 @@ use tokio_postgres::{
     Error,
     Socket,
     Statement,
+    Transaction as PgTransaction,
     tls::MakeTlsConnect,
     tls::TlsConnect,
 };
@@ -82,12 +83,44 @@ impl Client {
             }
         }
     }
+    pub async fn transaction<'a>(&'a mut self) -> Result<Transaction<'a>, Error> {
+        Ok(Transaction {
+            txn: PgClient::transaction(&mut self.client).await?,
+            statement_cache: &mut self.statement_cache
+        })
+    }
 }
 
 impl Deref for Client {
     type Target = PgClient;
     fn deref(&self) -> &PgClient {
         &self.client
+    }
+}
+
+pub struct Transaction<'a> {
+    txn: PgTransaction<'a>,
+    statement_cache: &'a mut HashMap<String, Statement>,
+}
+
+impl<'a> Transaction<'a> {
+    pub async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
+        let query_owned = query.to_owned();
+        match self.statement_cache.get(&query_owned) {
+            Some(statement) => Ok(statement.clone()),
+            None => {
+                let stmt = self.txn.prepare(query).await?;
+                self.statement_cache.insert(query_owned.clone(), stmt.clone());
+                return Ok(stmt)
+            }
+        }
+    }
+}
+
+impl<'a> Deref for Transaction<'a> {
+    type Target = PgTransaction<'a>;
+    fn deref(&self) -> &PgTransaction<'a> {
+        &self.txn
     }
 }
 
