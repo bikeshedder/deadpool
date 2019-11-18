@@ -71,13 +71,13 @@ impl Client {
             statement_cache: HashMap::new()
         }
     }
-    pub async fn prepare(&mut self, sql: &str) -> Result<Statement, Error> {
-        let sql_string = sql.to_owned();
-        match self.statement_cache.get(&sql_string) {
+    pub async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
+        let query_owned = query.to_owned();
+        match self.statement_cache.get(&query_owned) {
             Some(statement) => Ok(statement.clone()),
             None => {
-                let stmt = self.client.prepare(sql).await?;
-                self.statement_cache.insert(sql_string.clone(), stmt.clone());
+                let stmt = self.client.prepare(query).await?;
+                self.statement_cache.insert(query_owned.clone(), stmt.clone());
                 return Ok(stmt)
             }
         }
