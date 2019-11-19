@@ -1,33 +1,27 @@
 use std::collections::HashMap;
-use std::ops::{Deref};
+use std::ops::Deref;
 
 use async_trait::async_trait;
 use futures::FutureExt;
 use log::{debug, warn};
 use tokio::spawn;
 use tokio_postgres::{
-    Client as PgClient,
-    Config as PgConfig,
-    Error,
-    Socket,
-    Statement,
-    Transaction as PgTransaction,
-    tls::MakeTlsConnect,
-    tls::TlsConnect,
+    tls::MakeTlsConnect, tls::TlsConnect, Client as PgClient, Config as PgConfig, Error, Socket,
+    Statement, Transaction as PgTransaction,
 };
 
 pub type Pool = deadpool::Pool<Client, tokio_postgres::Error>;
 
 pub struct Manager<T: MakeTlsConnect<Socket>> {
     config: PgConfig,
-    tls: T
+    tls: T,
 }
 
-impl <T: MakeTlsConnect<Socket>> Manager<T> {
+impl<T: MakeTlsConnect<Socket>> Manager<T> {
     pub fn new(config: PgConfig, tls: T) -> Manager<T> {
         Manager {
             config: config,
-            tls: tls
+            tls: tls,
         }
     }
 }
@@ -69,7 +63,7 @@ impl Client {
     pub fn new(client: PgClient) -> Client {
         Client {
             client: client,
-            statement_cache: HashMap::new()
+            statement_cache: HashMap::new(),
         }
     }
     pub async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
@@ -78,15 +72,16 @@ impl Client {
             Some(statement) => Ok(statement.clone()),
             None => {
                 let stmt = self.client.prepare(query).await?;
-                self.statement_cache.insert(query_owned.clone(), stmt.clone());
-                return Ok(stmt)
+                self.statement_cache
+                    .insert(query_owned.clone(), stmt.clone());
+                Ok(stmt)
             }
         }
     }
     pub async fn transaction<'a>(&'a mut self) -> Result<Transaction<'a>, Error> {
         Ok(Transaction {
             txn: PgClient::transaction(&mut self.client).await?,
-            statement_cache: &mut self.statement_cache
+            statement_cache: &mut self.statement_cache,
         })
     }
 }
@@ -110,8 +105,9 @@ impl<'a> Transaction<'a> {
             Some(statement) => Ok(statement.clone()),
             None => {
                 let stmt = self.txn.prepare(query).await?;
-                self.statement_cache.insert(query_owned.clone(), stmt.clone());
-                return Ok(stmt)
+                self.statement_cache
+                    .insert(query_owned.clone(), stmt.clone());
+                Ok(stmt)
             }
         }
     }

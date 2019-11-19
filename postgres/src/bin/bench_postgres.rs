@@ -1,8 +1,8 @@
 #[tokio::main]
 async fn main() {
-    use std::env;
-    use std::time::{Instant};
     use deadpool_postgres::{Manager, Pool};
+    use std::env;
+    use std::time::Instant;
     let mut cfg = tokio_postgres::Config::new();
     cfg.host("/var/run/postgresql");
     cfg.user(env::var("USER").unwrap().as_str());

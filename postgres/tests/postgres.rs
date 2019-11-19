@@ -1,5 +1,5 @@
+use deadpool_postgres::{Manager, Pool};
 use std::env;
-use deadpool_postgres::{Pool, Manager};
 
 fn create_pool() -> Pool {
     let mut cfg = tokio_postgres::Config::new();

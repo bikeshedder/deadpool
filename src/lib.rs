@@ -1,10 +1,10 @@
 use std::ops::{Deref, DerefMut};
-use std::sync::{Arc, Weak};
 use std::sync::atomic::{AtomicIsize, AtomicUsize, Ordering};
+use std::sync::{Arc, Weak};
 
 use async_trait::async_trait;
-use tokio::sync::Mutex;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio::sync::Mutex;
 
 #[cfg(feature = "postgres")]
 pub mod postgres;
@@ -17,7 +17,7 @@ pub trait Manager<T, E> {
 
 pub struct Object<T, E> {
     obj: Option<T>,
-    pool: Weak<PoolInner<T, E>>
+    pool: Weak<PoolInner<T, E>>,
 }
 
 impl<T, E> Object<T, E> {
@@ -56,8 +56,7 @@ pub struct PoolSize {
     available: AtomicIsize,
 }
 
-pub struct PoolInner<T, E>
-{
+pub struct PoolInner<T, E> {
     manager: Box<dyn Manager<T, E> + Sync + Send>,
     max_size: usize,
     obj_sender: Sender<T>,
@@ -68,18 +67,22 @@ pub struct PoolInner<T, E>
 impl<T, E> PoolInner<T, E> {
     fn return_obj(&self, obj: T) {
         self.size.available.fetch_add(1, Ordering::SeqCst);
-        self.obj_sender.clone().try_send(obj).map_err(|_| ()).unwrap();
+        self.obj_sender
+            .clone()
+            .try_send(obj)
+            .map_err(|_| ())
+            .unwrap();
     }
 }
 
 pub struct Pool<T, E> {
-    inner: Arc<PoolInner<T, E>>
+    inner: Arc<PoolInner<T, E>>,
 }
 
 impl<T, E> Clone for Pool<T, E> {
     fn clone(&self) -> Pool<T, E> {
         Pool {
-            inner: self.inner.clone()
+            inner: self.inner.clone(),
         }
     }
 }
@@ -94,7 +97,7 @@ impl<T, E> Pool<T, E> {
                 obj_sender: obj_sender,
                 obj_receiver: Mutex::new(obj_receiver),
                 size: PoolSize::default(),
-            })
+            }),
         }
     }
     pub async fn get(&self) -> Result<Object<T, E>, E> {
@@ -104,11 +107,11 @@ impl<T, E> Pool<T, E> {
             if current < self.inner.max_size {
                 self.inner.size.available.fetch_add(1, Ordering::SeqCst);
                 let obj = self.inner.manager.create().await?;
-                return Ok(Object::new(&self, obj))
+                return Ok(Object::new(&self, obj));
             }
         }
         let obj = self.inner.obj_receiver.lock().await.recv().await.unwrap();
         let obj = self.inner.manager.recycle(obj).await?;
-        return Ok(Object::new(&self, obj));
+        Ok(Object::new(&self, obj))
     }
 }

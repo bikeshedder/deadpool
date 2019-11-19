@@ -6,25 +6,20 @@ use futures::FutureExt;
 use log::{debug, warn};
 use tokio::spawn;
 use tokio_postgres::{
-    Client as PgClient,
-    Config as PgConfig,
-    Error,
-    Socket,
+    tls::MakeTlsConnect, tls::TlsConnect, Client as PgClient, Config as PgConfig, Error, Socket,
     Statement,
-    tls::MakeTlsConnect,
-    tls::TlsConnect,
 };
 
 pub struct Manager<T: MakeTlsConnect<Socket>> {
     config: PgConfig,
-    tls: T
+    tls: T,
 }
 
-impl <T: MakeTlsConnect<Socket>> Manager<T> {
+impl<T: MakeTlsConnect<Socket>> Manager<T> {
     pub fn new(config: PgConfig, tls: T) -> Manager<T> {
         Manager {
             config: config,
-            tls: tls
+            tls: tls,
         }
     }
 }
@@ -66,7 +61,7 @@ impl Client {
     pub fn new(client: PgClient) -> Client {
         Client {
             client: client,
-            statement_cache: HashMap::new()
+            statement_cache: HashMap::new(),
         }
     }
     pub async fn prepare(&mut self, sql: &str) -> Result<Statement, Error> {
@@ -75,8 +70,9 @@ impl Client {
             Some(statement) => Ok(statement.clone()),
             None => {
                 let stmt = self.client.prepare(sql).await?;
-                self.statement_cache.insert(sql_string.clone(), stmt.clone());
-                return Ok(stmt)
+                self.statement_cache
+                    .insert(sql_string.clone(), stmt.clone());
+                Ok(stmt)
             }
         }
     }
