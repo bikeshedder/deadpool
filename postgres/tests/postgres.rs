@@ -31,6 +31,7 @@ async fn test_transaction_1() {
         let stmt = txn.prepare("SELECT 1 + 2").await.unwrap();
         let rows = txn.query(&stmt, &[]).await.unwrap();
         let value: i32 = rows[0].get(0);
+        txn.commit().await.unwrap();
         assert_eq!(value, 3);
     }
 }
@@ -45,6 +46,7 @@ async fn test_transaction_2() {
         let txn = client.transaction().await.unwrap();
         let rows = txn.query(&stmt, &[]).await.unwrap();
         let value: i32 = rows[0].get(0);
+        txn.commit().await.unwrap();
         assert_eq!(value, 3);
     }
 }

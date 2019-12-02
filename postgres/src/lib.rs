@@ -164,6 +164,14 @@ impl<'a> Transaction<'a> {
             }
         }
     }
+    /// Like `tokio_postgres::Transaction::commit`
+    pub async fn commit(self) -> Result<(), Error> {
+        self.txn.commit().await
+    }
+    /// Like `tokio_postgres::Transaction::rollback`
+    pub async fn rollback(self) -> Result<(), Error> {
+        self.txn.rollback().await
+    }
 }
 
 impl<'a> Deref for Transaction<'a> {

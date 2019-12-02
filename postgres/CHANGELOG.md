@@ -4,6 +4,7 @@
 
 * Add documentation for `docs.rs`
 * Improve example in `README.md` and crate root
+* Fix `Transaction::commit` and `Transaction::rollback`
 
 ## v0.2.2
 
