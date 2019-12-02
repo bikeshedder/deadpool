@@ -1,4 +1,4 @@
-# Deadpool
+# Deadpool [![Latest Version](https://img.shields.io/crates/v/deadpool.svg)](https://crates.io/crates/deadpool)
 
 Deadpool is a dead simple async pool for connections and objects
 of any type.
