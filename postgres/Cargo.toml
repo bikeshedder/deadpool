@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-postgres"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for tokio-postgres"
 keywords = ["async", "database", "pool", "postgres"]
@@ -10,7 +10,7 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
-deadpool = { path = "../", version = "0.2" }
+deadpool = { path = "../", version = "0.2.2" }
 async-trait = "0.1.17"
 futures = "0.3.1"
 log = "0.4"
