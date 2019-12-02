@@ -14,5 +14,8 @@ deadpool = { path = "../", version = "0.2" }
 async-trait = "0.1.17"
 futures = "0.3.1"
 log = "0.4"
-tokio = "0.2.0-alpha.6"
-tokio-postgres = { version = "0.5.0-alpha.1" }
+tokio = { version = "0.2.2", features = ["sync"] }
+tokio-postgres = { version = "0.5.0-alpha.2" }
+
+[dev-dependencies]
+tokio = { version = "0.2.2", features = ["sync", "macros"] }
