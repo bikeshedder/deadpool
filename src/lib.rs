@@ -5,7 +5,7 @@
 //!
 //! ```rust,ignore
 //! use async_trait::async_trait;
-//! use deadpool_postgres::{Manager, Pool};
+//! use deadpool::{Manager, Pool};
 //!
 //! struct Error {}
 //!
