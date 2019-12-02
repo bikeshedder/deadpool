@@ -3,8 +3,10 @@
 Deadpool is a dead simple async pool for connections and objects
 of any type.
 
-This crate implements a manager for `tokio-postgres` and also provides
-a `statement` cache.
+This crate implements a [`deadpool`](https://crates.io/crates/deadpool)
+manager for [`tokio-postgres`](https://crates.io/crates/tokio-postgres)
+and also provides a `statement` cache by wrapping `tokio_postgres::Client`
+and `tokio_postgres::Transaction`.
 
 ## Example
 

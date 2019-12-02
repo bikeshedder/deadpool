@@ -1,3 +1,40 @@
+//! Deadpool simple async pool for PostgreSQL connections.
+//!
+//! This crate implements a [`deadpool`](https://crates.io/crates/deadpool)
+//! manager for [`tokio-postgres`](https://crates.io/crates/tokio-postgres)
+//! and also provides a `statement` cache by wrapping `tokio_postgres::Client`
+//! and `tokio_postgres::Transaction`.
+//!
+//! You should not need to use `deadpool` directly. Use the `Pool` type
+//! provided by this crate instead.
+//!
+//! # Example
+//!
+//! ```rust,ignore
+//! use std::env;
+//!
+//! use deadpool_postgres::{Manager, Pool};
+//! use tokio_postgres::{Config, NoTls};
+//!
+//! #[tokio::main]
+//! fn main() {
+//!     let mut cfg = Config::new();
+//!     cfg.host("/var/run/postgresql");
+//!     cfg.user(env::var("USER").unwrap().as_str());
+//!     cfg.dbname("deadpool");
+//!     let mgr = Manager::new(cfg tokio_postgres::NoTls);
+//!     let pool = Pool::new(mgr, 16);
+//!     loop {
+//!         let mut client = pool.get().await.unwrap();
+//!         let stmt = client.prepare("SELECT random()").await.unwrap();
+//!         let rows = client.query(&stmt, &[]).await.unwrap();
+//!         let value: f64 = rows[0].get(0);
+//!         println!("{}", value);
+//!     }
+//! }
+//! ```
+#![warn(missing_docs)]
+
 use std::collections::HashMap;
 use std::ops::Deref;
 
@@ -10,14 +47,17 @@ use tokio_postgres::{
     Statement, Transaction as PgTransaction,
 };
 
+/// A type alias for using `deadpool::Pool` with `tokio_postgres`
 pub type Pool = deadpool::Pool<Client, tokio_postgres::Error>;
 
+/// The manager for creating and recyling postgresql connections
 pub struct Manager<T: MakeTlsConnect<Socket>> {
     config: PgConfig,
     tls: T,
 }
 
 impl<T: MakeTlsConnect<Socket>> Manager<T> {
+    /// Create manager using `PgConfig` and a `TlsConnector`
     pub fn new(config: PgConfig, tls: T) -> Manager<T> {
         Manager {
             config: config,
@@ -54,18 +94,23 @@ where
     }
 }
 
+/// A wrapper for `tokio_postgres::Client` which includes a statement cache.
 pub struct Client {
     client: PgClient,
     statement_cache: HashMap<String, Statement>,
 }
 
 impl Client {
+    /// Create new wrapper instance using an existing `tokio_postgres::Client`
     pub fn new(client: PgClient) -> Client {
         Client {
             client: client,
             statement_cache: HashMap::new(),
         }
     }
+    /// Creates a new prepared statement using the statement cache if possible.
+    ///
+    /// See [`tokio_postgres::Client::prepare`](#method.prepare-1)
     pub async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
         let query_owned = query.to_owned();
         match self.statement_cache.get(&query_owned) {
@@ -78,6 +123,9 @@ impl Client {
             }
         }
     }
+    /// Begins a new database transaction which supports the statement cache.
+    ///
+    /// See [`tokio_postgres::Client::transaction`](#method.transaction-1)
     pub async fn transaction<'a>(&'a mut self) -> Result<Transaction<'a>, Error> {
         Ok(Transaction {
             txn: PgClient::transaction(&mut self.client).await?,
@@ -93,12 +141,17 @@ impl Deref for Client {
     }
 }
 
+/// A wrapper for `tokio_postgres::Transaction` which uses the statement cache
+/// from the client object it was created by.
 pub struct Transaction<'a> {
     txn: PgTransaction<'a>,
     statement_cache: &'a mut HashMap<String, Statement>,
 }
 
 impl<'a> Transaction<'a> {
+    /// Creates a new prepared statement using the statement cache if possible.
+    ///
+    /// See [`tokio_postgres::Transaction::prepare`](#method.prepare-1)
     pub async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
         let query_owned = query.to_owned();
         match self.statement_cache.get(&query_owned) {

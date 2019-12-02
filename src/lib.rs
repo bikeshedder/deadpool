@@ -1,3 +1,58 @@
+//! Deadpool is a dead simple async pool for connections and objects
+//! of any type.
+//!
+//! # Example
+//!
+//! ```rust,ignore
+//! use async_trait::async_trait;
+//! use deadpool_postgres::{Manager, Pool};
+//!
+//! struct Error {}
+//!
+//! struct Connection {}
+//!
+//! impl Connection {
+//!     async fn new() -> Result<Self, Error> {
+//!         unimplemented!();
+//!     }
+//!     async fn check_health(&self) -> bool {
+//!         unimplemented!();
+//!     }
+//! }
+//!
+//! struct Manager {}
+//!
+//! #[async_trait]
+//! impl deadpool::Manager<Client, Error> for Manager
+//! {
+//!     async fn create(&self) -> Result<Connection, Error> {
+//!         Connection::new().await
+//!     }
+//!     async fn recycle(&self, conn: Connection) -> Result<Client, Error> {
+//!         if conn.check_health().await {
+//!             conn
+//!         } else {
+//!             Connection::new().await
+//!         }
+//!     }
+//! }
+//!
+//! #[tokio::main]
+//! fn main() {
+//!     let mgr = Manager::new();
+//!     let pool = Pool::new(mgr, 16);
+//!     loop {
+//!         let mut conn = pool.get().await.unwrap();
+//!         let value = conn.do_something()
+//!         println!("{}", value);
+//!     }
+//! }
+//! ```
+//!
+//! For a more complete example please see
+//! [`deadpool-postgres`](https://crates.io/crates/deadpool-postgres)
+#![warn(missing_docs)]
+
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicIsize, AtomicUsize, Ordering};
 use std::sync::{Arc, Weak};
@@ -9,12 +64,20 @@ use tokio::sync::Mutex;
 #[cfg(feature = "postgres")]
 pub mod postgres;
 
+/// This trait is used to `create` new objects or `recycle` existing ones.
 #[async_trait]
 pub trait Manager<T, E> {
+    /// Create a new instance of `T`
     async fn create(&self) -> Result<T, E>;
+    /// Try to recycle an instance of `T`, create a new instance of `T` if
+    /// that fails or return an error if that fails, too.
     async fn recycle(&self, obj: T) -> Result<T, E>;
 }
 
+/// A wrapper around the actual pooled object which implements the traits
+/// `Deref`, `DerefMut` and `Drop`. Use this object just as it was of type
+/// `T` and upon leaving scope the `drop` function will take care of
+/// returning it to the pool.
 pub struct Object<T, E> {
     obj: Option<T>,
     pool: Weak<PoolInner<T, E>>,
@@ -51,12 +114,12 @@ impl<T, E> DerefMut for Object<T, E> {
 }
 
 #[derive(Default)]
-pub struct PoolSize {
+struct PoolSize {
     current: AtomicUsize,
     available: AtomicIsize,
 }
 
-pub struct PoolInner<T, E> {
+struct PoolInner<T, E> {
     manager: Box<dyn Manager<T, E> + Sync + Send>,
     max_size: usize,
     obj_sender: Sender<T>,
@@ -75,6 +138,10 @@ impl<T, E> PoolInner<T, E> {
     }
 }
 
+/// A generic object and connection pool.
+///
+/// This struct can be cloned and transferred accross thread boundaries
+/// and uses reference counting for its internal state.
 pub struct Pool<T, E> {
     inner: Arc<PoolInner<T, E>>,
 }
@@ -88,6 +155,9 @@ impl<T, E> Clone for Pool<T, E> {
 }
 
 impl<T, E> Pool<T, E> {
+    /// Create new connection pool with a given `manager` and `max_size`.
+    /// The `manager` is used to create and recycle objects and `max_size`
+    /// is the maximum number of objects ever created.
     pub fn new(manager: impl Manager<T, E> + Send + Sync + 'static, max_size: usize) -> Pool<T, E> {
         let (obj_sender, obj_receiver) = channel::<T>(max_size);
         Pool {
@@ -100,6 +170,7 @@ impl<T, E> Pool<T, E> {
             }),
         }
     }
+    /// Retrieve object from pool or wait for one to become available.
     pub async fn get(&self) -> Result<Object<T, E>, E> {
         let available = self.inner.size.available.fetch_sub(1, Ordering::SeqCst);
         if available <= 0 && self.inner.size.current.load(Ordering::SeqCst) < self.inner.max_size {
