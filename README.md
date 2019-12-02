@@ -23,7 +23,7 @@ fn main() {
     cfg.host("/var/run/postgresql");
     cfg.user(env::var("USER").unwrap().as_str());
     cfg.dbname("deadpool");
-    let mgr = Manager::new(cfg tokio_postgres::NoTls);
+    let mgr = Manager::new(cfg, NoTls);
     let pool = Pool::new(mgr, 16);
     loop {
         let mut client = pool.get().await.unwrap();
