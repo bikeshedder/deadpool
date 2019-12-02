@@ -4,6 +4,7 @@
 
 * Add documentation for `docs.rs`
 * Remove `PoolInner` and `PoolSize` struct from public interface
+* Improve example in `README.md` and crate root
 
 ## v0.2.2
 

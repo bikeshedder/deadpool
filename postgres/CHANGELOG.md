@@ -3,6 +3,7 @@
 ## v0.2.3
 
 * Add documentation for `docs.rs`
+* Improve example in `README.md` and crate root
 
 ## v0.2.2
 

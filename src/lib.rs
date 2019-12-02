@@ -3,34 +3,39 @@
 //!
 //! # Example
 //!
-//! ```rust,ignore
+//! ```rust
 //! use async_trait::async_trait;
-//! use deadpool::{Manager, Pool};
 //!
-//! struct Error {}
+//! #[derive(Debug)]
+//! enum Error { Fail }
 //!
 //! struct Connection {}
 //!
+//! type Pool = deadpool::Pool<Connection, Error>;
+//!
 //! impl Connection {
 //!     async fn new() -> Result<Self, Error> {
-//!         unimplemented!();
+//!         Ok(Connection {})
 //!     }
 //!     async fn check_health(&self) -> bool {
-//!         unimplemented!();
+//!         true
+//!     }
+//!     async fn do_something(&self) -> String {
+//!         "Horray!".to_string()
 //!     }
 //! }
 //!
 //! struct Manager {}
 //!
 //! #[async_trait]
-//! impl deadpool::Manager<Client, Error> for Manager
+//! impl deadpool::Manager<Connection, Error> for Manager
 //! {
 //!     async fn create(&self) -> Result<Connection, Error> {
 //!         Connection::new().await
 //!     }
-//!     async fn recycle(&self, conn: Connection) -> Result<Client, Error> {
+//!     async fn recycle(&self, conn: Connection) -> Result<Connection, Error> {
 //!         if conn.check_health().await {
-//!             conn
+//!             Ok(conn)
 //!         } else {
 //!             Connection::new().await
 //!         }
@@ -38,14 +43,12 @@
 //! }
 //!
 //! #[tokio::main]
-//! fn main() {
-//!     let mgr = Manager::new();
+//! async fn main() {
+//!     let mgr = Manager {};
 //!     let pool = Pool::new(mgr, 16);
-//!     loop {
-//!         let mut conn = pool.get().await.unwrap();
-//!         let value = conn.do_something()
-//!         println!("{}", value);
-//!     }
+//!     let mut conn = pool.get().await.unwrap();
+//!     let value = conn.do_something().await;
+//!     assert_eq!(value, "Horray!".to_string());
 //! }
 //! ```
 //!

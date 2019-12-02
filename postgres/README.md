@@ -17,19 +17,19 @@ use deadpool_postgres::{Manager, Pool};
 use tokio_postgres::{Config, NoTls};
 
 #[tokio::main]
-fn main() {
+async fn main() {
     let mut cfg = Config::new();
     cfg.host("/var/run/postgresql");
     cfg.user(env::var("USER").unwrap().as_str());
     cfg.dbname("deadpool");
-    let mgr = Manager::new(cfg tokio_postgres::NoTls);
+    let mgr = Manager::new(cfg, tokio_postgres::NoTls);
     let pool = Pool::new(mgr, 16);
-    loop {
+    for i in 1..10 {
         let mut client = pool.get().await.unwrap();
-        let stmt = client.prepare("SELECT random()").await.unwrap();
-        let rows = client.query(&stmt, &[]).await.unwrap();
-        let value: f64 = rows[0].get(0);
-        println!("{}", value);
+        let stmt = client.prepare("SELECT 1 + $1").await.unwrap();
+        let rows = client.query(&stmt, &[&i]).await.unwrap();
+        let value: i32 = rows[0].get(0);
+        assert_eq!(value, i + 1);
     }
 }
 ```
