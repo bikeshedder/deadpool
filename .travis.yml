@@ -1,3 +1,9 @@
+dist: xenial
+addons:
+  apt:
+    packages:
+      - rabbitmq-server
+
 language: rust
 rust:
 - stable
