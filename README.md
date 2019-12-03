@@ -76,7 +76,7 @@ things a little different and that is the reason for it to exist:
   pool using the `Drop` trait. The health of those objects is checked upon
   next retrieval and not when they are returned. Deadpool never performs any
   action in the background. This is the reason why deadpool does not need
-  to spawn futures and does not realy on a background thread or task of any
+  to spawn futures and does not rely on a background thread or task of any
   type.
 
 * **Identical startup and runtime behaviour**. When writing long running
