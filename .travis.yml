@@ -6,7 +6,20 @@ sudo: false
 
 cache: cargo
 
+env:
+  global:
+    - PG_HOST=localhost
+    - PG_PORT=5432
+    - PG_USER=postgres
+    - PG_PASSWORD=
+    - PG_DBNAME=deadpool
+
+services:
+  - postgresql
+
+before_script:
+  - psql -c 'create database deadpool;' -U postgres
+
 script:
 - cargo build --workspace --verbose
 - cargo test --workspace --verbose
-

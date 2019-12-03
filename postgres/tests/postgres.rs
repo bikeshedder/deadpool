@@ -1,11 +1,43 @@
-use deadpool_postgres::{Manager, Pool};
 use std::env;
+use std::path::Path;
+
+use deadpool_postgres::{Manager, Pool};
+
+fn pg_config_from_env() -> tokio_postgres::config::Config {
+    let mut config = tokio_postgres::Config::new();
+    if let Ok(host) = env::var("PG_HOST") {
+        config.host(host.as_str());
+    } else if Path::new("/run/postgresql").exists() {
+        config.host("/run/postgresql");
+    } else {
+        config.host("/tmp");
+    }
+    if let Ok(port) = env::var("PG_PORT") {
+        match u16::from_str_radix(port.as_str(), 10) {
+            Ok(port) => { config.port(port); }
+            Err(_) => { panic!(format!("Invalid port: {}", port)); }
+        }
+    }
+    if let Ok(user) = env::var("PG_USER") {
+        config.user(user.as_str());
+    } else if let Ok(user) = env::var("USER") {
+        config.user(user.as_str());
+    } else {
+        panic!("PG_USER missing in environment; fallback to USER failed as well.");
+    }
+    if let Ok(password) = env::var("PG_PASSWORD") {
+        config.password(password.as_str());
+    }
+    if let Ok(dbname) = env::var("PG_DBNAME") {
+        config.dbname(dbname.as_str());
+    } else {
+        config.dbname("deadpool");
+    }
+    config
+}
 
 fn create_pool() -> Pool {
-    let mut cfg = tokio_postgres::Config::new();
-    cfg.host("/var/run/postgresql");
-    cfg.user(env::var("USER").unwrap().as_str());
-    cfg.dbname("deadpool");
+    let cfg = pg_config_from_env();
     let mgr = Manager::new(cfg, tokio_postgres::NoTls);
     Pool::new(mgr, 16)
 }
