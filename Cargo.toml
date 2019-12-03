@@ -18,5 +18,6 @@ tokio = { version = "0.2.2", features = ["sync", "macros"] }
 
 [workspace]
 members = [
-    "postgres"
+    "postgres",
+    "lapin"
 ]

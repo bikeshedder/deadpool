@@ -11,6 +11,7 @@ trait. The following backends are currently supported:
 Backend                                                     | Crate
 ----------------------------------------------------------- | -----
 [tokio-postgres](https://crates.io/crates/tokio-postrges)   | [deadpool-postgres](https://crates.io/crates/deadpool-postgres)
+[lapin](https://crates.io/crates/lapin) (AMQP)              | [deadpool-lapin](https://crates.io/crates/deadpool-lapin)
 
 ## Example
 

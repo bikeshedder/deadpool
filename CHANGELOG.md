@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.2.4 (unreleased)
+
+* Add `deadpool-lapin` to README
+
 ## v0.2.3
 
 * Add documentation for `docs.rs`

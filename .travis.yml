@@ -16,6 +16,7 @@ env:
 
 services:
   - postgresql
+  - rabbitmq
 
 before_script:
   - psql -c 'create database deadpool;' -U postgres
