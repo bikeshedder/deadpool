@@ -24,6 +24,7 @@ env:
 services:
   - postgresql
   - rabbitmq
+  - redis-server
 
 before_script:
   - psql -c 'create database deadpool;' -U postgres

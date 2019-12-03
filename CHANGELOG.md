@@ -3,6 +3,7 @@
 ## v0.2.4 (unreleased)
 
 * Add `deadpool-lapin` to README
+* Add `deadpool-redis` to README
 
 ## v0.2.3
 
