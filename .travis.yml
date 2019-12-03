@@ -1,0 +1,12 @@
+language: rust
+rust:
+- stable
+
+sudo: false
+
+cache: cargo
+
+script:
+- cargo build --workspace --verbose
+- cargo test --workspace --verbose
+
