@@ -21,7 +21,7 @@
 //!         true
 //!     }
 //!     async fn do_something(&self) -> String {
-//!         "Horray!".to_string()
+//!         "Hooray!".to_string()
 //!     }
 //! }
 //!
@@ -48,7 +48,7 @@
 //!     let pool = Pool::new(mgr, 16);
 //!     let mut conn = pool.get().await.unwrap();
 //!     let value = conn.do_something().await;
-//!     assert_eq!(value, "Horray!".to_string());
+//!     assert_eq!(value, "Hooray!".to_string());
 //! }
 //! ```
 //!
@@ -78,7 +78,7 @@ pub trait Manager<T, E> {
 }
 
 /// A wrapper around the actual pooled object which implements the traits
-/// `Deref`, `DerefMut` and `Drop`. Use this object just as it was of type
+/// `Deref`, `DerefMut` and `Drop`. Use this object just as if it was of type
 /// `T` and upon leaving scope the `drop` function will take care of
 /// returning it to the pool.
 pub struct Object<T, E> {
@@ -143,7 +143,7 @@ impl<T, E> PoolInner<T, E> {
 
 /// A generic object and connection pool.
 ///
-/// This struct can be cloned and transferred accross thread boundaries
+/// This struct can be cloned and transferred across thread boundaries
 /// and uses reference counting for its internal state.
 pub struct Pool<T, E> {
     inner: Arc<PoolInner<T, E>>,
