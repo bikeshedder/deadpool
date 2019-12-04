@@ -1,7 +1,7 @@
-//! Deadpool simple async pool for AMQP connections.
+//! Deadpool simple async pool for Redis connections.
 //!
 //! This crate implements a [`deadpool`](https://crates.io/crates/deadpool)
-//! manager for [`lapin`](https://crates.io/crates/lapin).
+//! manager for [`redis`](https://crates.io/crates/redis).
 //!
 //! You should not need to use `deadpool` directly. Use the `Pool` type
 //! provided by this crate instead.
@@ -12,7 +12,6 @@
 //! use std::env;
 //!
 //! use deadpool_redis::{Manager, Pool};
-//! use futures::compat::Future01CompatExt;
 //! use redis::FromRedisValue;
 //!
 //! #[tokio::main]
