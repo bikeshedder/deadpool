@@ -196,6 +196,13 @@ pub struct Pool<T, E> {
     inner: Arc<PoolInner<T, E>>,
 }
 
+#[derive(Debug)]
+/// The current pool status.
+pub struct Status {
+    size: usize,
+    available: isize,
+}
+
 impl<T, E> Clone for Pool<T, E> {
     fn clone(&self) -> Pool<T, E> {
         Pool {
@@ -248,5 +255,11 @@ impl<T, E> Pool<T, E> {
                 self.inner.size.fetch_sub(1, Ordering::Relaxed);
             }
         }
+    }
+    /// Retrieve status of the pool
+    pub fn status(&self) -> Status {
+        let size = self.inner.size.load(Ordering::Relaxed);
+        let available = self.inner.available.load(Ordering::Relaxed);
+        Status { size, available }
     }
 }
