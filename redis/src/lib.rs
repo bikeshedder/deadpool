@@ -54,13 +54,19 @@ pub struct Connection {
 }
 
 impl Connection {
+    /// Execute query
     pub async fn query(&mut self, cmd: &redis::Cmd) -> RedisResult<redis::Value>
     {
-        // FIXME how to handle if the connection is no longer part of this
-        let conn = self.conn.take().unwrap();
-        let (conn, result) = cmd.query_async(conn).compat().await?;
-        self.conn.replace(conn);
-        Ok(result)
+        if let Some(conn) = self.conn.take() {
+            let (conn, result) = cmd.query_async(conn).compat().await?;
+            self.conn.replace(conn);
+            Ok(result)
+        } else {
+            Err(redis::RedisError::from((
+                redis::ErrorKind::IoError,
+                "deadpool: Connection to server lost due to previous query"
+            )))
+        }
     }
 }
 
