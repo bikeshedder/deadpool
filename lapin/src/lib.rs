@@ -77,8 +77,8 @@ impl deadpool::Manager<lapin::Connection, Error> for Manager
         ).await?;
         Ok(connection)
     }
-    async fn recycle(&self, connection: lapin::Connection) -> Result<lapin::Connection, Error> {
+    async fn recycle(&self, connection: lapin::Connection) -> Option<lapin::Connection> {
         // FIXME how to check the health?
-        Ok(connection)
+        Some(connection)
     }
 }

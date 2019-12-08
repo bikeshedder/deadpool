@@ -84,12 +84,12 @@ where
         spawn(connection);
         Ok(Client::new(client))
     }
-    async fn recycle(&self, client: Client) -> Result<Client, Error> {
+    async fn recycle(&self, client: Client) -> Option<Client> {
         if let Ok(_) = client.simple_query("").await {
-            Ok(client)
+            Some(client)
         } else {
             debug!(target: "deadpool.postgres", "Recycling of DB connection failed. Reconnecting...");
-            self.create().await
+            None
         }
     }
 }

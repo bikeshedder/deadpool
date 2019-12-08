@@ -33,11 +33,11 @@
 //!     async fn create(&self) -> Result<Connection, Error> {
 //!         Connection::new().await
 //!     }
-//!     async fn recycle(&self, conn: Connection) -> Result<Connection, Error> {
+//!     async fn recycle(&self, conn: Connection) -> Option<Connection> {
 //!         if conn.check_health().await {
-//!             Ok(conn)
+//!             Some(conn)
 //!         } else {
-//!             Connection::new().await
+//!             None
 //!         }
 //!     }
 //! }
@@ -72,9 +72,9 @@ pub mod postgres;
 pub trait Manager<T, E> {
     /// Create a new instance of `T`
     async fn create(&self) -> Result<T, E>;
-    /// Try to recycle an instance of `T`, create a new instance of `T` if
-    /// that fails or return an error if that fails, too.
-    async fn recycle(&self, obj: T) -> Result<T, E>;
+    /// Try to recycle an instance of `T` returning None` if the
+    /// object could not be recycled.
+    async fn recycle(&self, obj: T) -> Option<T>;
 }
 
 /// A wrapper around the actual pooled object which implements the traits
@@ -90,7 +90,7 @@ impl<T, E> Object<T, E> {
     fn new(pool: &Pool<T, E>, obj: T) -> Object<T, E> {
         Object {
             obj: Some(obj),
-            pool: Arc::downgrade(&pool.inner),
+            pool: Arc::downgrade(&pool.inner)
         }
     }
 }
@@ -98,7 +98,7 @@ impl<T, E> Object<T, E> {
 impl<T, E> Drop for Object<T, E> {
     fn drop(&mut self) {
         if let Some(pool) = self.pool.upgrade() {
-            pool.return_obj(self.obj.take().unwrap());
+            pool.return_obj(self.obj.take());
         }
     }
 }
@@ -116,28 +116,75 @@ impl<T, E> DerefMut for Object<T, E> {
     }
 }
 
-#[derive(Default)]
-struct PoolSize {
-    current: AtomicUsize,
-    available: AtomicIsize,
+/// This structure is used to undo changes that were done to the internal
+/// pool state if a future executing `Pool::get` is aborted and dropped.
+enum Undo {
+    SizeAdd,
+    AvailableSub,
+    Recycle,
+    None
+}
+
+struct UndoGuard<T, E> {
+    pool: Weak<PoolInner<T, E>>,
+    what: Undo,
+}
+
+impl<T, E> UndoGuard<T, E> {
+    fn new(pool: &Pool<T, E>, what: Undo) -> Self {
+        Self {
+            pool: Arc::downgrade(&pool.inner),
+            what
+        }
+    }
+    pub fn abort(mut self) {
+        self.what = Undo::None;
+    }
+}
+
+impl<T, E> Drop for UndoGuard<T, E> {
+    fn drop(&mut self) {
+        if let Undo::None = self.what {
+            if let Some(pool) = self.pool.upgrade() {
+                match self.what {
+                    Undo::SizeAdd => {
+                        pool.size.fetch_sub(1, Ordering::Relaxed);
+                    }
+                    Undo::AvailableSub => {
+                        pool.available.fetch_add(1, Ordering::Relaxed);
+                    }
+                    Undo::Recycle => {
+                        pool.return_obj(None)
+                    }
+                    Undo::None => {}
+                }
+            }
+        }
+    }
 }
 
 struct PoolInner<T, E> {
     manager: Box<dyn Manager<T, E> + Sync + Send>,
     max_size: usize,
-    obj_sender: Sender<T>,
-    obj_receiver: Mutex<Receiver<T>>,
-    size: PoolSize,
+    obj_sender: Sender<Option<T>>,
+    obj_receiver: Mutex<Receiver<Option<T>>>,
+    size: AtomicUsize,
+    /// The number of available objects in the pool. If there are no
+    /// objects in the pool this number can become negative and stores the
+    /// number of futures waiting for an object.
+    available: AtomicIsize,
 }
 
 impl<T, E> PoolInner<T, E> {
-    fn return_obj(&self, obj: T) {
-        self.size.available.fetch_add(1, Ordering::SeqCst);
-        self.obj_sender
-            .clone()
-            .try_send(obj)
-            .map_err(|_| ())
-            .unwrap();
+    fn return_obj(&self, obj: Option<T>) {
+        match self.obj_sender.clone().try_send(obj) {
+            Ok(_) => {
+                self.available.fetch_add(1, Ordering::Relaxed);
+            }
+            Err(e) => {
+                eprintln!("Could not return object to pool: {}", e);
+            }
+        }
     }
 }
 
@@ -162,30 +209,44 @@ impl<T, E> Pool<T, E> {
     /// The `manager` is used to create and recycle objects and `max_size`
     /// is the maximum number of objects ever created.
     pub fn new(manager: impl Manager<T, E> + Send + Sync + 'static, max_size: usize) -> Pool<T, E> {
-        let (obj_sender, obj_receiver) = channel::<T>(max_size);
+        let (obj_sender, obj_receiver) = channel::<Option<T>>(max_size);
         Pool {
             inner: Arc::new(PoolInner {
                 max_size: max_size,
                 manager: Box::new(manager),
                 obj_sender: obj_sender,
                 obj_receiver: Mutex::new(obj_receiver),
-                size: PoolSize::default(),
+                size: AtomicUsize::new(0),
+                available: AtomicIsize::new(0)
             }),
         }
     }
     /// Retrieve object from pool or wait for one to become available.
     pub async fn get(&self) -> Result<Object<T, E>, E> {
-        let available = self.inner.size.available.fetch_sub(1, Ordering::SeqCst);
-        if available <= 0 && self.inner.size.current.load(Ordering::SeqCst) < self.inner.max_size {
-            let current = self.inner.size.current.fetch_add(1, Ordering::SeqCst);
-            if current < self.inner.max_size {
-                self.inner.size.available.fetch_add(1, Ordering::SeqCst);
+        let available = self.inner.available.fetch_sub(1, Ordering::Relaxed);
+        let undo_available = UndoGuard::new(&self, Undo::AvailableSub);
+        loop {
+            if available <= 0 && self.inner.size.load(Ordering::Relaxed) < self.inner.max_size {
+                // The pool is empty and the max size has not been
+                // reached, yet.
+                self.inner.size.fetch_add(1, Ordering::Relaxed);
+                let undo_size = UndoGuard::new(&self, Undo::SizeAdd);
+                drop(undo_available);
                 let obj = self.inner.manager.create().await?;
+                undo_size.abort();
                 return Ok(Object::new(&self, obj));
             }
+            let obj = self.inner.obj_receiver.lock().await.recv().await.unwrap();
+            if let Some(obj) = obj {
+                let undo_recycle = UndoGuard::new(&self, Undo::Recycle);
+                if let Some(obj) = self.inner.manager.recycle(obj).await {
+                    undo_available.abort();
+                    undo_recycle.abort();
+                    return Ok(Object::new(&self, obj));
+                }
+            } else {
+                self.inner.size.fetch_sub(1, Ordering::Relaxed);
+            }
         }
-        let obj = self.inner.obj_receiver.lock().await.recv().await.unwrap();
-        let obj = self.inner.manager.recycle(obj).await?;
-        Ok(Object::new(&self, obj))
     }
 }

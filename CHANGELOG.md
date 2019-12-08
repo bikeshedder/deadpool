@@ -1,9 +1,11 @@
 # Change Log
 
-## v0.2.4 (unreleased)
+## v0.3.0 (unreleased)
 
 * Add `deadpool-lapin` to README
 * Add `deadpool-redis` to README
+* Fix possible stale state and deadlock if a future calling `Pool::get` is
+  aborted. This is related to https://github.com/tokio-rs/tokio/issues/1898
 
 ## v0.2.3
 

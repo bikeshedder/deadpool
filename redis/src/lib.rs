@@ -86,11 +86,11 @@ impl deadpool::Manager<Connection, RedisError> for Manager
         let conn = self.client.get_async_connection().compat().await?;
         Ok(Connection { conn: Some(conn) })
     }
-    async fn recycle(&self, conn: Connection) -> Result<Connection, RedisError> {
+    async fn recycle(&self, conn: Connection) -> Option<Connection> {
         if conn.conn.is_some() {
-            Ok(conn)
+            Some(conn)
         } else {
-            self.create().await
+            None
         }
     }
 }
