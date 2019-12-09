@@ -145,19 +145,28 @@ impl<T, E> UndoGuard<T, E> {
 impl<T, E> Drop for UndoGuard<T, E> {
     fn drop(&mut self) {
         if let Undo::None = self.what {
-            if let Some(pool) = self.pool.upgrade() {
-                match self.what {
-                    Undo::SizeAdd => {
-                        pool.size.fetch_sub(1, Ordering::Relaxed);
-                    }
-                    Undo::AvailableSub => {
-                        pool.available.fetch_add(1, Ordering::Relaxed);
-                    }
-                    Undo::Recycle => {
-                        pool.return_obj(None)
-                    }
-                    Undo::None => {}
+            return;
+        }
+        if let Some(pool) = self.pool.upgrade() {
+            match self.what {
+                Undo::SizeAdd => {
+                    pool.size.fetch_sub(1, Ordering::Relaxed);
                 }
+                Undo::AvailableSub => {
+                    pool.available.fetch_add(1, Ordering::Relaxed);
+                }
+                Undo::Recycle => {
+                    if let Err(e) = pool.obj_sender.clone().try_send(None) {
+                        // This code should be unreachable. Still if this ever
+                        // happens fixing the fool state is a good idea.
+                        pool.available.fetch_sub(1, Ordering::Relaxed);
+                        pool.size.fetch_sub(1, Ordering::Relaxed);
+                        if !std::thread::panicking() {
+                            unreachable!("Could not return object to pool: {}", e);
+                        }
+                    }
+                }
+                Undo::None => {}
             }
         }
     }
@@ -182,7 +191,12 @@ impl<T, E> PoolInner<T, E> {
                 self.available.fetch_add(1, Ordering::Relaxed);
             }
             Err(e) => {
-                eprintln!("Could not return object to pool: {}", e);
+                // This code should be unreachable. Still if this ever
+                // happens fixing the fool state is a good idea.
+                self.size.fetch_sub(1, Ordering::Relaxed);
+                if !std::thread::panicking() {
+                    unreachable!("Could not return object to pool: {}", e);
+                }
             }
         }
     }
@@ -230,18 +244,20 @@ impl<T, E> Pool<T, E> {
     }
     /// Retrieve object from pool or wait for one to become available.
     pub async fn get(&self) -> Result<Object<T, E>, E> {
-        let available = self.inner.available.fetch_sub(1, Ordering::Relaxed);
+        let mut available = self.inner.available.fetch_sub(1, Ordering::Relaxed);
         let undo_available = UndoGuard::new(&self, Undo::AvailableSub);
+        let mut size = self.inner.size.load(Ordering::Relaxed);
         loop {
-            if available <= 0 && self.inner.size.load(Ordering::Relaxed) < self.inner.max_size {
+            if available <= 0 && size < self.inner.max_size {
                 // The pool is empty and the max size has not been
                 // reached, yet.
-                self.inner.size.fetch_add(1, Ordering::Relaxed);
                 let undo_size = UndoGuard::new(&self, Undo::SizeAdd);
-                drop(undo_available);
-                let obj = self.inner.manager.create().await?;
-                undo_size.abort();
-                return Ok(Object::new(&self, obj));
+                if self.inner.size.fetch_add(1, Ordering::Relaxed) < self.inner.max_size {
+                    drop(undo_available);
+                    let obj = self.inner.manager.create().await?;
+                    undo_size.abort();
+                    return Ok(Object::new(&self, obj));
+                }
             }
             let obj = self.inner.obj_receiver.lock().await.recv().await.unwrap();
             if let Some(obj) = obj {
@@ -251,9 +267,12 @@ impl<T, E> Pool<T, E> {
                     undo_recycle.abort();
                     return Ok(Object::new(&self, obj));
                 }
-            } else {
-                self.inner.size.fetch_sub(1, Ordering::Relaxed);
+                undo_recycle.abort();
             }
+            // At this point either no object was received from the channel
+            // or recycling the object failed.
+            size = self.inner.size.fetch_sub(1, Ordering::Relaxed) - 1;
+            available = self.inner.available.fetch_sub(1, Ordering::Relaxed);
         }
     }
     /// Retrieve status of the pool
