@@ -6,6 +6,8 @@
 * Add `deadpool-redis` to README
 * Fix possible stale state and deadlock if a future calling `Pool::get` is
   aborted. This is related to https://github.com/tokio-rs/tokio/issues/1898
+* Make recycling more robust by changing the `Manager::recycle` to a non
+  consuming API.
 
 ## v0.2.3
 

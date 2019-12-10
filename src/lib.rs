@@ -33,11 +33,11 @@
 //!     async fn create(&self) -> Result<Connection, Error> {
 //!         Connection::new().await
 //!     }
-//!     async fn recycle(&self, conn: Connection) -> Option<Connection> {
+//!     async fn recycle(&self, conn: &mut Connection) -> Result<(), Error> {
 //!         if conn.check_health().await {
-//!             Some(conn)
+//!             Ok(())
 //!         } else {
-//!             None
+//!             Err(Error::Fail)
 //!         }
 //!     }
 //! }
@@ -74,7 +74,14 @@ pub trait Manager<T, E> {
     async fn create(&self) -> Result<T, E>;
     /// Try to recycle an instance of `T` returning None` if the
     /// object could not be recycled.
-    async fn recycle(&self, obj: T) -> Option<T>;
+    async fn recycle(&self, obj: &mut T) -> Result<(), E>;
+}
+
+enum ObjectState {
+    New,
+    Creating,
+    Recycling,
+    Ready
 }
 
 /// A wrapper around the actual pooled object which implements the traits
@@ -83,13 +90,15 @@ pub trait Manager<T, E> {
 /// returning it to the pool.
 pub struct Object<T, E> {
     obj: Option<T>,
+    state: ObjectState,
     pool: Weak<PoolInner<T, E>>,
 }
 
 impl<T, E> Object<T, E> {
-    fn new(pool: &Pool<T, E>, obj: T) -> Object<T, E> {
+    fn new(pool: &Pool<T, E>) -> Object<T, E> {
         Object {
-            obj: Some(obj),
+            obj: None,
+            state: ObjectState::New,
             pool: Arc::downgrade(&pool.inner)
         }
     }
@@ -98,8 +107,33 @@ impl<T, E> Object<T, E> {
 impl<T, E> Drop for Object<T, E> {
     fn drop(&mut self) {
         if let Some(pool) = self.pool.upgrade() {
-            pool.return_obj(self.obj.take());
+            match self.state {
+                ObjectState::New => {
+                    pool.available.fetch_add(1, Ordering::Relaxed);
+                }
+                ObjectState::Creating => {
+                    pool.available.fetch_add(1, Ordering::Relaxed);
+                    pool.size.fetch_sub(1, Ordering::Relaxed);
+                }
+                ObjectState::Recycling => {
+                    pool.available.fetch_add(1, Ordering::Relaxed);
+                    if let Err(e) = pool.obj_sender.clone().try_send(self.obj.take()) {
+                        pool.available.fetch_sub(1, Ordering::Relaxed);
+                        pool.size.fetch_sub(1, Ordering::Relaxed);
+                        // This code should be unreachable. Still if this ever
+                        // happens fixing the pool state is a good idea.
+                        if !std::thread::panicking() {
+                            unreachable!("Could not return object to pool: {}", e);
+                        }
+                    }
+                }
+                ObjectState::Ready => {
+                    pool.return_obj(self.obj.take());
+                }
+            }
         }
+        self.obj = None;
+        self.state = ObjectState::New;
     }
 }
 
@@ -113,62 +147,6 @@ impl<T, E> Deref for Object<T, E> {
 impl<T, E> DerefMut for Object<T, E> {
     fn deref_mut(&mut self) -> &mut T {
         self.obj.as_mut().unwrap()
-    }
-}
-
-/// This structure is used to undo changes that were done to the internal
-/// pool state if a future executing `Pool::get` is aborted and dropped.
-enum Undo {
-    SizeAdd,
-    AvailableSub,
-    Recycle,
-    None
-}
-
-struct UndoGuard<T, E> {
-    pool: Weak<PoolInner<T, E>>,
-    what: Undo,
-}
-
-impl<T, E> UndoGuard<T, E> {
-    fn new(pool: &Pool<T, E>, what: Undo) -> Self {
-        Self {
-            pool: Arc::downgrade(&pool.inner),
-            what
-        }
-    }
-    pub fn abort(mut self) {
-        self.what = Undo::None;
-    }
-}
-
-impl<T, E> Drop for UndoGuard<T, E> {
-    fn drop(&mut self) {
-        if let Undo::None = self.what {
-            return;
-        }
-        if let Some(pool) = self.pool.upgrade() {
-            match self.what {
-                Undo::SizeAdd => {
-                    pool.size.fetch_sub(1, Ordering::Relaxed);
-                }
-                Undo::AvailableSub => {
-                    pool.available.fetch_add(1, Ordering::Relaxed);
-                }
-                Undo::Recycle => {
-                    if let Err(e) = pool.obj_sender.clone().try_send(None) {
-                        // This code should be unreachable. Still if this ever
-                        // happens fixing the fool state is a good idea.
-                        pool.available.fetch_sub(1, Ordering::Relaxed);
-                        pool.size.fetch_sub(1, Ordering::Relaxed);
-                        if !std::thread::panicking() {
-                            unreachable!("Could not return object to pool: {}", e);
-                        }
-                    }
-                }
-                Undo::None => {}
-            }
-        }
     }
 }
 
@@ -192,7 +170,7 @@ impl<T, E> PoolInner<T, E> {
             }
             Err(e) => {
                 // This code should be unreachable. Still if this ever
-                // happens fixing the fool state is a good idea.
+                // happens fixing the pool state is a good idea.
                 self.size.fetch_sub(1, Ordering::Relaxed);
                 if !std::thread::panicking() {
                     unreachable!("Could not return object to pool: {}", e);
@@ -245,35 +223,40 @@ impl<T, E> Pool<T, E> {
     /// Retrieve object from pool or wait for one to become available.
     pub async fn get(&self) -> Result<Object<T, E>, E> {
         let mut available = self.inner.available.fetch_sub(1, Ordering::Relaxed);
-        let undo_available = UndoGuard::new(&self, Undo::AvailableSub);
         let mut size = self.inner.size.load(Ordering::Relaxed);
+        let mut obj = Object::new(&self);
         loop {
             if available <= 0 && size < self.inner.max_size {
                 // The pool is empty and the max size has not been
                 // reached, yet.
-                let undo_size = UndoGuard::new(&self, Undo::SizeAdd);
                 if self.inner.size.fetch_add(1, Ordering::Relaxed) < self.inner.max_size {
-                    drop(undo_available);
-                    let obj = self.inner.manager.create().await?;
-                    undo_size.abort();
-                    return Ok(Object::new(&self, obj));
+                    self.inner.available.fetch_add(1, Ordering::Relaxed);
+                    obj.state = ObjectState::Creating;
+                    obj.obj = Some(self.inner.manager.create().await?);
+                    obj.state = ObjectState::Ready;
+                    break;
+                } else {
+                    self.inner.size.fetch_sub(1, Ordering::Relaxed);
                 }
             }
-            let obj = self.inner.obj_receiver.lock().await.recv().await.unwrap();
-            if let Some(obj) = obj {
-                let undo_recycle = UndoGuard::new(&self, Undo::Recycle);
-                if let Some(obj) = self.inner.manager.recycle(obj).await {
-                    undo_available.abort();
-                    undo_recycle.abort();
-                    return Ok(Object::new(&self, obj));
+            let inner_obj = self.inner.obj_receiver.lock().await.recv().await.unwrap();
+            if let Some(inner_obj) = inner_obj {
+                obj.obj = Some(inner_obj);
+                obj.state = ObjectState::Recycling;
+                if self.inner.manager.recycle(&mut obj).await.is_ok() {
+                    obj.state = ObjectState::Ready;
+                    break;
                 }
-                undo_recycle.abort();
+                obj.state = ObjectState::New;
             }
             // At this point either no object was received from the channel
-            // or recycling the object failed.
+            // or recycling the object failed. This means that the object
+            // received from the channel was unuseable and the pool size
+            // needs to be reduced by one.
             size = self.inner.size.fetch_sub(1, Ordering::Relaxed) - 1;
             available = self.inner.available.fetch_sub(1, Ordering::Relaxed);
         }
+        Ok(obj)
     }
     /// Retrieve status of the pool
     pub fn status(&self) -> Status {

@@ -40,7 +40,7 @@ use std::ops::Deref;
 
 use async_trait::async_trait;
 use futures::FutureExt;
-use log::{debug, warn};
+use log::{info, warn};
 use tokio::spawn;
 use tokio_postgres::{
     tls::MakeTlsConnect, tls::TlsConnect, Client as PgClient, Config as PgConfig, Error, Socket,
@@ -84,12 +84,13 @@ where
         spawn(connection);
         Ok(Client::new(client))
     }
-    async fn recycle(&self, client: Client) -> Option<Client> {
-        if let Ok(_) = client.simple_query("").await {
-            Some(client)
-        } else {
-            debug!(target: "deadpool.postgres", "Recycling of DB connection failed. Reconnecting...");
-            None
+    async fn recycle(&self, client: &mut Client) -> Result<(), Error> {
+        match client.simple_query("").await {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                info!(target: "deadpool.postgres", "Connection could not be recycled: {}", e);
+                Err(e)
+            }
         }
     }
 }

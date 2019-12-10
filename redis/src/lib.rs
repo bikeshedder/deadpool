@@ -64,7 +64,7 @@ impl Connection {
         } else {
             Err(redis::RedisError::from((
                 redis::ErrorKind::IoError,
-                "deadpool: Connection to server lost due to previous query"
+                "deadpool.redis: Connection to server lost due to previous query"
             )))
         }
     }
@@ -92,11 +92,14 @@ impl deadpool::Manager<Connection, RedisError> for Manager
         let conn = self.client.get_async_connection().compat().await?;
         Ok(Connection { conn: Some(conn) })
     }
-    async fn recycle(&self, conn: Connection) -> Option<Connection> {
+    async fn recycle(&self, conn: &mut Connection) -> Result<(), RedisError> {
         if conn.conn.is_some() {
-            Some(conn)
+            Ok(())
         } else {
-            None
+            Err(redis::RedisError::from((
+                redis::ErrorKind::IoError,
+                "deadpool.redis: Connection could not be recycled"
+            )))
         }
     }
 }
