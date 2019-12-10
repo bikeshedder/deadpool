@@ -68,6 +68,20 @@ impl Connection {
             )))
         }
     }
+    /// Execute pipeline
+    pub async fn query_pipeline(&mut self, pipeline: redis::Pipeline) -> RedisResult<redis::Value>
+    {
+        if let Some(conn) = self.conn.take() {
+            let (conn, result) = pipeline.query_async(conn).compat().await?;
+            self.conn.replace(conn);
+            Ok(result)
+        } else {
+            Err(redis::RedisError::from((
+                redis::ErrorKind::IoError,
+                "deadpool.redis: Connection to server lost due to previous query"
+            )))
+        }
+    }
 }
 
 
