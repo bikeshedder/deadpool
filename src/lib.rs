@@ -64,9 +64,6 @@ use async_trait::async_trait;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::Mutex;
 
-#[cfg(feature = "postgres")]
-pub mod postgres;
-
 /// This trait is used to `create` new objects or `recycle` existing ones.
 #[async_trait]
 pub trait Manager<T, E> {
