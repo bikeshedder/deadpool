@@ -11,8 +11,7 @@
 //! ```rust
 //! use std::env;
 //!
-//! use deadpool_redis::{Manager, Pool};
-//! use redis::FromRedisValue;
+//! use deadpool_redis::{cmd, Manager, Pool};
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -20,16 +19,18 @@
 //!     let pool = Pool::new(mgr, 16);
 //!     {
 //!         let mut conn = pool.get().await.unwrap();
-//!         let mut cmd = redis::cmd("SET");
-//!         cmd.arg(&["deadpool/test_key", "42"]);
-//!         conn.query(&cmd).await.unwrap();
+//!         cmd("SET")
+//!             .arg(&["deadpool/test_key", "42"])
+//!             .execute(&mut conn)
+//!             .await.unwrap();
 //!     }
 //!     {
 //!         let mut conn = pool.get().await.unwrap();
-//!         let mut cmd = redis::cmd("GET");
-//!         cmd.arg(&["deadpool/test_key"]);
-//!         let value = conn.query(&cmd).await.unwrap();
-//!         assert_eq!(String::from_redis_value(&value).unwrap(), "42".to_string());
+//!         let value = cmd("GET")
+//!             .arg(&["deadpool/test_key"])
+//!             .query::<String>(&mut conn)
+//!             .await.unwrap();
+//!         assert_eq!(value, "42".to_string());
 //!     }
 //! }
 //! ```
@@ -38,52 +39,40 @@
 use async_trait::async_trait;
 use futures::compat::Future01CompatExt;
 use redis::{
-    aio::Connection as RedisConnection,
-    Client,
-    IntoConnectionInfo,
-    RedisError,
+    aio::Connection as RedisConnection, Client, IntoConnectionInfo, RedisError,
     RedisResult,
 };
 
 /// A type alias for using `deadpool::Pool` with `redis`
 pub type Pool = deadpool::Pool<Connection, RedisError>;
 
+mod cmd_wrapper;
+pub use cmd_wrapper::{cmd, Cmd};
+mod pipeline_wrapper;
+pub use pipeline_wrapper::{pipe, Pipeline};
+
 /// A type alias for using `deadpool::Object` with `redis`
 pub struct Connection {
-    conn: Option<RedisConnection>
+    conn: Option<RedisConnection>,
 }
 
 impl Connection {
-    /// Execute query
-    pub async fn query(&mut self, cmd: &redis::Cmd) -> RedisResult<redis::Value>
-    {
+
+    fn _take_conn(&mut self) -> RedisResult<RedisConnection> {
         if let Some(conn) = self.conn.take() {
-            let (conn, result) = cmd.query_async(conn).compat().await?;
-            self.conn.replace(conn);
-            Ok(result)
+            Ok(conn)
         } else {
             Err(redis::RedisError::from((
                 redis::ErrorKind::IoError,
-                "deadpool.redis: Connection to server lost due to previous query"
+                "deadpool.redis: Connection to server lost due to previous query",
             )))
         }
     }
-    /// Execute pipeline
-    pub async fn query_pipeline(&mut self, pipeline: redis::Pipeline) -> RedisResult<redis::Value>
-    {
-        if let Some(conn) = self.conn.take() {
-            let (conn, result) = pipeline.query_async(conn).compat().await?;
-            self.conn.replace(conn);
-            Ok(result)
-        } else {
-            Err(redis::RedisError::from((
-                redis::ErrorKind::IoError,
-                "deadpool.redis: Connection to server lost due to previous query"
-            )))
-        }
+
+    fn _replace_conn(&mut self, conn: RedisConnection) {
+        self.conn = Some(conn)
     }
 }
-
 
 /// The manager for creating and recyling lapin connections
 pub struct Manager {
@@ -94,14 +83,13 @@ impl Manager {
     /// Create manager using `PgConfig` and a `TlsConnector`
     pub fn new<T: IntoConnectionInfo>(params: T) -> RedisResult<Self> {
         Ok(Self {
-            client: Client::open(params)?
+            client: Client::open(params)?,
         })
     }
 }
 
 #[async_trait]
-impl deadpool::Manager<Connection, RedisError> for Manager
-{
+impl deadpool::Manager<Connection, RedisError> for Manager {
     async fn create(&self) -> Result<Connection, RedisError> {
         let conn = self.client.get_async_connection().compat().await?;
         Ok(Connection { conn: Some(conn) })
@@ -112,7 +100,7 @@ impl deadpool::Manager<Connection, RedisError> for Manager
         } else {
             Err(redis::RedisError::from((
                 redis::ErrorKind::IoError,
-                "deadpool.redis: Connection could not be recycled"
+                "deadpool.redis: Connection could not be recycled",
             )))
         }
     }
