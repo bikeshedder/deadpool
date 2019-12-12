@@ -1,23 +1,18 @@
 use futures::compat::Future01CompatExt;
-use redis::{
-    aio::Connection as RedisConnection,
-    FromRedisValue,
-    ToRedisArgs,
-    RedisResult,
-};
+use redis::{aio::Connection as RedisConnection, FromRedisValue, RedisResult, ToRedisArgs};
 
 use crate::Connection;
 
 /// See [redis::Cmd](https://docs.rs/redis/latest/redis/struct.Cmd.html)
 pub struct Cmd {
-    pub(crate) cmd: redis::Cmd
+    pub(crate) cmd: redis::Cmd,
 }
 
 impl Cmd {
     /// See [redis::Cmd::new](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.new)
     pub fn new() -> Cmd {
         Cmd {
-            cmd: redis::Cmd::new()
+            cmd: redis::Cmd::new(),
         }
     }
     /// See [redis::Cmd::arg](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.arg)

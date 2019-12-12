@@ -40,10 +40,7 @@
 #![warn(missing_docs)]
 
 use async_trait::async_trait;
-use lapin::{
-    ConnectionProperties,
-    Error
-};
+use lapin::{ConnectionProperties, Error};
 
 /// A type alias for using `deadpool::Pool` with `lapin`
 pub type Pool = deadpool::Pool<lapin::Connection, Error>;
@@ -62,19 +59,17 @@ impl Manager {
     pub fn new(addr: String, connection_properties: ConnectionProperties) -> Self {
         Self {
             addr: addr,
-            connection_properties: connection_properties
+            connection_properties: connection_properties,
         }
     }
 }
 
 #[async_trait]
-impl deadpool::Manager<lapin::Connection, Error> for Manager
-{
+impl deadpool::Manager<lapin::Connection, Error> for Manager {
     async fn create(&self) -> Result<lapin::Connection, Error> {
-        let connection = lapin::Connection::connect(
-            self.addr.as_str(),
-            self.connection_properties.clone()
-        ).await?;
+        let connection =
+            lapin::Connection::connect(self.addr.as_str(), self.connection_properties.clone())
+                .await?;
         Ok(connection)
     }
     async fn recycle(&self, connection: &mut lapin::Connection) -> Result<(), Error> {

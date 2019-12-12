@@ -78,7 +78,7 @@ enum ObjectState {
     New,
     Creating,
     Recycling,
-    Ready
+    Ready,
 }
 
 /// A wrapper around the actual pooled object which implements the traits
@@ -96,7 +96,7 @@ impl<T, E> Object<T, E> {
         Object {
             obj: None,
             state: ObjectState::New,
-            pool: Arc::downgrade(&pool.inner)
+            pool: Arc::downgrade(&pool.inner),
         }
     }
 }
@@ -213,7 +213,7 @@ impl<T, E> Pool<T, E> {
                 obj_sender: obj_sender,
                 obj_receiver: Mutex::new(obj_receiver),
                 size: AtomicUsize::new(0),
-                available: AtomicIsize::new(0)
+                available: AtomicIsize::new(0),
             }),
         }
     }

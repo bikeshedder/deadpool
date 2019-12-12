@@ -1,28 +1,24 @@
 use futures::compat::Future01CompatExt;
-use redis::{
-    FromRedisValue,
-    ToRedisArgs,
-    RedisResult,
-};
+use redis::{FromRedisValue, RedisResult, ToRedisArgs};
 
-use crate::{Connection, Cmd};
+use crate::{Cmd, Connection};
 
 /// See [redis::Pipeline](https://docs.rs/redis/latest/redis/struct.Pipeline.html)
 pub struct Pipeline {
-    pipeline: redis::Pipeline
+    pipeline: redis::Pipeline,
 }
 
 impl Pipeline {
     /// See [redis::Pipeline::new](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.new)
     pub fn new() -> Pipeline {
         Pipeline {
-            pipeline: redis::Pipeline::new()
+            pipeline: redis::Pipeline::new(),
         }
     }
     /// See [redis::Pipeline::with_capacity](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.with_capacity)
     pub fn with_capacity(capacity: usize) -> Pipeline {
         Self {
-            pipeline: redis::Pipeline::with_capacity(capacity)
+            pipeline: redis::Pipeline::with_capacity(capacity),
         }
     }
     /// See [redis::Pipeline::cmd](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.cmd)
@@ -55,10 +51,7 @@ impl Pipeline {
         self.pipeline.get_packed_pipeline(atomic)
     }
     /// See [redis::Pipeline::query](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.query)
-    pub async fn query<T: FromRedisValue>(
-        &self,
-        con: &mut Connection
-    ) -> RedisResult<T> {
+    pub async fn query<T: FromRedisValue>(&self, con: &mut Connection) -> RedisResult<T> {
         let rcon = con._take_conn()?;
         let (rcon, result) = self.pipeline.clone().query_async(rcon).compat().await?;
         con._replace_conn(rcon);

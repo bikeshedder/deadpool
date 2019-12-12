@@ -26,9 +26,9 @@
 //!     }
 //!     {
 //!         let mut conn = pool.get().await.unwrap();
-//!         let value = cmd("GET")
+//!         let value: String = cmd("GET")
 //!             .arg(&["deadpool/test_key"])
-//!             .query::<String>(&mut conn)
+//!             .query(&mut conn)
 //!             .await.unwrap();
 //!         assert_eq!(value, "42".to_string());
 //!     }
@@ -39,8 +39,7 @@
 use async_trait::async_trait;
 use futures::compat::Future01CompatExt;
 use redis::{
-    aio::Connection as RedisConnection, Client, IntoConnectionInfo, RedisError,
-    RedisResult,
+    aio::Connection as RedisConnection, Client, IntoConnectionInfo, RedisError, RedisResult,
 };
 
 /// A type alias for using `deadpool::Pool` with `redis`
@@ -57,7 +56,6 @@ pub struct Connection {
 }
 
 impl Connection {
-
     fn _take_conn(&mut self) -> RedisResult<RedisConnection> {
         if let Some(conn) = self.conn.take() {
             Ok(conn)
