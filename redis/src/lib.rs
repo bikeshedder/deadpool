@@ -94,7 +94,7 @@ impl deadpool::Manager<Connection, RedisError> for Manager {
     }
     async fn recycle(&self, conn: &mut Connection) -> Result<(), RedisError> {
         if conn.conn.is_some() {
-            Ok(())
+            cmd("PING").execute(conn).await.map(|_| ())
         } else {
             Err(redis::RedisError::from((
                 redis::ErrorKind::IoError,
