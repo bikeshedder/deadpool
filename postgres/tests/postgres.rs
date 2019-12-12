@@ -51,6 +51,7 @@ async fn test_basic() {
     let rows = client.query(&stmt, &[]).await.unwrap();
     let value: i32 = rows[0].get(0);
     assert_eq!(value, 3);
+    assert_eq!(client.statement_cache.size(), 1);
 }
 
 #[tokio::main]
@@ -65,6 +66,7 @@ async fn test_transaction_1() {
         let value: i32 = rows[0].get(0);
         txn.commit().await.unwrap();
         assert_eq!(value, 3);
+        assert_eq!(client.statement_cache.size(), 1);
     }
 }
 
@@ -80,5 +82,6 @@ async fn test_transaction_2() {
         let value: i32 = rows[0].get(0);
         txn.commit().await.unwrap();
         assert_eq!(value, 3);
+        assert_eq!(client.statement_cache.size(), 1);
     }
 }

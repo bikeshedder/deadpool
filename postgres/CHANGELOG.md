@@ -1,5 +1,13 @@
 # Change Log
 
+## v0.3.0
+
+* Add `StatementCache` struct with the functions `size` and `clear` which
+  are now accessible via `Connection::statement_cache` and
+  `Transaction::statement_cache`.
+* Make recycling more robust by changing the `Manager::recycle` to a non
+  consuming API.
+
 ## v0.2.3
 
 * Add documentation for `docs.rs`

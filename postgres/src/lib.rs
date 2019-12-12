@@ -95,10 +95,33 @@ where
     }
 }
 
+/// This structure holds the cached statements and provides access to
+/// functions for retrieving the current size and clearing the cache.
+pub struct StatementCache {
+    map: HashMap<String, Statement>,
+}
+
+impl StatementCache {
+    fn new() -> StatementCache {
+        StatementCache {
+            map: HashMap::new()
+        }
+    }
+    /// Retrieve current size of the cache
+    pub fn size(&self) -> usize {
+        self.map.len()
+    }
+    /// Clear cache
+    pub fn clear(&mut self) {
+        self.map.clear()
+    }
+}
+
 /// A wrapper for `tokio_postgres::Client` which includes a statement cache.
 pub struct Client {
     client: PgClient,
-    statement_cache: HashMap<String, Statement>,
+    /// The statement cache
+    pub statement_cache: StatementCache,
 }
 
 impl Client {
@@ -106,7 +129,7 @@ impl Client {
     pub fn new(client: PgClient) -> Client {
         Client {
             client: client,
-            statement_cache: HashMap::new(),
+            statement_cache: StatementCache::new(),
         }
     }
     /// Creates a new prepared statement using the statement cache if possible.
@@ -114,11 +137,11 @@ impl Client {
     /// See [`tokio_postgres::Client::prepare`](#method.prepare-1)
     pub async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
         let query_owned = query.to_owned();
-        match self.statement_cache.get(&query_owned) {
+        match self.statement_cache.map.get(&query_owned) {
             Some(statement) => Ok(statement.clone()),
             None => {
                 let stmt = self.client.prepare(query).await?;
-                self.statement_cache
+                self.statement_cache.map
                     .insert(query_owned.clone(), stmt.clone());
                 Ok(stmt)
             }
@@ -146,7 +169,8 @@ impl Deref for Client {
 /// from the client object it was created by.
 pub struct Transaction<'a> {
     txn: PgTransaction<'a>,
-    statement_cache: &'a mut HashMap<String, Statement>,
+    /// The statement cache
+    pub statement_cache: &'a mut StatementCache,
 }
 
 impl<'a> Transaction<'a> {
@@ -155,11 +179,11 @@ impl<'a> Transaction<'a> {
     /// See [`tokio_postgres::Transaction::prepare`](#method.prepare-1)
     pub async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
         let query_owned = query.to_owned();
-        match self.statement_cache.get(&query_owned) {
+        match self.statement_cache.map.get(&query_owned) {
             Some(statement) => Ok(statement.clone()),
             None => {
                 let stmt = self.txn.prepare(query).await?;
-                self.statement_cache
+                self.statement_cache.map
                     .insert(query_owned.clone(), stmt.clone());
                 Ok(stmt)
             }
