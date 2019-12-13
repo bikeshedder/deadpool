@@ -50,7 +50,7 @@ impl deadpool::Manager<Connection, Error> for Manager
         if conn.check_health().await {
             Ok(())
         } else {
-            Connection::new().await
+            Err(Error::Fail)
         }
     }
 }
