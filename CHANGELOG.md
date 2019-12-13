@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.3.0 (unreleased)
+## v0.3.0
 
 * Add `deadpool-lapin` to README
 * Add `deadpool-redis` to README
