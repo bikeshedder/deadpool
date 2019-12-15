@@ -33,11 +33,11 @@
 //!     async fn create(&self) -> Result<Connection, Error> {
 //!         Connection::new().await
 //!     }
-//!     async fn recycle(&self, conn: &mut Connection) -> Result<(), Error> {
+//!     async fn recycle(&self, conn: &mut Connection) -> deadpool::RecycleResult<Error> {
 //!         if conn.check_health().await {
 //!             Ok(())
 //!         } else {
-//!             Err(Error::Fail)
+//!             Err(Error::Fail.into())
 //!         }
 //!     }
 //! }
@@ -56,13 +56,24 @@
 //! [`deadpool-postgres`](https://crates.io/crates/deadpool-postgres)
 #![warn(missing_docs)]
 
+use std::future::Future;
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicIsize, AtomicUsize, Ordering};
 use std::sync::{Arc, Weak};
+use std::time::Duration;
 
 use async_trait::async_trait;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::Mutex;
+use tokio::time::timeout;
+
+mod config;
+pub use config::PoolConfig;
+mod errors;
+pub use errors::{PoolError, RecycleError, TimeoutType};
+
+/// Result type for the recycle function
+pub type RecycleResult<E> = Result<(), RecycleError<E>>;
 
 /// This trait is used to `create` new objects or `recycle` existing ones.
 #[async_trait]
@@ -71,7 +82,7 @@ pub trait Manager<T, E> {
     async fn create(&self) -> Result<T, E>;
     /// Try to recycle an instance of `T` returning None` if the
     /// object could not be recycled.
-    async fn recycle(&self, obj: &mut T) -> Result<(), E>;
+    async fn recycle(&self, obj: &mut T) -> RecycleResult<E>;
 }
 
 enum ObjectState {
@@ -149,7 +160,7 @@ impl<T, E> DerefMut for Object<T, E> {
 
 struct PoolInner<T, E> {
     manager: Box<dyn Manager<T, E> + Sync + Send>,
-    max_size: usize,
+    config: PoolConfig,
     obj_sender: Sender<Option<T>>,
     obj_receiver: Mutex<Receiver<Option<T>>>,
     size: AtomicUsize,
@@ -188,8 +199,12 @@ pub struct Pool<T, E> {
 #[derive(Debug)]
 /// The current pool status.
 pub struct Status {
-    size: usize,
-    available: isize,
+    /// The size of the pool
+    pub size: usize,
+    /// The number of available objects in the pool. If there are no
+    /// objects in the pool this number can become negative and stores the
+    /// number of futures waiting for an object.
+    pub available: isize,
 }
 
 impl<T, E> Clone for Pool<T, E> {
@@ -205,11 +220,17 @@ impl<T, E> Pool<T, E> {
     /// The `manager` is used to create and recycle objects and `max_size`
     /// is the maximum number of objects ever created.
     pub fn new(manager: impl Manager<T, E> + Send + Sync + 'static, max_size: usize) -> Pool<T, E> {
-        let (obj_sender, obj_receiver) = channel::<Option<T>>(max_size);
+        Self::from_config(manager, PoolConfig::new(max_size))
+    }
+    /// Create new connection pool with a given `manager` and `config`.
+    /// The `manager` is used to create and recycle objects and `max_size`
+    /// is the maximum number of objects ever created.
+    pub fn from_config(manager: impl Manager<T, E> + Send + Sync + 'static, config: PoolConfig) -> Pool<T, E> {
+        let (obj_sender, obj_receiver) = channel::<Option<T>>(config.max_size);
         Pool {
             inner: Arc::new(PoolInner {
-                max_size: max_size,
                 manager: Box::new(manager),
+                config: config,
                 obj_sender: obj_sender,
                 obj_receiver: Mutex::new(obj_receiver),
                 size: AtomicUsize::new(0),
@@ -218,29 +239,32 @@ impl<T, E> Pool<T, E> {
         }
     }
     /// Retrieve object from pool or wait for one to become available.
-    pub async fn get(&self) -> Result<Object<T, E>, E> {
+    pub async fn get(&self) -> Result<Object<T, E>, PoolError<E>> {
         let mut available = self.inner.available.fetch_sub(1, Ordering::Relaxed);
         let mut size = self.inner.size.load(Ordering::Relaxed);
         let mut obj = Object::new(&self);
         loop {
-            if available <= 0 && size < self.inner.max_size {
+            if available <= 0 && size < self.inner.config.max_size {
                 // The pool is empty and the max size has not been
                 // reached, yet.
-                if self.inner.size.fetch_add(1, Ordering::Relaxed) < self.inner.max_size {
+                if self.inner.size.fetch_add(1, Ordering::Relaxed) < self.inner.config.max_size {
                     self.inner.available.fetch_add(1, Ordering::Relaxed);
                     obj.state = ObjectState::Creating;
-                    obj.obj = Some(self.inner.manager.create().await?);
+                    let create_future = self.inner.manager.create();
+                    obj.obj = Some(apply_timeout(create_future, TimeoutType::Create, self.inner.config.create_timeout).await??);
                     obj.state = ObjectState::Ready;
                     break;
                 } else {
                     self.inner.size.fetch_sub(1, Ordering::Relaxed);
                 }
             }
-            let inner_obj = self.inner.obj_receiver.lock().await.recv().await.unwrap();
+            let inner_obj = apply_timeout(self._wait(), TimeoutType::Wait, self.inner.config.wait_timeout).await?;
             if let Some(inner_obj) = inner_obj {
                 obj.obj = Some(inner_obj);
                 obj.state = ObjectState::Recycling;
-                if self.inner.manager.recycle(&mut obj).await.is_ok() {
+                let recycle_future = self.inner.manager.recycle(&mut obj);
+                let recycle_result = apply_timeout(recycle_future, TimeoutType::Recycle, self.inner.config.recycle_timeout).await?;
+                if recycle_result.is_ok() {
                     obj.state = ObjectState::Ready;
                     break;
                 }
@@ -255,10 +279,25 @@ impl<T, E> Pool<T, E> {
         }
         Ok(obj)
     }
+    async fn _wait(&self) -> Option<T> {
+        self.inner.obj_receiver.lock().await.recv().await.unwrap()
+    }
     /// Retrieve status of the pool
     pub fn status(&self) -> Status {
         let size = self.inner.size.load(Ordering::Relaxed);
         let available = self.inner.available.load(Ordering::Relaxed);
         Status { size, available }
+    }
+}
+
+async fn apply_timeout<F, O, E>(future: F, timeout_type: TimeoutType, duration: Option<Duration>) -> Result<O, PoolError<E>>
+where F: Future<Output = O>
+{
+    match duration {
+        Some(duration) => match timeout(duration, future).await {
+            Ok(result) => Ok(result),
+            Err(elapsed) => Err(PoolError::Timeout(timeout_type, elapsed)),
+        }
+        None => Ok(future.await)
     }
 }

@@ -48,6 +48,9 @@ pub type Pool = deadpool::Pool<lapin::Connection, Error>;
 /// A type alias for using `deadpool::Object` with `lapin`
 pub type Connection = deadpool::Object<lapin::Connection, Error>;
 
+type RecycleResult = deadpool::RecycleResult<Error>;
+type RecycleError = deadpool::RecycleError<Error>;
+
 /// The manager for creating and recyling lapin connections
 pub struct Manager {
     addr: String,
@@ -72,7 +75,7 @@ impl deadpool::Manager<lapin::Connection, Error> for Manager {
                 .await?;
         Ok(connection)
     }
-    async fn recycle(&self, connection: &mut lapin::Connection) -> Result<(), Error> {
+    async fn recycle(&self, connection: &mut lapin::Connection) -> RecycleResult {
         // FIXME how to check the health?
         Ok(())
     }

@@ -45,6 +45,9 @@ use redis::{
 /// A type alias for using `deadpool::Pool` with `redis`
 pub type Pool = deadpool::Pool<ConnectionWrapper, RedisError>;
 
+type RecycleResult = deadpool::RecycleResult<RedisError>;
+type RecycleError = deadpool::RecycleError<RedisError>;
+
 mod cmd_wrapper;
 pub use cmd_wrapper::{cmd, Cmd};
 mod pipeline_wrapper;
@@ -97,14 +100,17 @@ impl deadpool::Manager<ConnectionWrapper, RedisError> for Manager {
         let conn = self.client.get_async_connection().compat().await?;
         Ok(ConnectionWrapper { conn: Some(conn) })
     }
-    async fn recycle(&self, conn: &mut ConnectionWrapper) -> Result<(), RedisError> {
+
+    async fn recycle(&self, conn: &mut ConnectionWrapper) -> RecycleResult {
         if conn.conn.is_some() {
-            cmd("PING").execute(conn).await.map(|_| ())
+            match cmd("PING").execute(conn).await {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e.into()),
+            }
         } else {
-            Err(redis::RedisError::from((
-                redis::ErrorKind::IoError,
-                "deadpool.redis: Connection could not be recycled",
-            )))
+            Err(RecycleError::Message(
+                "deadpool.redis: Connection could not be recycled".to_string()
+            ))
         }
     }
 }

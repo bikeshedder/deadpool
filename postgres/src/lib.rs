@@ -53,6 +53,8 @@ pub type Pool = deadpool::Pool<ClientWrapper, tokio_postgres::Error>;
 /// A type alias for using `deadpool::Object` with `tokio_postgres`
 pub type Client = deadpool::Object<ClientWrapper, tokio_postgres::Error>;
 
+type RecycleResult = deadpool::RecycleResult<Error>;
+
 /// The manager for creating and recyling postgresql connections
 pub struct Manager<T: MakeTlsConnect<Socket>> {
     config: PgConfig,
@@ -87,12 +89,12 @@ where
         spawn(connection);
         Ok(ClientWrapper::new(client))
     }
-    async fn recycle(&self, client: &mut ClientWrapper) -> Result<(), Error> {
+    async fn recycle(&self, client: &mut ClientWrapper) -> RecycleResult {
         match client.simple_query("").await {
             Ok(_) => Ok(()),
             Err(e) => {
                 info!(target: "deadpool.postgres", "Connection could not be recycled: {}", e);
-                Err(e)
+                Err(e.into())
             }
         }
     }

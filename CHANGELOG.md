@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.4.0 (unreleased)
+
+* Add support for timeouts
+* Make fields of pool status public
+
 ## v0.3.0
 
 * Add `deadpool-lapin` to README
