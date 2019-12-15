@@ -1,7 +1,7 @@
 use futures::compat::Future01CompatExt;
 use redis::{aio::Connection as RedisConnection, FromRedisValue, RedisResult, ToRedisArgs};
 
-use crate::Connection;
+use crate::ConnectionWrapper;
 
 /// See [redis::Cmd](https://docs.rs/redis/latest/redis/struct.Cmd.html)
 pub struct Cmd {
@@ -34,14 +34,14 @@ impl Cmd {
         self.cmd.in_scan_mode()
     }
     /// See [redis::Cmd::query](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.query)
-    pub async fn query<T: FromRedisValue + Send>(&self, conn: &mut Connection) -> RedisResult<T> {
+    pub async fn query<T: FromRedisValue + Send>(&self, conn: &mut ConnectionWrapper) -> RedisResult<T> {
         let rconn = conn._take_conn()?;
         let (rconn, result) = self.cmd.query_async(rconn).compat().await?;
         conn._replace_conn(rconn);
         Ok(FromRedisValue::from_redis_value(&result)?)
     }
     /// See [redis::Cmd::execute](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.execute)
-    pub async fn execute(&self, conn: &mut Connection) -> RedisResult<()> {
+    pub async fn execute(&self, conn: &mut ConnectionWrapper) -> RedisResult<()> {
         let rconn = conn._take_conn()?;
         let (rconn, _) = self
             .cmd

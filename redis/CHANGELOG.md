@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.4.0 (unreleased)
+
+* Rename `Connection` to `ConnectionWrapper`
+* Add `Connection` type alias
+
 ## v0.3.0
 
 * Add pipeline support

@@ -1,7 +1,7 @@
 use futures::compat::Future01CompatExt;
 use redis::{FromRedisValue, RedisResult, ToRedisArgs};
 
-use crate::{Cmd, Connection};
+use crate::{Cmd, ConnectionWrapper};
 
 /// See [redis::Pipeline](https://docs.rs/redis/latest/redis/struct.Pipeline.html)
 pub struct Pipeline {
@@ -51,7 +51,7 @@ impl Pipeline {
         self.pipeline.get_packed_pipeline(atomic)
     }
     /// See [redis::Pipeline::query](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.query)
-    pub async fn query<T: FromRedisValue>(&self, con: &mut Connection) -> RedisResult<T> {
+    pub async fn query<T: FromRedisValue>(&self, con: &mut ConnectionWrapper) -> RedisResult<T> {
         let rcon = con._take_conn()?;
         let (rcon, result) = self.pipeline.clone().query_async(rcon).compat().await?;
         con._replace_conn(rcon);
@@ -62,7 +62,7 @@ impl Pipeline {
         self.pipeline.clear();
     }
     /// See [redis::Pipeline::execute](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.execute)
-    pub async fn execute(&self, con: &mut Connection) -> RedisResult<()> {
+    pub async fn execute(&self, con: &mut ConnectionWrapper) -> RedisResult<()> {
         self.query::<redis::Value>(con).await?;
         Ok(())
     }
