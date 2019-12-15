@@ -48,7 +48,10 @@ use tokio_postgres::{
 };
 
 /// A type alias for using `deadpool::Pool` with `tokio_postgres`
-pub type Pool = deadpool::Pool<Client, tokio_postgres::Error>;
+pub type Pool = deadpool::Pool<ClientWrapper, tokio_postgres::Error>;
+
+/// A type alias for using `deadpool::Object` with `tokio_postgres`
+pub type Client = deadpool::Object<ClientWrapper, tokio_postgres::Error>;
 
 /// The manager for creating and recyling postgresql connections
 pub struct Manager<T: MakeTlsConnect<Socket>> {
@@ -67,14 +70,14 @@ impl<T: MakeTlsConnect<Socket>> Manager<T> {
 }
 
 #[async_trait]
-impl<T> deadpool::Manager<Client, Error> for Manager<T>
+impl<T> deadpool::Manager<ClientWrapper, Error> for Manager<T>
 where
     T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
     T::Stream: Sync + Send,
     T::TlsConnect: Sync + Send,
     <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
 {
-    async fn create(&self) -> Result<Client, Error> {
+    async fn create(&self) -> Result<ClientWrapper, Error> {
         let (client, connection) = self.config.connect(self.tls.clone()).await?;
         let connection = connection.map(|r| {
             if let Err(e) = r {
@@ -82,9 +85,9 @@ where
             }
         });
         spawn(connection);
-        Ok(Client::new(client))
+        Ok(ClientWrapper::new(client))
     }
-    async fn recycle(&self, client: &mut Client) -> Result<(), Error> {
+    async fn recycle(&self, client: &mut ClientWrapper) -> Result<(), Error> {
         match client.simple_query("").await {
             Ok(_) => Ok(()),
             Err(e) => {
@@ -118,16 +121,16 @@ impl StatementCache {
 }
 
 /// A wrapper for `tokio_postgres::Client` which includes a statement cache.
-pub struct Client {
+pub struct ClientWrapper {
     client: PgClient,
     /// The statement cache
     pub statement_cache: StatementCache,
 }
 
-impl Client {
+impl ClientWrapper {
     /// Create new wrapper instance using an existing `tokio_postgres::Client`
-    pub fn new(client: PgClient) -> Client {
-        Client {
+    pub fn new(client: PgClient) -> Self {
+        Self {
             client: client,
             statement_cache: StatementCache::new(),
         }
@@ -158,7 +161,7 @@ impl Client {
     }
 }
 
-impl Deref for Client {
+impl Deref for ClientWrapper {
     type Target = PgClient;
     fn deref(&self) -> &PgClient {
         &self.client

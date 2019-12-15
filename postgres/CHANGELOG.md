@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.4.0 (unreleased)
+
+* Rename `Client` struct to `ClientWrapper`
+* Add `Client` type alias
+
 ## v0.3.0
 
 * Add `StatementCache` struct with the functions `size` and `clear` which
