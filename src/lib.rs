@@ -224,7 +224,10 @@ impl<T, E> Pool<T, E> {
     /// Create new connection pool with a given `manager` and `config`.
     /// The `manager` is used to create and recycle objects and `max_size`
     /// is the maximum number of objects ever created.
-    pub fn from_config(manager: impl Manager<T, E> + Send + Sync + 'static, config: PoolConfig) -> Pool<T, E> {
+    pub fn from_config(
+        manager: impl Manager<T, E> + Send + Sync + 'static,
+        config: PoolConfig,
+    ) -> Pool<T, E> {
         let (obj_sender, obj_receiver) = channel::<Option<T>>(config.max_size);
         Pool {
             inner: Arc::new(PoolInner {
@@ -250,19 +253,36 @@ impl<T, E> Pool<T, E> {
                     self.inner.available.fetch_add(1, Ordering::Relaxed);
                     obj.state = ObjectState::Creating;
                     let create_future = self.inner.manager.create();
-                    obj.obj = Some(apply_timeout(create_future, TimeoutType::Create, self.inner.config.create_timeout).await??);
+                    obj.obj = Some(
+                        apply_timeout(
+                            create_future,
+                            TimeoutType::Create,
+                            self.inner.config.create_timeout,
+                        )
+                        .await??,
+                    );
                     obj.state = ObjectState::Ready;
                     break;
                 } else {
                     self.inner.size.fetch_sub(1, Ordering::Relaxed);
                 }
             }
-            let inner_obj = apply_timeout(self._wait(), TimeoutType::Wait, self.inner.config.wait_timeout).await?;
+            let inner_obj = apply_timeout(
+                self._wait(),
+                TimeoutType::Wait,
+                self.inner.config.wait_timeout,
+            )
+            .await?;
             if let Some(inner_obj) = inner_obj {
                 obj.obj = Some(inner_obj);
                 obj.state = ObjectState::Recycling;
                 let recycle_future = self.inner.manager.recycle(&mut obj);
-                let recycle_result = apply_timeout(recycle_future, TimeoutType::Recycle, self.inner.config.recycle_timeout).await?;
+                let recycle_result = apply_timeout(
+                    recycle_future,
+                    TimeoutType::Recycle,
+                    self.inner.config.recycle_timeout,
+                )
+                .await?;
                 if recycle_result.is_ok() {
                     obj.state = ObjectState::Ready;
                     break;
@@ -289,14 +309,19 @@ impl<T, E> Pool<T, E> {
     }
 }
 
-async fn apply_timeout<F, O, E>(future: F, timeout_type: TimeoutType, duration: Option<Duration>) -> Result<O, PoolError<E>>
-where F: Future<Output = O>
+async fn apply_timeout<F, O, E>(
+    future: F,
+    timeout_type: TimeoutType,
+    duration: Option<Duration>,
+) -> Result<O, PoolError<E>>
+where
+    F: Future<Output = O>,
 {
     match duration {
         Some(duration) => match timeout(duration, future).await {
             Ok(result) => Ok(result),
             Err(elapsed) => Err(PoolError::Timeout(timeout_type, elapsed)),
-        }
-        None => Ok(future.await)
+        },
+        None => Ok(future.await),
     }
 }

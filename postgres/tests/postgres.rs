@@ -14,8 +14,12 @@ fn pg_config_from_env() -> tokio_postgres::config::Config {
     }
     if let Ok(port) = env::var("PG_PORT") {
         match u16::from_str_radix(port.as_str(), 10) {
-            Ok(port) => { config.port(port); }
-            Err(_) => { panic!(format!("Invalid port: {}", port)); }
+            Ok(port) => {
+                config.port(port);
+            }
+            Err(_) => {
+                panic!(format!("Invalid port: {}", port));
+            }
         }
     }
     if let Ok(user) = env::var("PG_USER") {

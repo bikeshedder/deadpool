@@ -109,7 +109,7 @@ pub struct StatementCache {
 impl StatementCache {
     fn new() -> StatementCache {
         StatementCache {
-            map: HashMap::new()
+            map: HashMap::new(),
         }
     }
     /// Retrieve current size of the cache
@@ -146,7 +146,8 @@ impl ClientWrapper {
             Some(statement) => Ok(statement.clone()),
             None => {
                 let stmt = self.client.prepare(query).await?;
-                self.statement_cache.map
+                self.statement_cache
+                    .map
                     .insert(query_owned.clone(), stmt.clone());
                 Ok(stmt)
             }
@@ -188,7 +189,8 @@ impl<'a> Transaction<'a> {
             Some(statement) => Ok(statement.clone()),
             None => {
                 let stmt = self.txn.prepare(query).await?;
-                self.statement_cache.map
+                self.statement_cache
+                    .map
                     .insert(query_owned.clone(), stmt.clone());
                 Ok(stmt)
             }

@@ -109,7 +109,7 @@ impl deadpool::Manager<ConnectionWrapper, RedisError> for Manager {
             }
         } else {
             Err(RecycleError::Message(
-                "deadpool.redis: Connection could not be recycled".to_string()
+                "deadpool.redis: Connection could not be recycled".to_string(),
             ))
         }
     }

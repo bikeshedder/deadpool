@@ -31,7 +31,10 @@ impl deadpool::Manager<(), ()> for Manager {
 #[tokio::main]
 #[test]
 async fn test_unreliable_create() {
-    let manager = Manager { create_fail: true, recycle_fail: false };
+    let manager = Manager {
+        create_fail: true,
+        recycle_fail: false,
+    };
     let pool = Pool::new(manager, 16);
     {
         assert_eq!(pool.get().await.is_ok(), false);
@@ -40,7 +43,13 @@ async fn test_unreliable_create() {
     assert_eq!(status.available, 0);
     assert_eq!(status.size, 0);
     {
-        assert_eq!(timeout(Duration::from_millis(10), pool.get()).await.unwrap().is_ok(), false);
+        assert_eq!(
+            timeout(Duration::from_millis(10), pool.get())
+                .await
+                .unwrap()
+                .is_ok(),
+            false
+        );
     }
     assert_eq!(status.available, 0);
     assert_eq!(status.size, 0);
@@ -49,7 +58,10 @@ async fn test_unreliable_create() {
 #[tokio::main]
 #[test]
 async fn test_unreliable_recycle() {
-    let manager = Manager { create_fail: false, recycle_fail: true };
+    let manager = Manager {
+        create_fail: false,
+        recycle_fail: true,
+    };
     let pool = Pool::new(manager, 16);
     {
         assert_eq!(pool.get().await.is_ok(), true);

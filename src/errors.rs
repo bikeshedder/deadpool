@@ -32,7 +32,7 @@ pub enum PoolError<E> {
     /// A timeout happened
     Timeout(TimeoutType, Elapsed),
     /// The backend reported an error
-    Backend(E)
+    Backend(E),
 }
 
 impl<E> From<E> for PoolError<E> {

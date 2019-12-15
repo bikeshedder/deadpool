@@ -78,9 +78,10 @@ impl deadpool::Manager<lapin::Connection, Error> for Manager {
     async fn recycle(&self, connection: &mut lapin::Connection) -> RecycleResult {
         match connection.status().state() {
             lapin::ConnectionState::Connected => Ok(()),
-            other_state => Err(RecycleError::Message(
-                format!("lapin connection is in state: {:?}", other_state)
-            ))
+            other_state => Err(RecycleError::Message(format!(
+                "lapin connection is in state: {:?}",
+                other_state
+            ))),
         }
     }
 }

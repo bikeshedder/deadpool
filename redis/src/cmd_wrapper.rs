@@ -34,7 +34,10 @@ impl Cmd {
         self.cmd.in_scan_mode()
     }
     /// See [redis::Cmd::query](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.query)
-    pub async fn query<T: FromRedisValue + Send>(&self, conn: &mut ConnectionWrapper) -> RedisResult<T> {
+    pub async fn query<T: FromRedisValue + Send>(
+        &self,
+        conn: &mut ConnectionWrapper,
+    ) -> RedisResult<T> {
         let rconn = conn._take_conn()?;
         let (rconn, result) = self.cmd.query_async(rconn).compat().await?;
         conn._replace_conn(rconn);

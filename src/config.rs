@@ -9,7 +9,7 @@ pub struct PoolConfig {
     /// Timeout when waiting for an object to become available or None
     pub wait_timeout: Option<Duration>,
     /// Timeout when recycling an object
-    pub recycle_timeout: Option<Duration>
+    pub recycle_timeout: Option<Duration>,
 }
 
 impl PoolConfig {
@@ -19,7 +19,7 @@ impl PoolConfig {
             max_size,
             create_timeout: None,
             wait_timeout: None,
-            recycle_timeout: None
+            recycle_timeout: None,
         }
     }
 }
