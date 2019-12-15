@@ -14,7 +14,11 @@ deadpool = { path = "../", version = "0.3.0" }
 async-trait = "0.1.17"
 futures = "0.3.1"
 log = "0.4"
-lapin = { git = "https://github.com/sozu-proxy/lapin", features = ["futures"] }
+
+[dependencies.lapin]
+git = "https://github.com/sozu-proxy/lapin"
+default-features = false
+features = ["futures"]
 
 [dev-dependencies]
 tokio = { version = "0.2.2", features = ["macros"] }
