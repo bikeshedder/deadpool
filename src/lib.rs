@@ -120,7 +120,6 @@ impl<T, E> Drop for Object<T, E> {
                     pool.available.fetch_add(1, Ordering::Relaxed);
                 }
                 ObjectState::Creating => {
-                    pool.available.fetch_add(1, Ordering::Relaxed);
                     pool.size.fetch_sub(1, Ordering::Relaxed);
                 }
                 ObjectState::Recycling => {
