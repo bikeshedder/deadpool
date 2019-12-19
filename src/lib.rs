@@ -69,7 +69,7 @@ use tokio::sync::Semaphore;
 use tokio::time::timeout;
 
 mod config;
-pub use config::PoolConfig;
+pub use config::{PoolConfig, Timeouts};
 mod errors;
 pub use errors::{PoolError, RecycleError, TimeoutType};
 
@@ -220,6 +220,18 @@ impl<T, E> Pool<T, E> {
     }
     /// Retrieve object from pool or wait for one to become available.
     pub async fn get(&self) -> Result<Object<T, E>, PoolError<E>> {
+        self.timeout_get(&self.inner.config.timeouts).await
+    }
+    /// Retrieve object from the pool and do not wait if there is currently
+    /// no object available and the maximum pool size has been reached.
+    pub async fn try_get(&self) -> Result<Object<T, E>, PoolError<E>> {
+        let mut timeouts = self.inner.config.timeouts.clone();
+        timeouts.wait = Some(Duration::from_secs(0));
+        self.timeout_get(&timeouts).await
+    }
+    /// Retrieve object using a different timeout config than the one
+    /// configured.
+    async fn timeout_get(&self, timeouts: &Timeouts) -> Result<Object<T, E>, PoolError<E>> {
         self.inner.available.fetch_sub(1, Ordering::Relaxed);
 
         let mut obj = Object {
@@ -227,13 +239,27 @@ impl<T, E> Pool<T, E> {
             state: ObjectState::Waiting,
             pool: Arc::downgrade(&self.inner),
         };
-        apply_timeout(
-            self.inner.semaphore.acquire(),
-            TimeoutType::Wait,
-            self.inner.config.wait_timeout,
-        )
-        .await?
-        .forget();
+
+        let non_blocking = match timeouts.wait {
+            Some(t) => t.as_nanos() == 0,
+            None => false,
+        };
+
+        if non_blocking {
+            self.inner
+                .semaphore
+                .try_acquire()
+                .map_err(|_| PoolError::Timeout(TimeoutType::Wait))?
+                .forget();
+        } else {
+            apply_timeout(
+                self.inner.semaphore.acquire(),
+                TimeoutType::Wait,
+                self.inner.config.timeouts.wait,
+            )
+            .await?
+            .forget();
+        }
 
         loop {
             obj.state = ObjectState::Receiving;
@@ -246,7 +272,7 @@ impl<T, E> Pool<T, E> {
                     match apply_timeout(
                         self.inner.manager.recycle(&mut obj),
                         TimeoutType::Recycle,
-                        self.inner.config.recycle_timeout,
+                        self.inner.config.timeouts.recycle,
                     )
                     .await?
                     {
@@ -263,7 +289,7 @@ impl<T, E> Pool<T, E> {
                         apply_timeout(
                             self.inner.manager.create(),
                             TimeoutType::Create,
-                            self.inner.config.create_timeout,
+                            self.inner.config.timeouts.create,
                         )
                         .await??,
                     );
@@ -294,7 +320,7 @@ where
     match duration {
         Some(duration) => match timeout(duration, future).await {
             Ok(result) => Ok(result),
-            Err(elapsed) => Err(PoolError::Timeout(timeout_type, elapsed)),
+            Err(_) => Err(PoolError::Timeout(timeout_type)),
         },
         None => Ok(future.await),
     }

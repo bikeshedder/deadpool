@@ -1,5 +1,3 @@
-use tokio::time::Elapsed;
-
 /// This error is returned by the `Manager::recycle` function
 pub enum RecycleError<E> {
     /// Recycling failed for some other reason
@@ -18,10 +16,10 @@ impl<E> From<E> for RecycleError<E> {
 /// to figure out which step caused the timeout.
 #[derive(Debug)]
 pub enum TimeoutType {
+    /// The timeout happened while waiting for a slot to become available
+    Wait,
     /// The timeout happened while creating the object
     Create,
-    /// The timeout happened while waiting for an object to become available
-    Wait,
     /// The timeout happened while recycling an object
     Recycle,
 }
@@ -30,7 +28,7 @@ pub enum TimeoutType {
 #[derive(Debug)]
 pub enum PoolError<E> {
     /// A timeout happened
-    Timeout(TimeoutType, Elapsed),
+    Timeout(TimeoutType),
     /// The backend reported an error
     Backend(E),
 }

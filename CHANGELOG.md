@@ -6,6 +6,7 @@
 * Make fields of pool status public
 * Fix possible deadlock and make implementation a lot simpler by using
   the new tokio `Semaphore` and `Receiver::try_recv`.
+* Add `Pool::try_get` and `Pool::timeout_get` functions
 
 ## v0.3.0
 
