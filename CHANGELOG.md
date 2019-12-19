@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.4.1
+
+* Make `Pool::timeout_get` public
+
 ## v0.4.0
 
 * Add support for timeouts

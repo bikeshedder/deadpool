@@ -231,7 +231,7 @@ impl<T, E> Pool<T, E> {
     }
     /// Retrieve object using a different timeout config than the one
     /// configured.
-    async fn timeout_get(&self, timeouts: &Timeouts) -> Result<Object<T, E>, PoolError<E>> {
+    pub async fn timeout_get(&self, timeouts: &Timeouts) -> Result<Object<T, E>, PoolError<E>> {
         self.inner.available.fetch_sub(1, Ordering::Relaxed);
 
         let mut obj = Object {
