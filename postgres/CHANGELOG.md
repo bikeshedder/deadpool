@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.4.0 (unreleased)
+## v0.4.0
 
 * Rename `Client` struct to `ClientWrapper`
 * Add `Client` type alias

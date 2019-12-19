@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.4.0 (unreleased)
+## v0.4.0
 
 * Rename `Connection` to `ConnectionWrapper`
 * Add `Connection` type alias

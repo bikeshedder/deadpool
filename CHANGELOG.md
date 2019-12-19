@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.4.0 (unreleased)
+## v0.4.0
 
 * Add support for timeouts
 * Make fields of pool status public

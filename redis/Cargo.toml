@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-redis"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for redis"
 keywords = ["async", "redis", "pool"]
@@ -10,11 +10,11 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
-deadpool = { path = "../", version = "0.3.0" }
+deadpool = { path = "../", version = "0.4.0" }
 async-trait = "0.1.17"
 futures = { version = "0.3.1", features = ["compat" ] }
 log = "0.4"
 redis = "0.13.0"
 
 [dev-dependencies]
-tokio = { version = "0.2.2", features = ["macros"] }
+tokio = { version = "0.2.5", features = ["macros"] }
