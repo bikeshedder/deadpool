@@ -34,7 +34,7 @@ impl Connection {
         true
     }
     async fn do_something(&self) -> String {
-        "Horray!".to_string()
+        "Hooray!".to_string()
     }
 }
 
@@ -46,11 +46,11 @@ impl deadpool::Manager<Connection, Error> for Manager
     async fn create(&self) -> Result<Connection, Error> {
         Connection::new().await
     }
-    async fn recycle(&self, conn: &mut Connection) -> Result<(), Error> {
+    async fn recycle(&self, conn: &mut Connection) -> deadpool::RecycleResult<Error> {
         if conn.check_health().await {
             Ok(())
         } else {
-            Err(Error::Fail)
+            Err(Error::Fail.into())
         }
     }
 }
@@ -61,7 +61,7 @@ async fn main() {
     let pool = Pool::new(mgr, 16);
     let mut conn = pool.get().await.unwrap();
     let value = conn.do_something().await;
-    assert_eq!(value, "Horray!".to_string());
+    assert_eq!(value, "Hooray!".to_string());
 }
 ```
 
