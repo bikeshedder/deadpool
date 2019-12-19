@@ -28,12 +28,14 @@ impl RemoteControl {
     pub fn create_err(&mut self) {
         self.create_tx.try_send(Err(())).unwrap();
     }
+    /*
     pub fn recycle_ok(&mut self) {
         self.recycle_tx.try_send(Ok(())).unwrap();
     }
     pub fn recycle_err(&mut self) {
         self.recycle_tx.try_send(Err(())).unwrap();
     }
+    */
 }
 
 impl Manager {
