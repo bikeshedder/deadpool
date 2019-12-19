@@ -65,6 +65,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tokio::sync::Mutex;
+use tokio::sync::Semaphore;
 use tokio::time::timeout;
 
 mod config;
@@ -86,10 +87,12 @@ pub trait Manager<T, E> {
 }
 
 enum ObjectState {
-    New,
+    Waiting,
+    Receiving,
     Creating,
     Recycling,
     Ready,
+    Dropped,
 }
 
 /// A wrapper around the actual pooled object which implements the traits
@@ -102,45 +105,36 @@ pub struct Object<T, E> {
     pool: Weak<PoolInner<T, E>>,
 }
 
-impl<T, E> Object<T, E> {
-    fn new(pool: &Pool<T, E>) -> Object<T, E> {
-        Object {
-            obj: None,
-            state: ObjectState::New,
-            pool: Arc::downgrade(&pool.inner),
-        }
-    }
-}
-
 impl<T, E> Drop for Object<T, E> {
     fn drop(&mut self) {
         if let Some(pool) = self.pool.upgrade() {
             match self.state {
-                ObjectState::New => {
+                ObjectState::Waiting => {
                     pool.available.fetch_add(1, Ordering::Relaxed);
+                }
+                ObjectState::Receiving => {
+                    pool.available.fetch_add(1, Ordering::Relaxed);
+                    pool.semaphore.add_permits(1);
                 }
                 ObjectState::Creating => {
                     pool.size.fetch_sub(1, Ordering::Relaxed);
+                    pool.semaphore.add_permits(1);
                 }
-                ObjectState::Recycling => {
+                ObjectState::Recycling | ObjectState::Ready => {
                     pool.available.fetch_add(1, Ordering::Relaxed);
-                    if let Err(e) = pool.obj_sender.clone().try_send(self.obj.take()) {
-                        pool.available.fetch_sub(1, Ordering::Relaxed);
-                        pool.size.fetch_sub(1, Ordering::Relaxed);
-                        // This code should be unreachable. Still if this ever
-                        // happens fixing the pool state is a good idea.
-                        if !std::thread::panicking() {
-                            unreachable!("Could not return object to pool: {}", e);
-                        }
+                    let obj = self.obj.take().unwrap();
+                    if let Err(_) = pool.obj_sender.clone().try_send(obj) {
+                        unreachable!();
                     }
+                    pool.semaphore.add_permits(1);
                 }
-                ObjectState::Ready => {
-                    pool.return_obj(self.obj.take());
+                ObjectState::Dropped => {
+                    // The object has already been dropped.
                 }
             }
         }
         self.obj = None;
-        self.state = ObjectState::New;
+        self.state = ObjectState::Dropped;
     }
 }
 
@@ -159,32 +153,15 @@ impl<T, E> DerefMut for Object<T, E> {
 
 struct PoolInner<T, E> {
     manager: Box<dyn Manager<T, E> + Sync + Send>,
-    config: PoolConfig,
-    obj_sender: Sender<Option<T>>,
-    obj_receiver: Mutex<Receiver<Option<T>>>,
+    obj_sender: Sender<T>,
+    obj_receiver: Mutex<Receiver<T>>,
     size: AtomicUsize,
     /// The number of available objects in the pool. If there are no
     /// objects in the pool this number can become negative and stores the
     /// number of futures waiting for an object.
     available: AtomicIsize,
-}
-
-impl<T, E> PoolInner<T, E> {
-    fn return_obj(&self, obj: Option<T>) {
-        match self.obj_sender.clone().try_send(obj) {
-            Ok(_) => {
-                self.available.fetch_add(1, Ordering::Relaxed);
-            }
-            Err(e) => {
-                // This code should be unreachable. Still if this ever
-                // happens fixing the pool state is a good idea.
-                self.size.fetch_sub(1, Ordering::Relaxed);
-                if !std::thread::panicking() {
-                    unreachable!("Could not return object to pool: {}", e);
-                }
-            }
-        }
-    }
+    semaphore: Semaphore,
+    config: PoolConfig,
 }
 
 /// A generic object and connection pool.
@@ -228,78 +205,75 @@ impl<T, E> Pool<T, E> {
         manager: impl Manager<T, E> + Send + Sync + 'static,
         config: PoolConfig,
     ) -> Pool<T, E> {
-        let (obj_sender, obj_receiver) = channel::<Option<T>>(config.max_size);
+        let (obj_sender, obj_receiver) = channel::<T>(config.max_size);
         Pool {
             inner: Arc::new(PoolInner {
                 manager: Box::new(manager),
-                config: config,
                 obj_sender: obj_sender,
                 obj_receiver: Mutex::new(obj_receiver),
                 size: AtomicUsize::new(0),
                 available: AtomicIsize::new(0),
+                semaphore: Semaphore::new(config.max_size),
+                config: config,
             }),
         }
     }
     /// Retrieve object from pool or wait for one to become available.
     pub async fn get(&self) -> Result<Object<T, E>, PoolError<E>> {
-        let mut available = self.inner.available.fetch_sub(1, Ordering::Relaxed);
-        let mut size = self.inner.size.load(Ordering::Relaxed);
-        let mut obj = Object::new(&self);
+        self.inner.available.fetch_sub(1, Ordering::Relaxed);
+
+        let mut obj = Object {
+            obj: None,
+            state: ObjectState::Waiting,
+            pool: Arc::downgrade(&self.inner),
+        };
+        apply_timeout(
+            self.inner.semaphore.acquire(),
+            TimeoutType::Wait,
+            self.inner.config.wait_timeout,
+        )
+        .await?
+        .forget();
+
         loop {
-            if available <= 0 && size < self.inner.config.max_size {
-                // The pool is empty and the max size has not been
-                // reached, yet.
-                if self.inner.size.fetch_add(1, Ordering::Relaxed) < self.inner.config.max_size {
-                    self.inner.available.fetch_add(1, Ordering::Relaxed);
+            obj.state = ObjectState::Receiving;
+            let inner_obj = self.inner.obj_receiver.lock().await.try_recv().ok();
+            match inner_obj {
+                Some(inner_obj) => {
+                    // Recycle existing object
+                    obj.state = ObjectState::Recycling;
+                    obj.obj = Some(inner_obj);
+                    match apply_timeout(
+                        self.inner.manager.recycle(&mut obj),
+                        TimeoutType::Recycle,
+                        self.inner.config.recycle_timeout,
+                    )
+                    .await?
+                    {
+                        Ok(_) => break,
+                        Err(_) => continue,
+                    }
+                }
+                None => {
+                    // Create new object
                     obj.state = ObjectState::Creating;
-                    let create_future = self.inner.manager.create();
+                    self.inner.available.fetch_add(1, Ordering::Relaxed);
+                    self.inner.size.fetch_add(1, Ordering::Relaxed);
                     obj.obj = Some(
                         apply_timeout(
-                            create_future,
+                            self.inner.manager.create(),
                             TimeoutType::Create,
                             self.inner.config.create_timeout,
                         )
                         .await??,
                     );
-                    obj.state = ObjectState::Ready;
-                    break;
-                } else {
-                    self.inner.size.fetch_sub(1, Ordering::Relaxed);
-                }
-            }
-            let inner_obj = apply_timeout(
-                self._wait(),
-                TimeoutType::Wait,
-                self.inner.config.wait_timeout,
-            )
-            .await?;
-            if let Some(inner_obj) = inner_obj {
-                obj.obj = Some(inner_obj);
-                obj.state = ObjectState::Recycling;
-                let recycle_future = self.inner.manager.recycle(&mut obj);
-                let recycle_result = apply_timeout(
-                    recycle_future,
-                    TimeoutType::Recycle,
-                    self.inner.config.recycle_timeout,
-                )
-                .await?;
-                if recycle_result.is_ok() {
-                    obj.state = ObjectState::Ready;
                     break;
                 }
-                obj.state = ObjectState::New;
             }
-            // At this point either no object was received from the channel
-            // or recycling the object failed. This means that the object
-            // received from the channel was unuseable and the pool size
-            // needs to be reduced by one.
-            size = self.inner.size.fetch_sub(1, Ordering::Relaxed) - 1;
-            available = self.inner.available.fetch_sub(1, Ordering::Relaxed);
         }
+
+        obj.state = ObjectState::Ready;
         Ok(obj)
-    }
-    async fn _wait(&self) -> Option<T> {
-        self.inner.obj_receiver.lock().await.recv().await.unwrap()
     }
     /// Retrieve status of the pool
     pub fn status(&self) -> Status {

@@ -11,10 +11,11 @@ edition = "2018"
 
 [dependencies]
 async-trait = "0.1.17"
-tokio = { version = "0.2.2", features = ["sync", "time"] }
+futures-intrusive = "0.2.2"
+tokio = { version = "0.2.5", features = ["sync", "time"] }
 
 [dev-dependencies]
-tokio = { version = "0.2.2", features = ["sync", "macros"] }
+tokio = { version = "0.2.5", features = ["sync", "macros", "rt-core"] }
 
 [workspace]
 members = [
