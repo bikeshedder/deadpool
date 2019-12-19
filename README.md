@@ -89,14 +89,16 @@ things a little different and that is the reason for it to exist:
 
   If you really want your application to crash on startup if objects can
   not be created on startup simply call
-  `pool.get().expect("DB connection failed")` right after creating the pool.
+  `pool.get().await.expect("DB connection failed")` right after creating
+  the pool.
 
 * **Deadpool is fast.** The code which returns connections to the pool
-  contains no blocking code and retrival uses only one locking primitive.
+  contains no blocking code and retrival uses only two locking primitives.
   Everything else is implemented using non-locking atomic counters.
 
-* **Deadpool is simple.** Dead simple. There is very little API surface and
-  the actual code is barely 100 lines of code.
+* **Deadpool is simple.** Dead simple. There is very little API surface.
+  The actual code is barely 100 lines of code and lives in the two functions
+  `Pool::get` and `Object::drop`.
 
 ## Differences to other pool implementations
 
