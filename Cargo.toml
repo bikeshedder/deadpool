@@ -13,6 +13,7 @@ edition = "2018"
 async-trait = "0.1.17"
 futures-intrusive = "0.2.2"
 tokio = { version = "0.2.5", features = ["sync", "time"] }
+crossbeam-queue = "0.2.0"
 
 [dev-dependencies]
 tokio = { version = "0.2.5", features = ["sync", "macros", "rt-core"] }

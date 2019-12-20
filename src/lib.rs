@@ -63,8 +63,7 @@ use std::sync::{Arc, Weak};
 use std::time::Duration;
 
 use async_trait::async_trait;
-use tokio::sync::mpsc::{channel, Receiver, Sender};
-use tokio::sync::Mutex;
+use crossbeam_queue::ArrayQueue;
 use tokio::sync::Semaphore;
 use tokio::time::timeout;
 
@@ -123,9 +122,7 @@ impl<T, E> Drop for Object<T, E> {
                 ObjectState::Recycling | ObjectState::Ready => {
                     pool.available.fetch_add(1, Ordering::Relaxed);
                     let obj = self.obj.take().unwrap();
-                    if let Err(_) = pool.obj_sender.clone().try_send(obj) {
-                        unreachable!();
-                    }
+                    pool.queue.push(obj).unwrap();
                     pool.semaphore.add_permits(1);
                 }
                 ObjectState::Dropped => {
@@ -153,8 +150,7 @@ impl<T, E> DerefMut for Object<T, E> {
 
 struct PoolInner<T, E> {
     manager: Box<dyn Manager<T, E> + Sync + Send>,
-    obj_sender: Sender<T>,
-    obj_receiver: Mutex<Receiver<T>>,
+    queue: ArrayQueue<T>,
     size: AtomicUsize,
     /// The number of available objects in the pool. If there are no
     /// objects in the pool this number can become negative and stores the
@@ -205,12 +201,10 @@ impl<T, E> Pool<T, E> {
         manager: impl Manager<T, E> + Send + Sync + 'static,
         config: PoolConfig,
     ) -> Pool<T, E> {
-        let (obj_sender, obj_receiver) = channel::<T>(config.max_size);
         Pool {
             inner: Arc::new(PoolInner {
                 manager: Box::new(manager),
-                obj_sender: obj_sender,
-                obj_receiver: Mutex::new(obj_receiver),
+                queue: ArrayQueue::new(config.max_size),
                 size: AtomicUsize::new(0),
                 available: AtomicIsize::new(0),
                 semaphore: Semaphore::new(config.max_size),
@@ -245,12 +239,11 @@ impl<T, E> Pool<T, E> {
             None => false,
         };
 
-        if non_blocking {
+        let permit = if non_blocking {
             self.inner
                 .semaphore
                 .try_acquire()
                 .map_err(|_| PoolError::Timeout(TimeoutType::Wait))?
-                .forget();
         } else {
             apply_timeout(
                 self.inner.semaphore.acquire(),
@@ -258,14 +251,14 @@ impl<T, E> Pool<T, E> {
                 self.inner.config.timeouts.wait,
             )
             .await?
-            .forget();
-        }
+        };
+
+        permit.forget();
 
         loop {
             obj.state = ObjectState::Receiving;
-            let inner_obj = self.inner.obj_receiver.lock().await.try_recv().ok();
-            match inner_obj {
-                Some(inner_obj) => {
+            match self.inner.queue.pop() {
+                Ok(inner_obj) => {
                     // Recycle existing object
                     obj.state = ObjectState::Recycling;
                     obj.obj = Some(inner_obj);
@@ -280,7 +273,7 @@ impl<T, E> Pool<T, E> {
                         Err(_) => continue,
                     }
                 }
-                None => {
+                Err(_) => {
                     // Create new object
                     obj.state = ObjectState::Creating;
                     self.inner.available.fetch_add(1, Ordering::Relaxed);
