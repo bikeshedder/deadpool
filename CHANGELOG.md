@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.4.2
+
+* Replace `tokio::sync::mpsc::channel` by `crossbeam_queue::ArrayQueue`
+  which gets rid of the mutex when fetching an object from the pool.
+
 ## v0.4.1
 
 * Make `Pool::timeout_get` public
