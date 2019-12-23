@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.4.3
+
+* Add `std::error::Error` implementation for `PoolError` and `RecycleError`.
+  This makes it more convenient to use the `?` operator.
+
+
 ## v0.4.2
 
 * Replace `tokio::sync::mpsc::channel` by `crossbeam_queue::ArrayQueue`
