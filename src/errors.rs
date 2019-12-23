@@ -20,8 +20,8 @@ where E: fmt::Display
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Message(msg) => write!(f, "RecycleError::Message: {}", msg),
-            Self::Backend(e) => write!(f, "RecycleError::Backend {}", e),
+            Self::Message(msg) => write!(f, "An error occured while recycling an object: {}", msg),
+            Self::Backend(e) => write!(f, "An error occured while recycling an object: {}", e),
         }
     }
 }
@@ -60,8 +60,12 @@ where E: fmt::Display
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Timeout(tt) => write!(f, "PoolError::Timeout: {:?}", tt),
-            Self::Backend(e) => write!(f, "PoolError::Backend: {}", e),
+            Self::Timeout(tt) => match tt {
+                TimeoutType::Wait => write!(f, "A timeout occured while waiting for a slot to become available"),
+                TimeoutType::Create => write!(f, "A timeout occured while creating a new object"),
+                TimeoutType::Recycle => write!(f, "A timeout occured while recycling an object"),
+            },
+            Self::Backend(e) => write!(f, "An error occured while creating a new object: {}", e),
         }
     }
 }
