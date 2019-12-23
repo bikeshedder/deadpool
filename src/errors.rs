@@ -16,7 +16,8 @@ impl<E> From<E> for RecycleError<E> {
 }
 
 impl<E> fmt::Display for RecycleError<E>
-where E: fmt::Display
+where
+    E: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -56,7 +57,8 @@ impl<E> From<E> for PoolError<E> {
 }
 
 impl<E> fmt::Display for PoolError<E>
-where E: fmt::Display
+where
+    E: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
