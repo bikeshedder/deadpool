@@ -36,7 +36,7 @@
 #![warn(missing_docs)]
 
 use std::collections::HashMap;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use async_trait::async_trait;
 use futures::FutureExt;
@@ -168,6 +168,12 @@ impl Deref for ClientWrapper {
     type Target = PgClient;
     fn deref(&self) -> &PgClient {
         &self.client
+    }
+}
+
+impl DerefMut for ClientWrapper {
+    fn deref_mut(&mut self) -> &mut PgClient {
+        &mut self.client
     }
 }
 
