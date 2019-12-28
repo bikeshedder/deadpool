@@ -1,6 +1,8 @@
 use std::env;
 use std::path::Path;
 
+use tokio_postgres::types::Type;
+
 use deadpool_postgres::{Manager, Pool};
 
 fn pg_config_from_env() -> tokio_postgres::config::Config {
@@ -57,6 +59,18 @@ async fn test_basic() {
     assert_eq!(value, 3);
     assert_eq!(client.statement_cache.size(), 1);
 }
+
+#[tokio::main]
+#[test]
+async fn test_prepare_typed() {
+    let pool = create_pool();
+    let mut client = pool.get().await.unwrap();
+    let stmt = client.prepare_typed("SELECT 1 + %s", &[Type::INT8]).await.unwrap();
+    let rows = client.query(&stmt, &[&42i8]).await.unwrap();
+    let value: i8 = rows[0].get(0);
+    assert_eq!(value, 42i8);
+}
+
 
 #[tokio::main]
 #[test]

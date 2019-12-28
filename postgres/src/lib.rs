@@ -44,7 +44,7 @@ use log::{info, warn};
 use tokio::spawn;
 use tokio_postgres::{
     tls::MakeTlsConnect, tls::TlsConnect, Client as PgClient, Config as PgConfig, Error, Socket,
-    Statement, Transaction as PgTransaction,
+    Statement, Transaction as PgTransaction, types::Type
 };
 
 /// A type alias for using `deadpool::Pool` with `tokio_postgres`
@@ -103,7 +103,7 @@ where
 /// This structure holds the cached statements and provides access to
 /// functions for retrieving the current size and clearing the cache.
 pub struct StatementCache {
-    map: HashMap<String, Statement>,
+    map: HashMap<(String, Vec<Type>), Statement>,
 }
 
 impl StatementCache {
@@ -141,14 +141,20 @@ impl ClientWrapper {
     ///
     /// See [`tokio_postgres::Client::prepare`](#method.prepare-1)
     pub async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
-        let query_owned = query.to_owned();
-        match self.statement_cache.map.get(&query_owned) {
+        self.prepare_typed(query, &[]).await
+    }
+    /// Creates a new prepared statement using the statement cache if possible.
+    ///
+    /// See [`tokio_postgres::Client::prepare_typed`](#method.prepare_typed-1)
+    pub async fn prepare_typed(&mut self, query: &str, types: &[Type]) -> Result<Statement, Error> {
+        let key = (query.to_owned(), Vec::from(types));
+        match self.statement_cache.map.get(&key) {
             Some(statement) => Ok(statement.clone()),
             None => {
-                let stmt = self.client.prepare(query).await?;
+                let stmt = self.client.prepare_typed(query, types).await?;
                 self.statement_cache
                     .map
-                    .insert(query_owned.clone(), stmt.clone());
+                    .insert(key, stmt.clone());
                 Ok(stmt)
             }
         }
@@ -188,16 +194,22 @@ pub struct Transaction<'a> {
 impl<'a> Transaction<'a> {
     /// Creates a new prepared statement using the statement cache if possible.
     ///
-    /// See [`tokio_postgres::Transaction::prepare`](#method.prepare-1)
+    /// See [`tokio_postgres::Client::prepare`](#method.prepare_typed-1)
     pub async fn prepare(&mut self, query: &str) -> Result<Statement, Error> {
-        let query_owned = query.to_owned();
-        match self.statement_cache.map.get(&query_owned) {
+        self.prepare_typed(query, &[]).await
+    }
+    /// Creates a new prepared statement using the statement cache if possible.
+    ///
+    /// See [`tokio_postgres::Transaction::prepare_typed`](#method.prepare_typed-1)
+    pub async fn prepare_typed(&mut self, query: &str, types: &[Type]) -> Result<Statement, Error> {
+        let key = (query.to_owned(), Vec::from(types));
+        match self.statement_cache.map.get(&key) {
             Some(statement) => Ok(statement.clone()),
             None => {
-                let stmt = self.txn.prepare(query).await?;
+                let stmt = self.txn.prepare_typed(query, types).await?;
                 self.statement_cache
                     .map
-                    .insert(query_owned.clone(), stmt.clone());
+                    .insert(key, stmt.clone());
                 Ok(stmt)
             }
         }
