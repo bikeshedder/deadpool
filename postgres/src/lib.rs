@@ -35,6 +35,7 @@
 //! ```
 #![warn(missing_docs)]
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
@@ -103,7 +104,24 @@ where
 /// This structure holds the cached statements and provides access to
 /// functions for retrieving the current size and clearing the cache.
 pub struct StatementCache {
-    map: HashMap<(String, Vec<Type>), Statement>,
+    map: HashMap<StatementCacheKey<'static>, Statement>,
+}
+
+// Allows us to keep owned values in the `HashMap`, but still be able
+// to call `get` with borrowed values instead of allocating each time.
+#[derive(Hash, Eq, PartialEq)]
+struct StatementCacheKey<'a> {
+    query: Cow<'a, str>,
+    types: Cow<'a, [Type]>,
+}
+
+impl<'a> StatementCacheKey<'a> {
+    fn into_owned(self) -> StatementCacheKey<'static> {
+        StatementCacheKey {
+            query: Cow::Owned(self.query.into_owned()),
+            types: Cow::Owned(self.types.into_owned()),
+        }
+    }
 }
 
 impl StatementCache {
@@ -147,12 +165,18 @@ impl ClientWrapper {
     ///
     /// See [`tokio_postgres::Client::prepare_typed`](#method.prepare_typed-1)
     pub async fn prepare_typed(&mut self, query: &str, types: &[Type]) -> Result<Statement, Error> {
-        let key = (query.to_owned(), Vec::from(types));
+        let key = StatementCacheKey {
+            query: Cow::Borrowed(query),
+            types: Cow::Borrowed(types),
+        };
+
         match self.statement_cache.map.get(&key) {
             Some(statement) => Ok(statement.clone()),
             None => {
                 let stmt = self.client.prepare_typed(query, types).await?;
-                self.statement_cache.map.insert(key, stmt.clone());
+                self.statement_cache
+                    .map
+                    .insert(key.into_owned(), stmt.clone());
                 Ok(stmt)
             }
         }
@@ -200,12 +224,18 @@ impl<'a> Transaction<'a> {
     ///
     /// See [`tokio_postgres::Transaction::prepare_typed`](#method.prepare_typed-1)
     pub async fn prepare_typed(&mut self, query: &str, types: &[Type]) -> Result<Statement, Error> {
-        let key = (query.to_owned(), Vec::from(types));
+        let key = StatementCacheKey {
+            query: Cow::Borrowed(query),
+            types: Cow::Borrowed(types),
+        };
+
         match self.statement_cache.map.get(&key) {
             Some(statement) => Ok(statement.clone()),
             None => {
                 let stmt = self.txn.prepare_typed(query, types).await?;
-                self.statement_cache.map.insert(key, stmt.clone());
+                self.statement_cache
+                    .map
+                    .insert(key.into_owned(), stmt.clone());
                 Ok(stmt)
             }
         }
