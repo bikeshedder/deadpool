@@ -2,6 +2,8 @@
 
 ## v0.4.1 (unreleased)
 
+* Add statement cache support for `Client::prepare_typed` and
+  `Transaction::prepare_typed`.
 * Add back `DerefMut` implementation for `deadpool_postgres::Client` which
   makes it compatible with code expecting `&mut tokio_postgres::Client`.
 
