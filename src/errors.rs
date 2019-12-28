@@ -63,7 +63,10 @@ where
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Timeout(tt) => match tt {
-                TimeoutType::Wait => write!(f, "A timeout occured while waiting for a slot to become available"),
+                TimeoutType::Wait => write!(
+                    f,
+                    "A timeout occured while waiting for a slot to become available"
+                ),
                 TimeoutType::Create => write!(f, "A timeout occured while creating a new object"),
                 TimeoutType::Recycle => write!(f, "A timeout occured while recycling an object"),
             },

@@ -65,7 +65,10 @@ async fn test_basic() {
 async fn test_prepare_typed() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
-    let stmt = client.prepare_typed("SELECT 1 + $1", &[Type::INT2]).await.unwrap();
+    let stmt = client
+        .prepare_typed("SELECT 1 + $1", &[Type::INT2])
+        .await
+        .unwrap();
     let rows = client.query(&stmt, &[&42i16]).await.unwrap();
     let value: i32 = rows[0].get(0);
     assert_eq!(value, 43i32);
@@ -76,7 +79,10 @@ async fn test_prepare_typed() {
 async fn test_prepare_typed_error() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
-    let stmt = client.prepare_typed("SELECT 1 + $1", &[Type::INT2]).await.unwrap();
+    let stmt = client
+        .prepare_typed("SELECT 1 + $1", &[Type::INT2])
+        .await
+        .unwrap();
     assert!(client.query(&stmt, &[&42i32]).await.is_err());
 }
 

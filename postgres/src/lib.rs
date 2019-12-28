@@ -43,8 +43,8 @@ use futures::FutureExt;
 use log::{info, warn};
 use tokio::spawn;
 use tokio_postgres::{
-    tls::MakeTlsConnect, tls::TlsConnect, Client as PgClient, Config as PgConfig, Error, Socket,
-    Statement, Transaction as PgTransaction, types::Type
+    tls::MakeTlsConnect, tls::TlsConnect, types::Type, Client as PgClient, Config as PgConfig,
+    Error, Socket, Statement, Transaction as PgTransaction,
 };
 
 /// A type alias for using `deadpool::Pool` with `tokio_postgres`
@@ -152,9 +152,7 @@ impl ClientWrapper {
             Some(statement) => Ok(statement.clone()),
             None => {
                 let stmt = self.client.prepare_typed(query, types).await?;
-                self.statement_cache
-                    .map
-                    .insert(key, stmt.clone());
+                self.statement_cache.map.insert(key, stmt.clone());
                 Ok(stmt)
             }
         }
@@ -207,9 +205,7 @@ impl<'a> Transaction<'a> {
             Some(statement) => Ok(statement.clone()),
             None => {
                 let stmt = self.txn.prepare_typed(query, types).await?;
-                self.statement_cache
-                    .map
-                    .insert(key, stmt.clone());
+                self.statement_cache.map.insert(key, stmt.clone());
                 Ok(stmt)
             }
         }
