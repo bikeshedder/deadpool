@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.4.1 (unreleased)
+
+* Add back `DerefMut` implementation for `deadpool_postgres::Client` which
+  makes it compatible with code expecting `&mut tokio_postgres::Client`.
+
 ## v0.4.0
 
 * Rename `Client` struct to `ClientWrapper`
