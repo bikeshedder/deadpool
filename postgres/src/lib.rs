@@ -222,7 +222,7 @@ impl<'a> Transaction<'a> {
     }
     /// Creates a new prepared statement using the statement cache if possible.
     ///
-    /// See [`tokio_postgres::Transaction::prepare_typed`](#method.prepare_typed-1)map
+    /// See [`tokio_postgres::Transaction::prepare_typed`](#method.prepare_typed-1)
     pub async fn prepare_typed(&mut self, query: &str, types: &[Type]) -> Result<Statement, Error> {
         match self.statement_cache.get(query, types) {
             Some(statement) => Ok(statement),
