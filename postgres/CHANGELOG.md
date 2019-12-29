@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.4.1 (unreleased)
+## v0.4.1
 
 * Update to `tokio-postgres 0.5.1`
 * Add back `DerefMut` implementation for `deadpool_postgres::Client` which
