@@ -107,21 +107,12 @@ pub struct StatementCache {
     map: HashMap<StatementCacheKey<'static>, Statement>,
 }
 
-// Allows us to keep owned values in the `HashMap`, but still be able
-// to call `get` with borrowed values instead of allocating each time.
+// Allows us to use owned keys in the `HashMap`, but still be able
+// to call `get` with borrowed keys instead of allocating them each time.
 #[derive(Hash, Eq, PartialEq)]
 struct StatementCacheKey<'a> {
     query: Cow<'a, str>,
     types: Cow<'a, [Type]>,
-}
-
-impl<'a> StatementCacheKey<'a> {
-    fn into_owned(self) -> StatementCacheKey<'static> {
-        StatementCacheKey {
-            query: Cow::Owned(self.query.into_owned()),
-            types: Cow::Owned(self.types.into_owned()),
-        }
-    }
 }
 
 impl StatementCache {
@@ -137,6 +128,22 @@ impl StatementCache {
     /// Clear cache
     pub fn clear(&mut self) {
         self.map.clear()
+    }
+    /// Get statement from cache
+    fn get<'a>(&self, query: &str, types: &[Type]) -> Option<Statement> {
+        let key = StatementCacheKey {
+            query: Cow::Borrowed(query),
+            types: Cow::Borrowed(types),
+        };
+        self.map.get(&key).map(|stmt| stmt.to_owned())
+    }
+    /// Insert statement into cache
+    fn insert(&mut self, query: &str, types: &[Type], stmt: Statement) {
+        let key = StatementCacheKey {
+            query: Cow::Owned(query.to_owned()),
+            types: Cow::Owned(types.to_owned()),
+        };
+        self.map.insert(key, stmt);
     }
 }
 
@@ -165,18 +172,11 @@ impl ClientWrapper {
     ///
     /// See [`tokio_postgres::Client::prepare_typed`](#method.prepare_typed-1)
     pub async fn prepare_typed(&mut self, query: &str, types: &[Type]) -> Result<Statement, Error> {
-        let key = StatementCacheKey {
-            query: Cow::Borrowed(query),
-            types: Cow::Borrowed(types),
-        };
-
-        match self.statement_cache.map.get(&key) {
-            Some(statement) => Ok(statement.clone()),
+        match self.statement_cache.get(query, types) {
+            Some(statement) => Ok(statement),
             None => {
                 let stmt = self.client.prepare_typed(query, types).await?;
-                self.statement_cache
-                    .map
-                    .insert(key.into_owned(), stmt.clone());
+                self.statement_cache.insert(query, types, stmt.clone());
                 Ok(stmt)
             }
         }
@@ -222,20 +222,13 @@ impl<'a> Transaction<'a> {
     }
     /// Creates a new prepared statement using the statement cache if possible.
     ///
-    /// See [`tokio_postgres::Transaction::prepare_typed`](#method.prepare_typed-1)
+    /// See [`tokio_postgres::Transaction::prepare_typed`](#method.prepare_typed-1)map
     pub async fn prepare_typed(&mut self, query: &str, types: &[Type]) -> Result<Statement, Error> {
-        let key = StatementCacheKey {
-            query: Cow::Borrowed(query),
-            types: Cow::Borrowed(types),
-        };
-
-        match self.statement_cache.map.get(&key) {
-            Some(statement) => Ok(statement.clone()),
+        match self.statement_cache.get(query, types) {
+            Some(statement) => Ok(statement),
             None => {
                 let stmt = self.txn.prepare_typed(query, types).await?;
-                self.statement_cache
-                    .map
-                    .insert(key.into_owned(), stmt.clone());
+                self.statement_cache.insert(query, types, stmt.clone());
                 Ok(stmt)
             }
         }
