@@ -45,6 +45,9 @@ use redis::{
 /// A type alias for using `deadpool::Pool` with `redis`
 pub type Pool = deadpool::Pool<ConnectionWrapper, RedisError>;
 
+/// A type alias for using `deadpool::PoolError` with `redis`
+pub type PoolError = deadpool::PoolError<RedisError>;
+
 type RecycleResult = deadpool::RecycleResult<RedisError>;
 type RecycleError = deadpool::RecycleError<RedisError>;
 

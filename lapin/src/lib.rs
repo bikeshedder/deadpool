@@ -45,6 +45,9 @@ use lapin::{ConnectionProperties, Error};
 /// A type alias for using `deadpool::Pool` with `lapin`
 pub type Pool = deadpool::Pool<lapin::Connection, Error>;
 
+/// A type alias for using `deadpool::PoolError` with `lapin`
+pub type PoolError = deadpool::PoolError<Error>;
+
 /// A type alias for using `deadpool::Object` with `lapin`
 pub type Connection = deadpool::Object<lapin::Connection, Error>;
 

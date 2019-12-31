@@ -51,6 +51,9 @@ use tokio_postgres::{
 /// A type alias for using `deadpool::Pool` with `tokio_postgres`
 pub type Pool = deadpool::Pool<ClientWrapper, tokio_postgres::Error>;
 
+/// A type alias for using `deadpool::PoolError` with `tokio_postgres`
+pub type PoolError = deadpool::PoolError<tokio_postgres::Error>;
+
 /// A type alias for using `deadpool::Object` with `tokio_postgres`
 pub type Client = deadpool::Object<ClientWrapper, tokio_postgres::Error>;
 
