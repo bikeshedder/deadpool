@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.4.1
+
+* Add `PoolError` type alias
+
 ## v0.4.0
 
 * Rename `Connection` to `ConnectionWrapper`

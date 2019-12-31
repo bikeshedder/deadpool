@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.4.2
+
+* Add `PoolError` type alias
+
 ## v0.4.1
 
 * Update to `tokio-postgres 0.5.1`
