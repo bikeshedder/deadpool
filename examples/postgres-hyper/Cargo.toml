@@ -1,0 +1,16 @@
+[package]
+name = "deadpool-example-postgres-hyper"
+version = "0.1.0"
+authors = ["Michael P. Jung <michael.jung@terreon.de>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+hyper = "0.13.1"
+deadpool-postgres = "0.4.2"
+serde = { version = "1.0.104", features = ["derive"] }
+tokio-postgres = { version = "0.5.1", features = ["with-uuid-0_8"] }
+uuid = { version = "0.8.1", features = ["serde"] }
+tokio = { version = "0.2.6", features = ["macros"] }
+serde_json = "1.0.44"
