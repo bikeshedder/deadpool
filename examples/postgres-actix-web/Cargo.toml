@@ -1,0 +1,16 @@
+[package]
+name = "deadpool-example-postgres-actix-web"
+version = "0.1.0"
+authors = ["Michael P. Jung <michael.jung@terreon.de>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-rt = "1.0.0"
+actix-web = "2.0.0"
+deadpool-postgres = "0.4.2"
+failure = "0.1.6"
+serde = { version = "1.0.104", features = ["derive"] }
+tokio-postgres = { version = "0.5.1", features = ["with-uuid-0_8"] }
+uuid = { version = "0.8.1", features = ["serde"] }

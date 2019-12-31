@@ -23,3 +23,6 @@ members = [
     "lapin",
     "redis",
 ]
+exclude = [
+    "examples",
+]
