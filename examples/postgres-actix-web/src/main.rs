@@ -63,10 +63,10 @@ fn create_pool() -> Pool {
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let pool = create_pool();
+    let server = HttpServer::new(move || App::new().data(pool.clone()).service(index))
+        .bind(SERVER_ADDR)?
+        .run();
     println!("Server running at http://{}/", SERVER_ADDR);
     println!("Try the following URLs: http://{}/v1.0/event.list", SERVER_ADDR);
-    HttpServer::new(move || App::new().data(pool.clone()).service(index))
-        .bind(SERVER_ADDR)?
-        .run()
-        .await
+    server.await
 }
