@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.4.3 (unreleased)
+## v0.4.3
 
 * `prepare` and `prepare_typed` now accept a `&self` instead of `&mut self`
   which fixes support for pipelining.
