@@ -12,7 +12,7 @@ async fn main() {
     // without pool (just using one client of it)
     let now = Instant::now();
     {
-        let mut client = pool.get().await.unwrap();
+        let client = pool.get().await.unwrap();
         for _ in 0usize..16000usize {
             let stmt = client.prepare("SELECT 1 + 2").await.unwrap();
             let rows = client.query(&stmt, &[]).await.unwrap();
@@ -31,7 +31,7 @@ async fn main() {
         let mut tx = tx.clone();
         tokio::spawn(async move {
             for _ in 0usize..1000usize {
-                let mut client = pool.get().await.unwrap();
+                let client = pool.get().await.unwrap();
                 let stmt = client.prepare("SELECT 1 + 2").await.unwrap();
                 let rows = client.query(&stmt, &[]).await.unwrap();
                 let value: i32 = rows[0].get(0);

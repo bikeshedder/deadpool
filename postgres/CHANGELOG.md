@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.4.3 (unreleased)
+
+* `prepare` and `prepare_typed` now accept a `&self` instead of `&mut self`
+  which fixes support for pipelining.
+
 ## v0.4.2
 
 * Add `PoolError` type alias
