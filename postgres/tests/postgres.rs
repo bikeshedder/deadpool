@@ -124,13 +124,13 @@ async fn test_transaction_2() {
 async fn test_transaction_pipeline() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
-    let _stmt = client.prepare("SELECT 1 + $1").await.unwrap();
+    let stmt = client.prepare("SELECT 1 + $1").await.unwrap();
     let txn = client.transaction().await.unwrap();
     let mut futures = vec![];
     for i in 0..100 {
+        let stmt = stmt.clone();
         let txn = &txn;
         futures.push(async move {
-            let stmt = txn.prepare("SELECT 1 + $1").await.unwrap();
             let rows = txn.query(&stmt, &[&i]).await.unwrap();
             let value: i32 = rows[0].get(0);
             value
