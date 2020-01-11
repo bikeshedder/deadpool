@@ -5,13 +5,7 @@
 //! # Example
 //!
 //! ```rust
-//!
-//! #[derive(Debug)]
-//! enum Error { Fail }
-//!
-//! struct Connection {}
-//!
-//! type Pool = deadpool::passive::Pool<String>;
+//! use deadpool::passive::Pool;
 //!
 //! #[tokio::main]
 //! async fn main() {
