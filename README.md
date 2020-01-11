@@ -3,10 +3,23 @@
 Deadpool is a dead simple async pool for connections and objects
 of any type.
 
-## Backends
+This crate provides two implementations that can individually be enabled
+using the feature flags `"managed"` and `"unmanaged"`. By default both
+implementations are enabled:
 
-Deadpool supports various backends by implementing the `deadpool::Manager`
-trait. The following backends are currently supported:
+- `deadpool::managed::Pool` requires a `Manager` trait which is responsible
+  for creating and recycling objects as they are needed. **This is the obvious
+  choice for connection pools of any kind.**
+
+- `deadpool::unmanaged::Pool` requires the objects to be created upfront.
+  This implementation is a lot simpler and does not require the `async-trait`
+  crate.
+
+## Database pools
+
+Deadpool supports various database backends by implementing the
+`deadpool::managed::Manager` trait. The following backends are
+currently supported:
 
 Backend                                                     | Crate
 ----------------------------------------------------------- | -----
@@ -14,7 +27,7 @@ Backend                                                     | Crate
 [lapin](https://crates.io/crates/lapin) (AMQP)              | [deadpool-lapin](https://crates.io/crates/deadpool-lapin)
 [redis](https://crates.io/crates/redis)                     | [deadpool-redis](https://crates.io/crates/deadpool-redis)
 
-## Example
+## Example (managed)
 
 ```rust
 use async_trait::async_trait;
@@ -67,6 +80,26 @@ async fn main() {
 
 For a more complete example please see
 [`deadpool-postgres`](https://crates.io/crates/deadpool-postgres)
+
+## Example (unmanaged)
+
+```rust
+use deadpool::unmanaged::Pool;
+
+#[tokio::main]
+async fn main() {
+    let pool = Pool::new(vec![
+        "foo".to_string(),
+        "bar".to_string(),
+    ]);
+    {
+        let s = pool.get().await;
+        assert_eq!(s.len(), 3);
+        assert_eq!(pool.status().available, 1)
+    }
+    assert_eq!(pool.status().available, 2);
+}
+```
 
 ## Reasons for yet another pool implementation
 

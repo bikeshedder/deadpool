@@ -2,10 +2,14 @@
 //! of any type.
 //!
 //! It provides two implementations:
+//!
 //! - A `managed` one which requires a `Manager` trait which is responsible
 //!   for creating and recycling objects as they are needed.
+//!
 //! - An `unmanaged` one which requires the objects to be created upfront and
 //!   is a lot simpler, too.
+//!
+//! By default both `"managed"` and `"unmanaged"` features are enabled.
 #![warn(missing_docs)]
 
 #[cfg(feature = "managed")]
