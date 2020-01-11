@@ -1,57 +1,61 @@
-use deadpool::unmanaged::Pool;
+#[cfg(feature = "unmanaged")]
+mod tests {
 
-#[tokio::test]
-async fn test_unmanaged_basic() {
-    let pool = Pool::new(vec![(), (), ()]);
+    use deadpool::unmanaged::Pool;
 
-    let status = pool.status();
-    assert_eq!(status.size, 3);
-    assert_eq!(status.available, 3);
+    #[tokio::test]
+    async fn test_unmanaged_basic() {
+        let pool = Pool::new(vec![(), (), ()]);
 
-    let _val0 = pool.get().await;
+        let status = pool.status();
+        assert_eq!(status.size, 3);
+        assert_eq!(status.available, 3);
 
-    let status = pool.status();
-    assert_eq!(status.size, 3);
-    assert_eq!(status.available, 2);
+        let _val0 = pool.get().await;
 
-    let _val1 = pool.get().await;
+        let status = pool.status();
+        assert_eq!(status.size, 3);
+        assert_eq!(status.available, 2);
 
-    let status = pool.status();
-    assert_eq!(status.size, 3);
-    assert_eq!(status.available, 1);
+        let _val1 = pool.get().await;
 
-    let _val2 = pool.get().await;
+        let status = pool.status();
+        assert_eq!(status.size, 3);
+        assert_eq!(status.available, 1);
 
-    let status = pool.status();
-    assert_eq!(status.size, 3);
-    assert_eq!(status.available, 0);
-}
+        let _val2 = pool.get().await;
 
-#[tokio::test(threaded_scheduler)]
-async fn test_unmanaged_concurrent() {
-    let pool = Pool::new(vec![0usize, 0, 0]);
-
-    // Spawn tasks
-    let futures = (0..100)
-        .map(|_| {
-            let pool = pool.clone();
-            tokio::spawn(async move {
-                *pool.get().await += 1;
-            })
-        })
-        .collect::<Vec<_>>();
-
-    // Await tasks to finish
-    for future in futures {
-        future.await.unwrap();
+        let status = pool.status();
+        assert_eq!(status.size, 3);
+        assert_eq!(status.available, 0);
     }
 
-    // Verify
-    let status = pool.status();
-    assert_eq!(status.size, 3);
-    assert_eq!(status.available, 3);
+    #[tokio::test(threaded_scheduler)]
+    async fn test_unmanaged_concurrent() {
+        let pool = Pool::new(vec![0usize, 0, 0]);
 
-    let values = [pool.get().await, pool.get().await, pool.get().await];
+        // Spawn tasks
+        let futures = (0..100)
+            .map(|_| {
+                let pool = pool.clone();
+                tokio::spawn(async move {
+                    *pool.get().await += 1;
+                })
+            })
+            .collect::<Vec<_>>();
 
-    assert_eq!(values.iter().map(|obj| **obj).sum::<usize>(), 100);
+        // Await tasks to finish
+        for future in futures {
+            future.await.unwrap();
+        }
+
+        // Verify
+        let status = pool.status();
+        assert_eq!(status.size, 3);
+        assert_eq!(status.available, 3);
+
+        let values = [pool.get().await, pool.get().await, pool.get().await];
+
+        assert_eq!(values.iter().map(|obj| **obj).sum::<usize>(), 100);
+    }
 }

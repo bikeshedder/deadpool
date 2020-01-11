@@ -3,14 +3,15 @@
 ## v0.5.0 (unreleased)
 
 * Move current pool implementation into `managed` module
-* Add unmanaged version of the pool which does not use a `Manager` and
+* Add unmanaged version of the `Pool` which does not use a `Manager` and
   requires all objects to be created upfront.
+* Add feature flags `"managed"` and `"unmanaged"` to enable only parts
+  of this crate.
 
 ## v0.4.3
 
 * Add `std::error::Error` implementation for `PoolError` and `RecycleError`.
   This makes it more convenient to use the `?` operator.
-
 
 ## v0.4.2
 
