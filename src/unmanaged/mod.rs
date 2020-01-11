@@ -83,6 +83,14 @@ pub struct Pool<T> {
     inner: Arc<PoolInner<T>>,
 }
 
+impl<T> Clone for Pool<T> {
+    fn clone(&self) -> Pool<T> {
+        Pool {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
 impl<T> Pool<T> {
     /// Create new pool from the given exact size iterator of objects.
     pub fn new<I>(iter: I) -> Self

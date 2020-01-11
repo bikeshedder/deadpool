@@ -1,5 +1,4 @@
 use deadpool::unmanaged::Pool;
-use std::sync::Arc;
 
 #[tokio::test]
 async fn test_unmanaged_basic() {
@@ -30,7 +29,7 @@ async fn test_unmanaged_basic() {
 
 #[tokio::test(threaded_scheduler)]
 async fn test_unmanaged_concurrent() {
-    let pool = Arc::new(Pool::new(vec![0usize, 0, 0]));
+    let pool = Pool::new(vec![0usize, 0, 0]);
 
     // Spawn tasks
     let futures = (0..100)
