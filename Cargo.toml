@@ -10,7 +10,7 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
-async-trait = "0.1.17"
+async-trait = { version = "0.1.17", optional = true }
 tokio = { version = "0.2.5", features = ["sync", "time"] }
 crossbeam-queue = "0.2.0"
 
@@ -29,5 +29,5 @@ exclude = [
 
 [features]
 default = ["managed", "unmanaged"]
-managed = []
+managed = ["async-trait"]
 unmanaged = []
