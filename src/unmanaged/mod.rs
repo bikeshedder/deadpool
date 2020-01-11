@@ -95,7 +95,7 @@ impl<T> Pool<T> {
     /// Create new pool from the given exact size iterator of objects.
     pub fn new<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item=T>,
+        I: IntoIterator<Item = T>,
         <I as IntoIterator>::IntoIter: ExactSizeIterator,
     {
         let iter = iter.into_iter();
