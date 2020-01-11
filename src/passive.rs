@@ -9,7 +9,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     let pool = Pool::from_exact_sized_iter(vec![
+//!     let pool = Pool::new(vec![
 //!         "foo".to_string(),
 //!         "bar".to_string(),
 //!     ]);
@@ -85,7 +85,7 @@ pub struct Pool<T> {
 
 impl<T> Pool<T> {
     /// Create new pool from the given exact size iterator of objects.
-    pub fn from_exact_sized_iter<I>(iter: I) -> Self
+    pub fn new<I>(iter: I) -> Self
     where
         I: IntoIterator<Item=T>,
         <I as IntoIterator>::IntoIter: ExactSizeIterator,
