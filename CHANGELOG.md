@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.5.0 (unreleased)
+
+* Add passive version of the pool which does not use a `Manager` and
+  requires all objects to be created upfront.
+
 ## v0.4.3
 
 * Add `std::error::Error` implementation for `PoolError` and `RecycleError`.

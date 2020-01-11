@@ -71,6 +71,7 @@ mod config;
 pub use config::{PoolConfig, Timeouts};
 mod errors;
 pub use errors::{PoolError, RecycleError, TimeoutType};
+pub mod passive;
 
 /// Result type for the recycle function
 pub type RecycleResult<E> = Result<(), RecycleError<E>>;
