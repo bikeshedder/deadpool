@@ -294,6 +294,29 @@ impl<T, E> Pool<T, E> {
         obj.state = ObjectState::Ready;
         Ok(obj)
     }
+    /// Add existing value to the pool. Returns whether or not the value was successfully added.
+    pub fn add(&self, value: T) -> bool {
+        let max_size = self.inner.config.max_size;
+        let mut current_size;
+        while {
+            // Get current size and check if max
+            current_size = self.inner.size.load(Ordering::Relaxed);
+            current_size < max_size
+        } {
+            // Try to increment size and push value
+            let old_size =
+                self.inner
+                    .size
+                    .compare_and_swap(current_size, current_size + 1, Ordering::Relaxed);
+            if old_size == current_size {
+                self.inner.queue.push(value).unwrap();
+                self.inner.available.fetch_add(1, Ordering::Relaxed);
+                return true;
+            }
+        }
+
+        false
+    }
     /// Retrieve status of the pool
     pub fn status(&self) -> Status {
         let size = self.inner.size.load(Ordering::Relaxed);
