@@ -43,13 +43,13 @@ use redis::{
 };
 
 /// A type alias for using `deadpool::Pool` with `redis`
-pub type Pool = deadpool::Pool<ConnectionWrapper, RedisError>;
+pub type Pool = deadpool::managed::Pool<ConnectionWrapper, RedisError>;
 
 /// A type alias for using `deadpool::PoolError` with `redis`
-pub type PoolError = deadpool::PoolError<RedisError>;
+pub type PoolError = deadpool::managed::PoolError<RedisError>;
 
-type RecycleResult = deadpool::RecycleResult<RedisError>;
-type RecycleError = deadpool::RecycleError<RedisError>;
+type RecycleResult = deadpool::managed::RecycleResult<RedisError>;
+type RecycleError = deadpool::managed::RecycleError<RedisError>;
 
 mod cmd_wrapper;
 pub use cmd_wrapper::{cmd, Cmd};
@@ -98,7 +98,7 @@ impl Manager {
 }
 
 #[async_trait]
-impl deadpool::Manager<ConnectionWrapper, RedisError> for Manager {
+impl deadpool::managed::Manager<ConnectionWrapper, RedisError> for Manager {
     async fn create(&self) -> Result<ConnectionWrapper, RedisError> {
         let conn = self.client.get_async_connection().compat().await?;
         Ok(ConnectionWrapper { conn: Some(conn) })

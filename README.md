@@ -46,7 +46,7 @@ impl deadpool::Manager<Connection, Error> for Manager
     async fn create(&self) -> Result<Connection, Error> {
         Connection::new().await
     }
-    async fn recycle(&self, conn: &mut Connection) -> deadpool::RecycleResult<Error> {
+    async fn recycle(&self, conn: &mut Connection) -> deadpool::managed::RecycleResult<Error> {
         if conn.check_health().await {
             Ok(())
         } else {

@@ -3,7 +3,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 use tokio::time::timeout;
 
-use deadpool::{Pool, RecycleError, RecycleResult};
+use deadpool::managed::{Pool, RecycleError, RecycleResult};
 
 struct Manager {
     create_fail: bool,
@@ -11,7 +11,7 @@ struct Manager {
 }
 
 #[async_trait]
-impl deadpool::Manager<(), ()> for Manager {
+impl deadpool::managed::Manager<(), ()> for Manager {
     async fn create(&self) -> Result<(), ()> {
         if self.create_fail {
             Err(())

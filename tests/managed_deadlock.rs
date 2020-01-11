@@ -7,7 +7,7 @@ use tokio::sync::Mutex;
 use tokio::task::yield_now;
 use tokio::time::timeout;
 
-use deadpool::{Pool, RecycleError, RecycleResult};
+use deadpool::managed::{Pool, RecycleError, RecycleResult};
 
 struct Manager {
     create_rx: Arc<Mutex<Receiver<Result<(), ()>>>>,
@@ -54,7 +54,7 @@ impl Manager {
 }
 
 #[async_trait]
-impl deadpool::Manager<(), ()> for Manager {
+impl deadpool::managed::Manager<(), ()> for Manager {
     async fn create(&self) -> Result<(), ()> {
         self.create_rx.lock().await.recv().await.unwrap()
     }

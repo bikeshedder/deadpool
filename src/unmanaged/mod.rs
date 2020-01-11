@@ -1,11 +1,11 @@
-//! This module contains a passive version of the pool. Passive meaning that
-//! no manager is used to create and recycle objects and all the objects need
-//! to be created upfront.
+//! This module contains the unmanaged version of the pool. Unmanaged meaning
+//! that no manager is used to create and recycle objects and all the objects
+//! need to be created upfront.
 //!
 //! # Example
 //!
 //! ```rust
-//! use deadpool::passive::Pool;
+//! use deadpool::unmanaged::Pool;
 //!
 //! #[tokio::main]
 //! async fn main() {

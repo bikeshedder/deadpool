@@ -2,7 +2,8 @@
 
 ## v0.5.0 (unreleased)
 
-* Add passive version of the pool which does not use a `Manager` and
+* Move current pool implementation into `managed` module
+* Add unmanaged version of the pool which does not use a `Manager` and
   requires all objects to be created upfront.
 
 ## v0.4.3

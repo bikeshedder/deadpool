@@ -43,16 +43,16 @@ use async_trait::async_trait;
 use lapin::{ConnectionProperties, Error};
 
 /// A type alias for using `deadpool::Pool` with `lapin`
-pub type Pool = deadpool::Pool<lapin::Connection, Error>;
+pub type Pool = deadpool::managed::Pool<lapin::Connection, Error>;
 
 /// A type alias for using `deadpool::PoolError` with `lapin`
-pub type PoolError = deadpool::PoolError<Error>;
+pub type PoolError = deadpool::managed::PoolError<Error>;
 
 /// A type alias for using `deadpool::Object` with `lapin`
-pub type Connection = deadpool::Object<lapin::Connection, Error>;
+pub type Connection = deadpool::managed::Object<lapin::Connection, Error>;
 
-type RecycleResult = deadpool::RecycleResult<Error>;
-type RecycleError = deadpool::RecycleError<Error>;
+type RecycleResult = deadpool::managed::RecycleResult<Error>;
+type RecycleError = deadpool::managed::RecycleError<Error>;
 
 /// The manager for creating and recyling lapin connections
 pub struct Manager {
@@ -71,7 +71,7 @@ impl Manager {
 }
 
 #[async_trait]
-impl deadpool::Manager<lapin::Connection, Error> for Manager {
+impl deadpool::managed::Manager<lapin::Connection, Error> for Manager {
     async fn create(&self) -> Result<lapin::Connection, Error> {
         let connection =
             lapin::Connection::connect(self.addr.as_str(), self.connection_properties.clone())
