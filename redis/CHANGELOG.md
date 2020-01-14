@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.5.0 (unreleased)
+
+* Update `redis` dependency to version 0.14.0
+* Rename `query` to `query_async` to match API of `redis` crate
+* Rename `execute` to `execute_async` to match API of `redis` crate
+
 ## v0.4.1
 
 * Add `PoolError` type alias

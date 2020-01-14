@@ -14,7 +14,7 @@ deadpool = { path = "../", version = "0.5.0", features = ["managed"] }
 async-trait = "0.1.17"
 futures = { version = "0.3.1", features = ["compat" ] }
 log = "0.4"
-redis = "0.13.0"
+redis = "0.14.0"
 
 [dev-dependencies]
-tokio = { version = "0.2.5", features = ["macros"] }
+tokio = { version = "0.2.5", features = ["macros", "rt-core"] }

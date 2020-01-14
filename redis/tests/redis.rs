@@ -12,7 +12,7 @@ async fn test_pipeline() {
         .ignore()
         .cmd("GET")
         .arg("deadpool/pipeline_test_key")
-        .query(&mut conn)
+        .query_async(&mut conn)
         .await
         .unwrap();
     assert_eq!(value, "42".to_string());

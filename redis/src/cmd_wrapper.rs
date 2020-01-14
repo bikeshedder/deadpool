@@ -1,5 +1,6 @@
-use futures::compat::Future01CompatExt;
-use redis::{aio::Connection as RedisConnection, FromRedisValue, RedisResult, ToRedisArgs};
+use std::ops::{Deref, DerefMut};
+
+use redis::{FromRedisValue, RedisResult, ToRedisArgs};
 
 use crate::ConnectionWrapper;
 
@@ -10,8 +11,8 @@ pub struct Cmd {
 
 impl Cmd {
     /// See [redis::Cmd::new](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.new)
-    pub fn new() -> Cmd {
-        Cmd {
+    pub fn new() -> Self {
+        Self {
             cmd: redis::Cmd::new(),
         }
     }
@@ -25,34 +26,30 @@ impl Cmd {
         self.cmd.cursor_arg(cursor);
         self
     }
-    /// See [redis::Cmd::get_packed_command](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.get_packed_command)
-    pub fn get_packed_command(&self) -> Vec<u8> {
-        self.cmd.get_packed_command()
-    }
-    /// See [redis::Cmd::in_scan_mode](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.in_scan_mode)
-    pub fn in_scan_mode(&self) -> bool {
-        self.cmd.in_scan_mode()
-    }
     /// See [redis::Cmd::query](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.query)
-    pub async fn query<T: FromRedisValue + Send>(
+    pub async fn query_async<T: FromRedisValue + Send>(
         &self,
         conn: &mut ConnectionWrapper,
     ) -> RedisResult<T> {
-        let rconn = conn._take_conn()?;
-        let (rconn, result) = self.cmd.query_async(rconn).compat().await?;
-        conn._replace_conn(rconn);
-        Ok(FromRedisValue::from_redis_value(&result)?)
+        self.cmd.query_async(DerefMut::deref_mut(conn)).await
     }
     /// See [redis::Cmd::execute](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.execute)
-    pub async fn execute(&self, conn: &mut ConnectionWrapper) -> RedisResult<()> {
-        let rconn = conn._take_conn()?;
-        let (rconn, _) = self
-            .cmd
-            .query_async::<RedisConnection, ()>(rconn)
-            .compat()
-            .await?;
-        conn._replace_conn(rconn);
+    pub async fn execute_async(&self, con: &mut ConnectionWrapper) -> RedisResult<()> {
+        self.query_async::<redis::Value>(con).await?;
         Ok(())
+    }
+}
+
+impl Deref for Cmd {
+    type Target = redis::Cmd;
+    fn deref(&self) -> &redis::Cmd {
+        &self.cmd
+    }
+}
+
+impl DerefMut for Cmd {
+    fn deref_mut(&mut self) -> &mut redis::Cmd {
+        &mut self.cmd
     }
 }
 

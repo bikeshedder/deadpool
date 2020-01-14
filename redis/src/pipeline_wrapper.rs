@@ -1,4 +1,5 @@
-use futures::compat::Future01CompatExt;
+use std::ops::{Deref, DerefMut};
+
 use redis::{FromRedisValue, RedisResult, ToRedisArgs};
 
 use crate::{Cmd, ConnectionWrapper};
@@ -10,8 +11,8 @@ pub struct Pipeline {
 
 impl Pipeline {
     /// See [redis::Pipeline::new](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.new)
-    pub fn new() -> Pipeline {
-        Pipeline {
+    pub fn new() -> Self {
+        Self {
             pipeline: redis::Pipeline::new(),
         }
     }
@@ -46,25 +47,27 @@ impl Pipeline {
         self.pipeline.atomic();
         self
     }
-    /// See [redis::Pipeline::get_packed_pipeline](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.get_packed_pipeline)
-    pub fn get_packed_pipeline(&self, atomic: bool) -> Vec<u8> {
-        self.pipeline.get_packed_pipeline(atomic)
-    }
     /// See [redis::Pipeline::query](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.query)
-    pub async fn query<T: FromRedisValue>(&self, con: &mut ConnectionWrapper) -> RedisResult<T> {
-        let rcon = con._take_conn()?;
-        let (rcon, result) = self.pipeline.clone().query_async(rcon).compat().await?;
-        con._replace_conn(rcon);
-        Ok(FromRedisValue::from_redis_value(&result)?)
-    }
-    /// See [redis::Pipeline::clear](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.clear)
-    pub fn clear(&mut self) {
-        self.pipeline.clear();
+    pub async fn query_async<T: FromRedisValue>(&self, con: &mut ConnectionWrapper) -> RedisResult<T> {
+        self.pipeline.query_async(DerefMut::deref_mut(con)).await
     }
     /// See [redis::Pipeline::execute](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.execute)
-    pub async fn execute(&self, con: &mut ConnectionWrapper) -> RedisResult<()> {
-        self.query::<redis::Value>(con).await?;
+    pub async fn execute_async(&self, con: &mut ConnectionWrapper) -> RedisResult<()> {
+        self.query_async::<redis::Value>(con).await?;
         Ok(())
+    }
+}
+
+impl Deref for Pipeline {
+    type Target = redis::Pipeline;
+    fn deref(&self) -> &redis::Pipeline {
+        &self.pipeline
+    }
+}
+
+impl DerefMut for Pipeline {
+    fn deref_mut(&mut self) -> &mut redis::Pipeline {
+        &mut self.pipeline
     }
 }
 
