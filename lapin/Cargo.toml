@@ -21,4 +21,4 @@ default-features = false
 features = ["futures"]
 
 [dev-dependencies]
-tokio = { version = "0.2.5", features = ["macros"] }
+tokio = { version = "0.2.9", features = ["sync", "macros"] }

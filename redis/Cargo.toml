@@ -17,4 +17,4 @@ log = "0.4"
 redis = "0.14.0"
 
 [dev-dependencies]
-tokio = { version = "0.2.5", features = ["macros", "rt-core"] }
+tokio = { version = "0.2.9", features = ["macros", "rt-core"] }
