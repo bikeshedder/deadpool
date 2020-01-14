@@ -25,7 +25,9 @@ pub mod unmanaged;
 #[derive(Debug)]
 /// The current pool status.
 pub struct Status {
-    /// The size of the pool
+    /// The maximum size of the pool
+    pub max_size: usize,
+    /// The current size of the pool
     pub size: usize,
     /// The number of available objects in the pool. If there are no
     /// objects in the pool this number can become negative and stores the

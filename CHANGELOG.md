@@ -7,6 +7,7 @@
   requires all objects to be created upfront.
 * Add feature flags `"managed"` and `"unmanaged"` to enable only parts
   of this crate.
+* Add `max_size` to pool `Status`
 
 ## v0.4.3
 

@@ -140,6 +140,6 @@ impl<T> Pool<T> {
     pub fn status(&self) -> Status {
         let size = self.inner.size;
         let available = self.inner.available.load(Ordering::Relaxed);
-        Status { size, available }
+        Status { max_size: size, size, available }
     }
 }
