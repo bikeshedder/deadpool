@@ -3,19 +3,67 @@
 Deadpool is a dead simple async pool for connections and objects
 of any type.
 
-This crate provides two implementations that can individually be enabled
-using the feature flags `"managed"` and `"unmanaged"`. By default both
-implementations are enabled:
+This crate provides two implementations:
 
-- `deadpool::managed::Pool` requires a `Manager` trait which is responsible
-  for creating and recycling objects as they are needed. **This is the obvious
-  choice for connection pools of any kind.**
+- [1. Managed pool](#1.-managed-pool)  
+  - Creates and recycles objects as needed  
+  - Useful for [database connection pools](#1.1.-database-connection-pools)
+  - Enabled via the `managed` feature in your `Cargo.toml`
 
-- `deadpool::unmanaged::Pool` requires the objects to be created upfront.
-  This implementation is a lot simpler and does not require the `async-trait`
-  crate.
+- [2. Unmanaged pool](#2.-unmanaged-pool)  
+  - All objects either need to to be created by the user and added to the
+    pool manually. It is also possible to create a pool from an existing
+    collection of objects.
+  - Enabled via the `unmanaged` feature in your `Cargo.toml`
 
-## Database pools
+When using this crate without specifying any `features` both implementations
+are enabled by default.
+
+## 1. Managed pool (aka. connection pool)
+
+This is the obvious choice for connection pools of any kind. Deadpool already
+comes with a couple of [database connection pools](#1.2.-database-connection-pools)
+which work out of the box.
+
+### 1.1. Example
+
+```rust
+use async_trait::async_trait;
+
+#[derive(Debug)]
+enum Error { Fail }
+
+struct Computer {}
+struct Manager {}
+type Pool = deadpool::managed::Pool<Computer, Error>;
+
+impl Computer {
+    async fn get_answer(&self) -> i32 {
+        42
+    }
+}
+
+#[async_trait]
+impl deadpool::managed::Manager<Computer, Error> for Manager {
+    async fn create(&self) -> Result<Computer, Error> {
+        Ok(Computer {})
+    }
+    async fn recycle(&self, conn: &mut Computer) -> deadpool::managed::RecycleResult<Error> {
+        Ok(())
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let mgr = Manager {};
+    let pool = Pool::new(mgr, 16);
+    let mut conn = pool.get().await.unwrap();
+    let answer = conn.get_answer().await;
+    assert_eq!(answer, 42);
+}
+```
+
+### 1.1. Database connection pools
 
 Deadpool supports various database backends by implementing the
 `deadpool::managed::Manager` trait. The following backends are
@@ -27,93 +75,19 @@ Backend                                                     | Crate
 [lapin](https://crates.io/crates/lapin) (AMQP)              | [deadpool-lapin](https://crates.io/crates/deadpool-lapin)
 [redis](https://crates.io/crates/redis)                     | [deadpool-redis](https://crates.io/crates/deadpool-redis)
 
-## Example (managed)
-
-```rust
-use async_trait::async_trait;
-
-#[derive(Debug)]
-enum Error { Fail }
-
-struct Connection {}
-
-type Pool = deadpool::Pool<Connection, Error>;
-
-impl Connection {
-    async fn new() -> Result<Self, Error> {
-        Ok(Connection {})
-    }
-    async fn check_health(&self) -> bool {
-        true
-    }
-    async fn do_something(&self) -> String {
-        "Hooray!".to_string()
-    }
-}
-
-struct Manager {}
-
-#[async_trait]
-impl deadpool::Manager<Connection, Error> for Manager
-{
-    async fn create(&self) -> Result<Connection, Error> {
-        Connection::new().await
-    }
-    async fn recycle(&self, conn: &mut Connection) -> deadpool::managed::RecycleResult<Error> {
-        if conn.check_health().await {
-            Ok(())
-        } else {
-            Err(Error::Fail.into())
-        }
-    }
-}
-
-#[tokio::main]
-async fn main() {
-    let mgr = Manager {};
-    let pool = Pool::new(mgr, 16);
-    let mut conn = pool.get().await.unwrap();
-    let value = conn.do_something().await;
-    assert_eq!(value, "Hooray!".to_string());
-}
-```
-
-For a more complete example please see
-[`deadpool-postgres`](https://crates.io/crates/deadpool-postgres)
-
-## Example (unmanaged)
-
-```rust
-use deadpool::unmanaged::Pool;
-
-#[tokio::main]
-async fn main() {
-    let pool = Pool::new(vec![
-        "foo".to_string(),
-        "bar".to_string(),
-    ]);
-    {
-        let s = pool.get().await;
-        assert_eq!(s.len(), 3);
-        assert_eq!(pool.status().available, 1)
-    }
-    assert_eq!(pool.status().available, 2);
-}
-```
-
-## Reasons for yet another pool implementation
+### 1.2. Reasons for yet another connection pool
 
 Deadpool is by no means the only pool implementation available. It does
-things a little different and that is the reason for it to exist:
+things a little different and that is the main reason for it to exist:
 
-* **Deadpool is compatible with any executor.** Objects are returned to the
+- **Deadpool is compatible with any executor.** Objects are returned to the
   pool using the `Drop` trait. The health of those objects is checked upon
   next retrieval and not when they are returned. Deadpool never performs any
-  action in the background. This is the reason why deadpool does not need
+  actions in the background. This is the reason why deadpool does not need
   to spawn futures and does not rely on a background thread or task of any
   type.
 
-* **Identical startup and runtime behaviour**. When writing long running
+- **Identical startup and runtime behaviour**. When writing long running
   application there usually should be no difference between startup and
   runtime if a database connection is temporarily not available. Nobody
   would expect an application to crash if the database becomes unavailable
@@ -125,31 +99,63 @@ things a little different and that is the reason for it to exist:
   `pool.get().await.expect("DB connection failed")` right after creating
   the pool.
 
-* **Deadpool is fast.** The code which returns connections to the pool
+- **Deadpool is fast.** The code which returns connections to the pool
   contains no blocking code and retrival uses only one locking primitive.
 
-* **Deadpool is simple.** Dead simple. There is very little API surface.
+- **Deadpool is simple.** Dead simple. There is very little API surface.
   The actual code is barely 100 lines of code and lives in the two functions
   `Pool::get` and `Object::drop`.
 
-## Differences to other pool implementations
+### 1.3. Differences to other connection pool implementations
 
-* [`r2d2`](https://crates.io/crates/r2d2) only provides a synchroneous
-  interface. It also is more complex and needs a lot more code.
+- [`r2d2`](https://crates.io/crates/r2d2) provides a lot more configuration
+  options but only provides a synchroneous interface.
 
-* [`bb8`](https://crates.io/crates/bb8) uses a callback based interface: See
-  [`pool.run`](https://docs.rs/bb8/0.3.1/bb8/struct.Pool.html#method.run)
+- [`bb8`](https://crates.io/crates/bb8) uses a callback based interface (See
+  [`pool.run`](https://docs.rs/bb8/0.3.1/bb8/struct.Pool.html#method.run))
+  and provides the same configuration options as `r2d2`. At the time of
+  writing there is no official release which supports `async/.await`.
 
-* [`mobc`](https://crates.io/crates/mobc) provides an `async/.await` based
-  interface and provides a lot more configuration options. The downside
-  of this being added code complexity and the need for an executor which
-  `deadpool` does not need.
+- [`mobc`](https://crates.io/crates/mobc) provides an `async/.await` based
+  interface and provides a lot more configuration options. It requires an
+  executor though and the code is a lot more complex.
+
+## 2. Unmanaged pool
+
+An unmanaged pool is useful when you can't write a manager for the objects
+you want to pool or simply don't want to. This pool implementation is slightly
+faster than the managed pool because it does not use a `Manager` trait to
+`create` and `recycle` objects but leaves it to the user.
+
+### 2.1. Unmanaged pool example
+
+```rust
+use deadpool::unmanaged::Pool;
+
+struct Computer {}
+
+impl Computer {
+    async fn get_answer(&self) -> i32 {
+        42
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let pool = Pool::from(vec![
+        Computer {},
+        Computer {},
+    ]);
+    let s = pool.get().await;
+    assert_eq!(s.get_answer().await, 42);
+}
+```
 
 ## License
 
 Licensed under either of
 
-* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-* MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
 at your option.
