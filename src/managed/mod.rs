@@ -10,47 +10,35 @@
 //! #[derive(Debug)]
 //! enum Error { Fail }
 //!
-//! struct Connection {}
+//! struct Computer {}
 //!
-//! type Pool = deadpool::managed::Pool<Connection, Error>;
-//! type RecycleResult = deadpool::managed::RecycleResult<Error>;
-//!
-//! impl Connection {
-//!     async fn new() -> Result<Self, Error> {
-//!         Ok(Connection {})
-//!     }
-//!     async fn check_health(&self) -> bool {
-//!         true
-//!     }
-//!     async fn do_something(&self) -> String {
-//!         "Hooray!".to_string()
+//! impl Computer {
+//!     async fn get_answer(&self) -> i32 {
+//!         42
 //!     }
 //! }
 //!
 //! struct Manager {}
 //!
 //! #[async_trait]
-//! impl deadpool::managed::Manager<Connection, Error> for Manager
-//! {
-//!     async fn create(&self) -> Result<Connection, Error> {
-//!         Connection::new().await
+//! impl deadpool::managed::Manager<Computer, Error> for Manager {
+//!     async fn create(&self) -> Result<Computer, Error> {
+//!         Ok(Computer {})
 //!     }
-//!     async fn recycle(&self, conn: &mut Connection) -> RecycleResult {
-//!         if conn.check_health().await {
-//!             Ok(())
-//!         } else {
-//!             Err(Error::Fail.into())
-//!         }
+//!     async fn recycle(&self, conn: &mut Computer) -> deadpool::managed::RecycleResult<Error> {
+//!         Ok(())
 //!     }
 //! }
+//!
+//! type Pool = deadpool::managed::Pool<Computer, Error>;
 //!
 //! #[tokio::main]
 //! async fn main() {
 //!     let mgr = Manager {};
 //!     let pool = Pool::new(mgr, 16);
 //!     let mut conn = pool.get().await.unwrap();
-//!     let value = conn.do_something().await;
-//!     assert_eq!(value, "Hooray!".to_string());
+//!     let answer = conn.get_answer().await;
+//!     assert_eq!(answer, 42);
 //! }
 //! ```
 //!

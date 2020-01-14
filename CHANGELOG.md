@@ -3,8 +3,8 @@
 ## v0.5.0 (unreleased)
 
 * Move current pool implementation into `managed` module
-* Add unmanaged version of the `Pool` which does not use a `Manager` and
-  requires all objects to be created upfront.
+* Add unmanaged version of the `Pool` which does not use a `Manager`
+  to create and recycle objects.
 * Add feature flags `"managed"` and `"unmanaged"` to enable only parts
   of this crate.
 * Add `max_size` to pool `Status`

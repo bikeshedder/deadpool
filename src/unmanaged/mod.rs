@@ -1,30 +1,35 @@
 //! This module contains the unmanaged version of the pool. Unmanaged meaning
-//! that no manager is used to create and recycle objects and all the objects
-//! need to be created upfront.
+//! that no manager is used to create and recycle objects. Objects either need
+//! to be created upfront or by adding them using the `add` or `try_add`
+//! methods.
 //!
 //! # Example
 //!
 //! ```rust
 //! use deadpool::unmanaged::Pool;
 //!
+//! struct Computer {}
+//!
+//! impl Computer {
+//!     async fn get_answer(&self) -> i32 {
+//!         42
+//!     }
+//! }
+//!
 //! #[tokio::main]
 //! async fn main() {
-//!     let pool = Pool::new(vec![
-//!         "foo".to_string(),
-//!         "bar".to_string(),
+//!     let pool = Pool::from(vec![
+//!         Computer {},
+//!         Computer {},
 //!     ]);
-//!     {
-//!         let s = pool.get().await;
-//!         assert_eq!(s.len(), 3);
-//!         assert_eq!(pool.status().available, 1)
-//!     }
-//!     assert_eq!(pool.status().available, 2);
+//!     let s = pool.get().await;
+//!     assert_eq!(s.get_answer().await, 42);
 //! }
 //! ```
 
 use std::convert::TryInto;
 use std::ops::{Deref, DerefMut};
-use std::sync::atomic::{AtomicIsize, Ordering};
+use std::sync::atomic::{AtomicIsize, AtomicUsize, Ordering};
 use std::sync::{Arc, Weak};
 
 use crossbeam_queue::ArrayQueue;
@@ -41,12 +46,27 @@ pub struct Object<T> {
     pool: Weak<PoolInner<T>>,
 }
 
+impl<T> Object<T> {
+    /// Take this object from the pool permanently. This reduces the size of
+    /// the pool. If needed the object can later be added back to the pool
+    /// using the `Pool::add` or `Pool::try_add` methods.
+    pub fn take(mut this: Self) -> T {
+        if let Some(pool) = this.pool.upgrade() {
+            pool.size.fetch_sub(1, Ordering::Relaxed);
+            pool.size_semaphore.add_permits(1);
+        }
+        this.obj.take().unwrap()
+    }
+}
+
 impl<T> Drop for Object<T> {
     fn drop(&mut self) {
-        if let Some(pool) = self.pool.upgrade() {
-            pool.queue.push(self.obj.take().unwrap()).unwrap();
-            pool.available.fetch_add(1, Ordering::Relaxed);
-            pool.semaphore.add_permits(1);
+        if let Some(obj) = self.obj.take() {
+            if let Some(pool) = self.pool.upgrade() {
+                pool.queue.push(obj).unwrap();
+                pool.available.fetch_add(1, Ordering::Relaxed);
+                pool.semaphore.add_permits(1);
+            }
         }
     }
 }
@@ -66,7 +86,12 @@ impl<T> DerefMut for Object<T> {
 
 struct PoolInner<T> {
     queue: ArrayQueue<T>,
-    size: usize,
+    max_size: usize,
+    size: AtomicUsize,
+    /// This semaphore has as many permits as `max_size - size`. Every time
+    /// an object is added to the pool a permit is removed from the semaphore
+    /// and every time an object is removed a permit is added back.
+    size_semaphore: Semaphore,
     /// The number of available objects in the pool. If there are no
     /// objects in the pool this number can become negative and stores the
     /// number of futures waiting for an object.
@@ -79,6 +104,14 @@ struct PoolInner<T> {
 ///
 /// This struct can be cloned and transferred across thread boundaries
 /// and uses reference counting for its internal state.
+///
+/// A pool of existing objects can be created from an existing collection
+/// of objects if it has a known exact size:
+///
+/// ```rust
+/// use deadpool::unmanaged::Pool;
+/// let pool = Pool::from(vec![1, 2, 3]);
+/// ```
 pub struct Pool<T> {
     inner: Arc<PoolInner<T>>,
 }
@@ -92,24 +125,16 @@ impl<T> Clone for Pool<T> {
 }
 
 impl<T> Pool<T> {
-    /// Create new pool from the given exact size iterator of objects.
-    pub fn new<I>(iter: I) -> Self
-    where
-        I: IntoIterator<Item = T>,
-        <I as IntoIterator>::IntoIter: ExactSizeIterator,
-    {
-        let iter = iter.into_iter();
-        let size = iter.len();
-        let queue = ArrayQueue::new(size);
-        for obj in iter {
-            queue.push(obj).unwrap();
-        }
+    /// Create a new empty pool with the given max_size.
+    pub fn new(max_size: usize) -> Self {
         Self {
             inner: Arc::new(PoolInner {
-                queue,
-                size,
-                available: AtomicIsize::new(size.try_into().unwrap()),
-                semaphore: Semaphore::new(size),
+                queue: ArrayQueue::new(max_size),
+                max_size,
+                size: AtomicUsize::new(0),
+                size_semaphore: Semaphore::new(max_size),
+                available: AtomicIsize::new(0),
+                semaphore: Semaphore::new(0),
             }),
         }
     }
@@ -136,10 +161,87 @@ impl<T> Pool<T> {
             obj: Some(obj),
         })
     }
+    /// Add object to pool. If the `size` has already reached `max_size`
+    /// the object is returned as `Err<T>`.
+    pub async fn add(&self, obj: T) {
+        let permit = self.inner.size_semaphore.acquire().await;
+        permit.forget();
+        self._add(obj);
+    }
+    /// Try to add a pool to the object. If the `size` has already reached
+    /// `max_size` the object is returned as `Err<T>`.
+    pub fn try_add(&self, obj: T) -> Result<(), T> {
+        if let Ok(permit) = self.inner.size_semaphore.try_acquire() {
+            permit.forget();
+            self._add(obj);
+            Ok(())
+        } else {
+            Err(obj)
+        }
+    }
+    /// Internal function which adds an object to the pool. Prior calling
+    /// this it must be guaranteed that `size` does not exceed `max_size`.
+    /// In the methods `add` and `try_add` this is ensured by using the
+    /// `size_semaphore`.
+    fn _add(&self, obj: T) {
+        self.inner.size.fetch_add(1, Ordering::Relaxed);
+        self.inner.queue.push(obj).unwrap();
+        self.inner.available.fetch_add(1, Ordering::Relaxed);
+        self.inner.semaphore.add_permits(1);
+    }
+    /// Remove an object from the pool. This is a shortcut for
+    /// ```rust,ignore
+    /// Object::take(pool.get().await)
+    /// ```
+    pub async fn remove(&self) -> T {
+        Object::take(self.get().await)
+    }
+    /// Try to remove an object from the pool. This is a shortcut for
+    /// ```rust,ignore
+    /// if let Some(obj) = self.try_get() {
+    ///     Some(Object::take(obj))
+    /// } else {
+    ///     None
+    /// }
+    /// ```
+    pub fn try_remove(&self) -> Option<T> {
+        if let Some(obj) = self.try_get() {
+            Some(Object::take(obj))
+        } else {
+            None
+        }
+    }
     /// Retrieve status of the pool
     pub fn status(&self) -> Status {
-        let size = self.inner.size;
+        let max_size = self.inner.max_size;
+        let size = self.inner.size.load(Ordering::Relaxed);
         let available = self.inner.available.load(Ordering::Relaxed);
-        Status { max_size: size, size, available }
+        Status { max_size, size, available }
+    }
+}
+
+impl<T, I> From<I> for Pool<T>
+where
+    I: IntoIterator<Item = T>,
+    <I as IntoIterator>::IntoIter: ExactSizeIterator,
+{
+    /// Create new pool from the given exact size iterator of objects.
+    fn from(iter: I) -> Pool<T> {
+        let iter = iter.into_iter();
+        let size = iter.len();
+        let queue = ArrayQueue::new(size);
+        for obj in iter {
+            queue.push(obj).unwrap();
+        }
+        Pool {
+            inner: Arc::new(PoolInner {
+                queue,
+                max_size: size,
+                size: AtomicUsize::new(size),
+                size_semaphore: Semaphore::new(0),
+                available: AtomicIsize::new(size.try_into().unwrap()),
+                semaphore: Semaphore::new(size),
+            })
+        }
     }
 }
