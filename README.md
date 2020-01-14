@@ -5,12 +5,12 @@ of any type.
 
 This crate provides two implementations:
 
-- [1. Managed pool](#1.-managed-pool)  
+- Managed pool (`deadpool::managed::Pool`)  
   - Creates and recycles objects as needed  
   - Useful for [database connection pools](#1.1.-database-connection-pools)
   - Enabled via the `managed` feature in your `Cargo.toml`
 
-- [2. Unmanaged pool](#2.-unmanaged-pool)  
+- Unmanaged pool (`deadpool::unmanaged::Pool`)  
   - All objects either need to to be created by the user and added to the
     pool manually. It is also possible to create a pool from an existing
     collection of objects.
@@ -19,13 +19,13 @@ This crate provides two implementations:
 When using this crate without specifying any `features` both implementations
 are enabled by default.
 
-## 1. Managed pool (aka. connection pool)
+## Managed pool (aka. connection pool)
 
 This is the obvious choice for connection pools of any kind. Deadpool already
 comes with a couple of [database connection pools](#1.2.-database-connection-pools)
 which work out of the box.
 
-### 1.1. Example
+### Example
 
 ```rust
 use async_trait::async_trait;
@@ -63,7 +63,7 @@ async fn main() {
 }
 ```
 
-### 1.1. Database connection pools
+### Database connection pools
 
 Deadpool supports various database backends by implementing the
 `deadpool::managed::Manager` trait. The following backends are
@@ -75,7 +75,7 @@ Backend                                                     | Crate
 [lapin](https://crates.io/crates/lapin) (AMQP)              | [deadpool-lapin](https://crates.io/crates/deadpool-lapin)
 [redis](https://crates.io/crates/redis)                     | [deadpool-redis](https://crates.io/crates/deadpool-redis)
 
-### 1.2. Reasons for yet another connection pool
+### Reasons for yet another connection pool
 
 Deadpool is by no means the only pool implementation available. It does
 things a little different and that is the main reason for it to exist:
@@ -106,7 +106,7 @@ things a little different and that is the main reason for it to exist:
   The actual code is barely 100 lines of code and lives in the two functions
   `Pool::get` and `Object::drop`.
 
-### 1.3. Differences to other connection pool implementations
+### Differences to other connection pool implementations
 
 - [`r2d2`](https://crates.io/crates/r2d2) provides a lot more configuration
   options but only provides a synchroneous interface.
@@ -120,14 +120,14 @@ things a little different and that is the main reason for it to exist:
   interface and provides a lot more configuration options. It requires an
   executor though and the code is a lot more complex.
 
-## 2. Unmanaged pool
+## Unmanaged pool
 
 An unmanaged pool is useful when you can't write a manager for the objects
 you want to pool or simply don't want to. This pool implementation is slightly
 faster than the managed pool because it does not use a `Manager` trait to
 `create` and `recycle` objects but leaves it to the user.
 
-### 2.1. Unmanaged pool example
+### Unmanaged pool example
 
 ```rust
 use deadpool::unmanaged::Pool;
