@@ -216,7 +216,11 @@ impl<T> Pool<T> {
         let max_size = self.inner.max_size;
         let size = self.inner.size.load(Ordering::Relaxed);
         let available = self.inner.available.load(Ordering::Relaxed);
-        Status { max_size, size, available }
+        Status {
+            max_size,
+            size,
+            available,
+        }
     }
 }
 
@@ -241,7 +245,7 @@ where
                 size_semaphore: Semaphore::new(0),
                 available: AtomicIsize::new(size.try_into().unwrap()),
                 semaphore: Semaphore::new(size),
-            })
+            }),
         }
     }
 }

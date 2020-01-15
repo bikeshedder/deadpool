@@ -279,7 +279,11 @@ impl<T, E> Pool<T, E> {
         let max_size = self.inner.config.max_size;
         let size = self.inner.size.load(Ordering::Relaxed);
         let available = self.inner.available.load(Ordering::Relaxed);
-        Status { max_size, size, available }
+        Status {
+            max_size,
+            size,
+            available,
+        }
     }
 }
 

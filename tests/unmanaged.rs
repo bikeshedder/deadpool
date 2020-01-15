@@ -3,7 +3,7 @@ mod tests {
 
     use std::time::Duration;
 
-    use tokio::time::{timeout, interval};
+    use tokio::time::{interval, timeout};
 
     use deadpool::unmanaged::Pool;
 
@@ -70,10 +70,20 @@ mod tests {
         assert_eq!(pool.status().size, 1);
         pool.add(2).await;
         assert_eq!(pool.status().size, 2);
-        assert!(timeout(Duration::from_millis(10), pool.add(3)).await.is_err(), "adding a third item should timeout");
+        assert!(
+            timeout(Duration::from_millis(10), pool.add(3))
+                .await
+                .is_err(),
+            "adding a third item should timeout"
+        );
         pool.remove().await;
         assert_eq!(pool.status().size, 1);
-        assert!(timeout(Duration::from_millis(10), pool.add(3)).await.is_ok(), "adding a third item should not timeout");
+        assert!(
+            timeout(Duration::from_millis(10), pool.add(3))
+                .await
+                .is_ok(),
+            "adding a third item should not timeout"
+        );
         pool.remove().await;
         assert_eq!(pool.status().size, 1);
         pool.remove().await;
@@ -110,7 +120,10 @@ mod tests {
         iv.tick().await;
         iv.tick().await;
         pool.try_remove().unwrap();
-        assert!(timeout(Duration::from_millis(10), add).await.is_ok(), "add should not timeout");
+        assert!(
+            timeout(Duration::from_millis(10), add).await.is_ok(),
+            "add should not timeout"
+        );
         assert_eq!(pool.status().size, 1);
         assert_eq!(pool.try_remove().unwrap(), 2);
     }
