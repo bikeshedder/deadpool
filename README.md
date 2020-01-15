@@ -19,6 +19,14 @@ This crate provides two implementations:
 When using this crate without specifying any `features` both implementations
 are enabled by default.
 
+## Features
+
+| Feature | Description | Extra dependencies | Default |
+| ------- | ----------- | ------------------ | ------- |
+| `managed` | Enable managed pool implementation | – | yes |
+| `unmanaged` | Enable unmanaged pool implementation | `async-trait` | yes |
+| `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
+
 ## Managed pool (aka. connection pool)
 
 This is the obvious choice for connection pools of any kind. Deadpool already

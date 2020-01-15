@@ -37,6 +37,9 @@ use tokio::sync::Semaphore;
 
 pub use crate::Status;
 
+mod config;
+pub use self::config::PoolConfig;
+
 /// A wrapper around the actual pooled object which implements the traits
 /// `Deref`, `DerefMut` and `Drop`. Use this object just as if it was of type
 /// `T` and upon leaving scope the `drop` function will take care of

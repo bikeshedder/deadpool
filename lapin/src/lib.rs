@@ -11,19 +11,16 @@
 //! ```rust
 //! use std::env;
 //!
-//! use deadpool_lapin::{Manager, Pool};
+//! use deadpool_lapin::Config;
 //! use lapin::{
-//!     ConnectionProperties,
 //!     options::BasicPublishOptions,
 //!     BasicProperties
 //! };
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     let addr = std::env::var("AMQP_ADDR").unwrap_or_else(
-//!         |_| "amqp://127.0.0.1:5672/%2f".into());
-//!     let mgr = Manager::new(addr, ConnectionProperties::default());
-//!     let pool = Pool::new(mgr, 16);
+//!     let cfg = Config::from_env("AMQP").unwrap();
+//!     let pool = cfg.create_pool();
 //!     for i in 1..10 {
 //!         let mut connection = pool.get().await.unwrap();
 //!         let channel = connection.create_channel().await.unwrap();
@@ -41,6 +38,9 @@
 
 use async_trait::async_trait;
 use lapin::{ConnectionProperties, Error};
+
+mod config;
+pub use crate::config::Config;
 
 /// A type alias for using `deadpool::Pool` with `lapin`
 pub type Pool = deadpool::managed::Pool<lapin::Connection, Error>;

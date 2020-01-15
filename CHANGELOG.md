@@ -8,6 +8,7 @@
 * Add feature flags `"managed"` and `"unmanaged"` to enable only parts
   of this crate.
 * Add `max_size` to pool `Status`
+* Add support for `config` crate
 
 ## v0.4.3
 

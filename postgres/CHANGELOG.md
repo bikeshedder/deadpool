@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.5.0
+
+* Add support for `config` crate
+
 ## v0.4.3
 
 * `prepare` and `prepare_typed` now accept a `&self` instead of `&mut self`

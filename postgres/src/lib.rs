@@ -50,6 +50,9 @@ use tokio_postgres::{
     Error, Socket, Statement, Transaction as PgTransaction,
 };
 
+mod config;
+pub use crate::config::Config;
+
 /// A type alias for using `deadpool::Pool` with `tokio_postgres`
 pub type Pool = deadpool::managed::Pool<ClientWrapper, tokio_postgres::Error>;
 

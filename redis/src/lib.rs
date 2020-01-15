@@ -11,12 +11,12 @@
 //! ```rust
 //! use std::env;
 //!
-//! use deadpool_redis::{cmd, Manager, Pool};
+//! use deadpool_redis::{cmd, Config};
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     let mgr = Manager::new("redis://127.0.0.1/").unwrap();
-//!     let pool = Pool::new(mgr, 16);
+//!     let cfg = Config::from_env("REDIS").unwrap();
+//!     let pool = cfg.create_pool().unwrap();
 //!     {
 //!         let mut conn = pool.get().await.unwrap();
 //!         cmd("SET")
@@ -51,6 +51,8 @@ pub type PoolError = deadpool::managed::PoolError<RedisError>;
 
 type RecycleResult = deadpool::managed::RecycleResult<RedisError>;
 
+mod config;
+pub use config::Config;
 mod cmd_wrapper;
 pub use cmd_wrapper::{cmd, Cmd};
 mod pipeline_wrapper;

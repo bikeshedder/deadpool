@@ -8,22 +8,24 @@ manager for [`tokio-postgres`](https://crates.io/crates/tokio-postgres)
 and also provides a `statement` cache by wrapping `tokio_postgres::Client`
 and `tokio_postgres::Transaction`.
 
+## Features
+
+| Feature | Description | Extra dependencies | Default |
+| ------- | ----------- | ------------------ | ------- |
+| `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
+
 ## Example
 
 ```rust
 use std::env;
 
-use deadpool_postgres::{Manager, Pool};
-use tokio_postgres::{Config, NoTls};
+use deadpool_postgres::{Config, Manager, Pool};
+use tokio_postgres::{NoTls};
 
 #[tokio::main]
 async fn main() {
-    let mut cfg = Config::new();
-    cfg.host("/var/run/postgresql");
-    cfg.user(env::var("USER").unwrap().as_str());
-    cfg.dbname("deadpool");
-    let mgr = Manager::new(cfg, tokio_postgres::NoTls);
-    let pool = Pool::new(mgr, 16);
+    let mut cfg = Config::from_env("PG").unwrap();
+    let pool = cfg.create_pool();
     for i in 1..10 {
         let mut client = pool.get().await.unwrap();
         let stmt = client.prepare("SELECT 1 + $1").await.unwrap();

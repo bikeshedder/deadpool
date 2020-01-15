@@ -8,24 +8,27 @@ manager for [`lapin`](https://crates.io/crates/lapin).
 
 This crate depends on the current git version which adds `async/.await` support and is therefore considered an alpha version.
 
+## Features
+
+| Feature | Description | Extra dependencies | Default |
+| ------- | ----------- | ------------------ | ------- |
+| `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
+
 ## Example
 
 ```rust
 use std::env;
 
-use deadpool_lapin::{Manager, Pool};
+use deadpool_lapin::Config;
 use lapin::{
-    ConnectionProperties,
     options::BasicPublishOptions,
     BasicProperties
 };
 
 #[tokio::main]
 async fn main() {
-    let addr = std::env::var("AMQP_ADDR").unwrap_or_else(
-        |_| "amqp://127.0.0.1:5672/%2f".into());
-    let mgr = Manager::new(addr, ConnectionProperties::default());
-    let pool = Pool::new(mgr, 16);
+    let cfg = Config::from_env("AMQP").unwrap();
+    let pool = cfg.create_pool();
     for i in 1..10 {
         let mut connection = pool.get().await.unwrap();
         let channel = connection.create_channel().await.unwrap();

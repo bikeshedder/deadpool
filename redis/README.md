@@ -6,19 +6,24 @@ of any type.
 This crate implements a [`deadpool`](https://crates.io/crates/deadpool)
 manager for [`redis`](https://crates.io/crates/redis).
 
+## Features
+
+| Feature | Description | Extra dependencies | Default |
+| ------- | ----------- | ------------------ | ------- |
+| `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
+
 ## Example
 
 ```rust
 use std::env;
 
-use deadpool_redis::{Manager, Pool};
-use futures::compat::Future01CompatExt;
+use deadpool_redis::Config;
 use redis::FromRedisValue;
 
 #[tokio::main]
 async fn main() {
-    let mgr = Manager::new("redis://127.0.0.1/").unwrap();
-    let pool = Pool::new(mgr, 16);
+    let cfg = Config::from_env("REDIS").unwrap();
+    let pool = cfg.create_pool().unwrap();
     {
         let mut conn = pool.get().await.unwrap();
         let mut cmd = redis::cmd("SET");

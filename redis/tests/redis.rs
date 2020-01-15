@@ -1,9 +1,9 @@
 #[tokio::main]
 #[test]
 async fn test_pipeline() {
-    use deadpool_redis::{pipe, Manager, Pool};
-    let mgr = Manager::new("redis://127.0.0.1/").unwrap();
-    let pool = Pool::new(mgr, 16);
+    use deadpool_redis::{pipe, Config};
+    let cfg = Config::from_env("REDIS").unwrap();
+    let pool = cfg.create_pool().unwrap();
     let mut conn = pool.get().await.unwrap();
     let (value,): (String,) = pipe()
         .cmd("SET")

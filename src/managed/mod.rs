@@ -57,7 +57,7 @@ use tokio::sync::Semaphore;
 use tokio::time::timeout;
 
 mod config;
-pub use config::{PoolConfig, Timeouts};
+pub use self::config::{PoolConfig, Timeouts};
 mod errors;
 pub use errors::{PoolError, RecycleError, TimeoutType};
 

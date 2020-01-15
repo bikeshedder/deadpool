@@ -10,9 +10,14 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
-async-trait = { version = "0.1.17", optional = true }
 tokio = { version = "0.2.9", features = ["sync", "time"] }
 crossbeam-queue = "0.2.0"
+num_cpus = "1.11.1"
+# only required when using the `managed` feature
+async-trait = { version = "0.1.17", optional = true }
+# only required when using the `config` feature
+config-crate = { package = "config", version = "0.10.1", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
 tokio = { version = "0.2.9", features = ["sync", "macros", "rt-core"] }
@@ -28,6 +33,7 @@ exclude = [
 ]
 
 [features]
-default = ["managed", "unmanaged"]
+default = ["managed", "unmanaged", "config"]
+config = ["config-crate", "serde"]
 managed = ["async-trait"]
 unmanaged = []
