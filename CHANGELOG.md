@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.5.0 (unreleased)
+## v0.5.0
 
 * Move current pool implementation into `managed` module
 * Add unmanaged version of the `Pool` which does not use a `Manager`
