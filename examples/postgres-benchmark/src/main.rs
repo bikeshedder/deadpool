@@ -1,7 +1,10 @@
+use dotenv::dotenv;
+use deadpool_postgres::Config;
+use std::time::Instant;
+
 #[tokio::main]
 async fn main() {
-    use deadpool_postgres::Config;
-    use std::time::Instant;
+    dotenv().ok();
     let cfg = Config::from_env("PG").unwrap();
     let pool = cfg.create_pool(tokio_postgres::NoTls).unwrap();
     // without pool (just using one client of it)
