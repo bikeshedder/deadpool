@@ -1,48 +1,44 @@
 use dotenv::dotenv;
 use deadpool_postgres::Config;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
-#[tokio::main]
-async fn main() {
-    dotenv().ok();
-    let workers = 16;
-    let iterations = 1000;
-    let cfg = Config::from_env("PG").unwrap();
-    // without pool
-    let d1 = {
-        let pg_config = cfg.get_pg_config().unwrap();
-        let now = Instant::now();
-        let (tx, mut rx) = tokio::sync::mpsc::channel::<usize>(16);
-        for i in 0usize..workers {
-            let mut tx = tx.clone();
-            let pg_config = pg_config.clone();
-            tokio::spawn(async move {
-                for _ in 0..iterations {
-                    let (client, connection) = pg_config.connect(tokio_postgres::NoTls).await.unwrap();
-                    tokio::spawn(connection);
-                    let stmt = client.prepare("SELECT 1 + 2").await.unwrap();
-                    let rows = client.query(&stmt, &[]).await.unwrap();
-                    let value: i32 = rows[0].get(0);
-                    assert_eq!(value, 3);
-                }
-                tx.send(i).await.unwrap();
-            });
-        }
-        for _ in 0usize..workers {
-            rx.recv().await.unwrap();
-        }
-        now.elapsed()
-    };
-    println!("Without pool: {}ms", d1.as_millis());
-    // with pool (16 clients in parallel)
-    let pool = cfg.create_pool(tokio_postgres::NoTls).unwrap();
+const WORKERS: usize = 16;
+const ITERATIONS: usize = 1000;
+
+async fn without_pool(config: &Config) -> Duration {
+    let pg_config = config.get_pg_config().unwrap();
     let now = Instant::now();
     let (tx, mut rx) = tokio::sync::mpsc::channel::<usize>(16);
-    for i in 0..workers {
+    for i in 0usize..WORKERS {
+        let mut tx = tx.clone();
+        let pg_config = pg_config.clone();
+        tokio::spawn(async move {
+            for _ in 0..ITERATIONS {
+                let (client, connection) = pg_config.connect(tokio_postgres::NoTls).await.unwrap();
+                tokio::spawn(connection);
+                let stmt = client.prepare("SELECT 1 + 2").await.unwrap();
+                let rows = client.query(&stmt, &[]).await.unwrap();
+                let value: i32 = rows[0].get(0);
+                assert_eq!(value, 3);
+            }
+            tx.send(i).await.unwrap();
+        });
+    }
+    for _ in 0..WORKERS {
+        rx.recv().await.unwrap();
+    }
+    now.elapsed()
+}
+
+async fn with_deadpool(config: &Config) -> Duration {
+    let pool = config.create_pool(tokio_postgres::NoTls).unwrap();
+    let now = Instant::now();
+    let (tx, mut rx) = tokio::sync::mpsc::channel::<usize>(16);
+    for i in 0..WORKERS {
         let pool = pool.clone();
         let mut tx = tx.clone();
         tokio::spawn(async move {
-            for _ in 0..iterations {
+            for _ in 0..ITERATIONS {
                 let client = pool.get().await.unwrap();
                 let stmt = client.prepare("SELECT 1 + 2").await.unwrap();
                 let rows = client.query(&stmt, &[]).await.unwrap();
@@ -52,10 +48,19 @@ async fn main() {
             tx.send(i).await.unwrap();
         });
     }
-    for _ in 0usize..workers {
+    for _ in 0usize..WORKERS {
         rx.recv().await.unwrap();
     }
-    let d2 = now.elapsed();
+    now.elapsed()
+}
+
+#[tokio::main]
+async fn main() {
+    dotenv().ok();
+    let cfg = Config::from_env("PG").unwrap();
+    let d1 = without_pool(&cfg).await;
+    println!("Without pool: {}ms", d1.as_millis());
+    let d2 = with_deadpool(&cfg).await;
     println!("With pool: {}ms", d2.as_millis());
     println!("Speedup: {}%", 100 * d1.as_millis() / d2.as_millis());
     assert!(d1 > d2);
