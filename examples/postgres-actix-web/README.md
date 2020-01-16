@@ -1,4 +1,4 @@
-# deadpool-postgres + hyper example
+# deadpool-postgres + actix-web example
 
 This example combines `deadpool-postgres` with a `actix-web` webservice to
 implement a simple API service that responds with JSON read from
