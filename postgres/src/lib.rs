@@ -23,7 +23,7 @@
 //! #[tokio::main]
 //! async fn main() {
 //!     let mut cfg = Config::from_env("PG").unwrap();
-//!     let pool = cfg.create_pool(NoTls);
+//!     let pool = cfg.create_pool(NoTls).unwrap();
 //!     for i in 1..10 {
 //!         let mut client = pool.get().await.unwrap();
 //!         let stmt = client.prepare("SELECT 1 + $1").await.unwrap();
