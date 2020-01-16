@@ -73,7 +73,7 @@ mod pipeline_wrapper;
 pub use pipeline_wrapper::{pipe, Pipeline};
 
 /// A type alias for using `deadpool::Object` with `redis`
-
+///
 /// A wrapper for `redis::Connection`. The `query_async` and `execute_async`
 /// functions of `redis::Cmd` and `redis::Pipeline` consume the connection.
 /// This wrapper makes it possible to replace the internal connection after

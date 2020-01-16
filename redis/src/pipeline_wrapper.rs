@@ -4,6 +4,12 @@ use redis::{FromRedisValue, RedisResult, ToRedisArgs};
 
 use crate::{Cmd, ConnectionWrapper};
 
+/// Wrapper for `redis::Cmd` which makes it compatible with the `query_async`
+/// method which takes a `ConnectionLike` as argument.
+///
+/// This Implementation could be simplified a lot via
+/// [RFC 2393](https://github.com/rust-lang/rfcs/pull/2393).
+///
 /// See [redis::Pipeline](https://docs.rs/redis/latest/redis/struct.Pipeline.html)
 pub struct Pipeline {
     pipeline: redis::Pipeline,
@@ -47,14 +53,14 @@ impl Pipeline {
         self.pipeline.atomic();
         self
     }
-    /// See [redis::Pipeline::query](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.query)
+    /// See [redis::Pipeline::query_async](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.query_async)
     pub async fn query_async<T: FromRedisValue>(
         &self,
         con: &mut ConnectionWrapper,
     ) -> RedisResult<T> {
         self.pipeline.query_async(DerefMut::deref_mut(con)).await
     }
-    /// See [redis::Pipeline::execute](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.execute)
+    /// See [redis::Pipeline::execute_async](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.execute_async)
     pub async fn execute_async(&self, con: &mut ConnectionWrapper) -> RedisResult<()> {
         self.query_async::<redis::Value>(con).await?;
         Ok(())
@@ -86,7 +92,9 @@ impl Into<redis::Pipeline> for Pipeline {
     }
 }
 
-/// See [redis::pipe](https://docs.rs/redis/0.13.0/redis/fn.pipe.html)
+/// Shortcut for creating a new pipeline.
+///
+/// See [redis::pipe](https://docs.rs/redis/latest/redis/fn.pipe.html)
 pub fn pipe() -> Pipeline {
     Pipeline::new()
 }

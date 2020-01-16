@@ -4,6 +4,12 @@ use redis::{FromRedisValue, RedisResult, ToRedisArgs};
 
 use crate::ConnectionWrapper;
 
+/// Wrapper for `redis::Cmd` which makes it compatible with the `query_async`
+/// method which takes a `ConnectionLike` as argument.
+///
+/// This Implementation could be simplified a lot via
+/// [RFC 2393](https://github.com/rust-lang/rfcs/pull/2393).
+///
 /// See [redis::Cmd](https://docs.rs/redis/latest/redis/struct.Cmd.html)
 pub struct Cmd {
     pub(crate) cmd: redis::Cmd,
@@ -26,14 +32,14 @@ impl Cmd {
         self.cmd.cursor_arg(cursor);
         self
     }
-    /// See [redis::Cmd::query](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.query)
+    /// See [redis::Cmd::query_async](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.query_async)
     pub async fn query_async<T: FromRedisValue + Send>(
         &self,
         conn: &mut ConnectionWrapper,
     ) -> RedisResult<T> {
         self.cmd.query_async(DerefMut::deref_mut(conn)).await
     }
-    /// See [redis::Cmd::execute](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.execute)
+    /// See [redis::Cmd::execute_async](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.execute_async)
     pub async fn execute_async(&self, con: &mut ConnectionWrapper) -> RedisResult<()> {
         self.query_async::<redis::Value>(con).await?;
         Ok(())
@@ -65,7 +71,13 @@ impl Into<redis::Cmd> for Cmd {
     }
 }
 
-/// See [redis::cmd](https://docs.rs/redis/0.13.0/redis/fn.cmd.html)
+/// Shortcut function to creating a command with a single argument.
+///
+/// The first argument of a redis command is always the name of the
+/// command which needs to be a string. This is the recommended way
+/// to start a command pipe.
+///
+/// See [redis::cmd](https://docs.rs/redis/latest/redis/fn.cmd.html)
 pub fn cmd(name: &str) -> Cmd {
     let mut cmd = Cmd::new();
     cmd.arg(name);

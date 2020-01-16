@@ -7,7 +7,7 @@ This crate provides two implementations:
 
 - Managed pool (`deadpool::managed::Pool`)  
   - Creates and recycles objects as needed  
-  - Useful for [database connection pools](#1.1.-database-connection-pools)
+  - Useful for [database connection pools](#database-connection-pools)
   - Enabled via the `managed` feature in your `Cargo.toml`
 
 - Unmanaged pool (`deadpool::unmanaged::Pool`)  
@@ -27,7 +27,7 @@ This crate provides two implementations:
 ## Managed pool (aka. connection pool)
 
 This is the obvious choice for connection pools of any kind. Deadpool already
-comes with a couple of [database connection pools](#1.2.-database-connection-pools)
+comes with a couple of [database connection pools](#database-connection-pools)
 which work out of the box.
 
 ### Example
@@ -130,7 +130,7 @@ things a little different and that is the main reason for it to exist:
 An unmanaged pool is useful when you can't write a manager for the objects
 you want to pool or simply don't want to. This pool implementation is slightly
 faster than the managed pool because it does not use a `Manager` trait to
-`create` and `recycle` objects but leaves it to the user.
+`create` and `recycle` objects but leaves it up to the user.
 
 ### Unmanaged pool example
 
