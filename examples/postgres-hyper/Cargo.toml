@@ -8,7 +8,9 @@ edition = "2018"
 
 [dependencies]
 hyper = "0.13.1"
+config = "0.10.1"
 deadpool-postgres = { version = "0.5.0", path = "../../postgres" }
+dotenv = "0.15.0"
 serde = { version = "1.0.104", features = ["derive"] }
 tokio-postgres = { version = "0.5.1", features = ["with-uuid-0_8"] }
 uuid = { version = "0.8.1", features = ["serde"] }

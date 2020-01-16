@@ -1,14 +1,9 @@
 #[tokio::main]
 async fn main() {
-    use deadpool_postgres::{Manager, Pool};
-    use std::env;
+    use deadpool_postgres::Config;
     use std::time::Instant;
-    let mut cfg = tokio_postgres::Config::new();
-    cfg.host("/var/run/postgresql");
-    cfg.user(env::var("USER").unwrap().as_str());
-    cfg.dbname("deadpool");
-    let mgr = Manager::new(cfg, tokio_postgres::NoTls);
-    let pool = Pool::new(mgr, 16);
+    let cfg = Config::from_env("PG").unwrap();
+    let pool = cfg.create_pool(tokio_postgres::NoTls).unwrap();
     // without pool (just using one client of it)
     let now = Instant::now();
     {

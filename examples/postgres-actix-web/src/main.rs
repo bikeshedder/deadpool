@@ -1,9 +1,8 @@
-use std::env;
-
 use actix_web::{error, get, web, App, HttpResponse, HttpServer};
-use deadpool_postgres::{Client, Manager, Pool, PoolError};
+use config::ConfigError;
+use deadpool_postgres::{Client, Config, Pool, PoolError};
+use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
-use tokio_postgres::Config;
 use uuid::Uuid;
 
 const SERVER_ADDR: &str = "127.0.0.1:8080";
@@ -29,7 +28,7 @@ impl From<PoolError> for Error {
 impl error::ResponseError for Error {}
 
 async fn event_list(pool: &Pool) -> Result<Vec<Event>, PoolError> {
-    let mut client: Client = pool.get().await?;
+    let client: Client = pool.get().await?;
     let stmt = client.prepare("SELECT id, title FROM event").await?;
     let rows = client.query(&stmt, &[]).await?;
     Ok(rows
@@ -47,26 +46,22 @@ async fn index(db_pool: web::Data<Pool>) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().json(events))
 }
 
-fn create_pool() -> Pool {
-    let mut cfg = Config::new();
-    cfg.host("/run/postgresql");
-    cfg.user(env::var("USER").unwrap().as_str());
-    cfg.dbname(
-        env::var("PG_DBNAME")
-            .expect("PG_DBNAME missing in environment")
-            .as_str(),
-    );
-    let mgr = Manager::new(cfg, tokio_postgres::NoTls);
-    Pool::new(mgr, 16)
+fn create_pool() -> Result<Pool, ConfigError> {
+    let cfg = Config::from_env("PG")?;
+    cfg.create_pool(tokio_postgres::NoTls)
 }
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    let pool = create_pool();
+    dotenv().ok();
+    let pool = create_pool().unwrap();
     let server = HttpServer::new(move || App::new().data(pool.clone()).service(index))
         .bind(SERVER_ADDR)?
         .run();
     println!("Server running at http://{}/", SERVER_ADDR);
-    println!("Try the following URLs: http://{}/v1.0/event.list", SERVER_ADDR);
+    println!(
+        "Try the following URLs: http://{}/v1.0/event.list",
+        SERVER_ADDR
+    );
     server.await
 }

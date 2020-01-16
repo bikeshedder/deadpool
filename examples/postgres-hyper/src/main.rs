@@ -1,12 +1,12 @@
-use std::env;
 use std::fmt;
 use std::net::SocketAddr;
 
-use deadpool_postgres::{Client, Manager, Pool, PoolError};
+use config::ConfigError;
+use deadpool_postgres::{Client, Config, Pool, PoolError};
+use dotenv::dotenv;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, header, Method, Request, Response, Server, StatusCode};
 use serde::{Deserialize, Serialize};
-use tokio_postgres::Config;
 use uuid::Uuid;
 
 const SERVER_ADDR: &str = "127.0.0.1:8080";
@@ -39,7 +39,7 @@ impl From<PoolError> for Error {
 }
 
 async fn event_list(pool: &Pool) -> Result<Vec<Event>, PoolError> {
-    let mut client: Client = pool.get().await?;
+    let client: Client = pool.get().await?;
     let stmt = client.prepare("SELECT id, title FROM event").await?;
     let rows = client.query(&stmt, &[]).await?;
     Ok(rows
@@ -71,23 +71,17 @@ async fn handle(req: Request<Body>, pool: Pool) -> Result<Response<Body>, Error>
     }
 }
 
-fn create_pool() -> Pool {
-    let mut cfg = Config::new();
-    cfg.host("/run/postgresql");
-    cfg.user(env::var("USER").unwrap().as_str());
-    cfg.dbname(
-        env::var("PG_DBNAME")
-            .expect("PG_DBNAME missing in environment")
-            .as_str(),
-    );
-    let mgr = Manager::new(cfg, tokio_postgres::NoTls);
-    Pool::new(mgr, 16)
+fn create_pool() -> Result<Pool, ConfigError> {
+    let cfg = Config::from_env("PG")?;
+    cfg.create_pool(tokio_postgres::NoTls)
 }
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
+
     let addr: SocketAddr = SERVER_ADDR.parse().unwrap();
-    let pool = create_pool();
+    let pool = create_pool().unwrap();
 
     let make_svc = make_service_fn(|_conn| {
         let pool = pool.clone();
