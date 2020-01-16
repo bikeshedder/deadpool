@@ -150,21 +150,21 @@ impl Config {
         cfg.try_into()
     }
     /// Create pool using the current configuration
-    pub fn create_pool<T>(&self, tls: T) -> Pool
+    pub fn create_pool<T>(&self, tls: T) -> Result<Pool, ConfigError>
     where
         T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
         T::Stream: Sync + Send,
         T::TlsConnect: Sync + Send,
         <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
     {
-        let pg_config = self.get_pg_config();
+        let pg_config = self.get_pg_config()?;
         let manager = crate::Manager::new(pg_config, tls);
         let pool_config = self.get_pool_config();
-        Pool::from_config(manager, pool_config)
+        Ok(Pool::from_config(manager, pool_config))
     }
     /// Get `tokio_postgres::Config` which can be used to connect to
     /// the database.
-    pub fn get_pg_config(&self) -> tokio_postgres::Config {
+    pub fn get_pg_config(&self) -> Result<tokio_postgres::Config, ConfigError> {
         let mut cfg = tokio_postgres::Config::new();
         if let Some(user) = &self.user {
             cfg.user(user.as_str());
@@ -174,9 +174,17 @@ impl Config {
         if let Some(password) = &self.password {
             cfg.password(password);
         }
-        if let Some(dbname) = &self.dbname {
-            cfg.dbname(dbname.as_str());
-        }
+        match &self.dbname {
+            Some(dbname) => match dbname.as_str() {
+                "" => return Err(ConfigError::Message(
+                    "configuration property \"dbname\" not found".to_string(),
+                )),
+                dbname => cfg.dbname(dbname),
+            },
+            None => return Err(ConfigError::Message(
+                "configuration property \"dbname\" contains an empty string".to_string(),
+            )),
+        };
         if let Some(options) = &self.options {
             cfg.options(options.as_str());
         }
@@ -214,7 +222,7 @@ impl Config {
         if let Some(keepalives_idle) = &self.keepalives_idle {
             cfg.keepalives_idle(*keepalives_idle);
         }
-        cfg
+        Ok(cfg)
     }
     /// Get `deadpool::PoolConfig` which can be used to construct a
     /// `deadpool::managed::Pool` instance.

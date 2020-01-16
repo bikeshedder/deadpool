@@ -9,7 +9,7 @@ use deadpool_postgres::{Config, Pool};
 
 fn create_pool() -> Pool {
     let cfg = Config::from_env("PG").unwrap();
-    cfg.create_pool(tokio_postgres::NoTls)
+    cfg.create_pool(tokio_postgres::NoTls).unwrap()
 }
 
 #[tokio::main]
