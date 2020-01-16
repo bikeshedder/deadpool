@@ -9,6 +9,9 @@ repository = "https://github.com/bikeshedder/deadpool"
 readme = "README.md"
 edition = "2018"
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 tokio = { version = "0.2.9", features = ["sync", "time"] }
 crossbeam-queue = "0.2.0"

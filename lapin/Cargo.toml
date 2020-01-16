@@ -9,6 +9,9 @@ repository = "https://github.com/bikeshedder/deadpool"
 readme = "README.md"
 edition = "2018"
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 deadpool = { path = "../", version = "0.5.0", features = ["managed"] }
 async-trait = "0.1.17"
