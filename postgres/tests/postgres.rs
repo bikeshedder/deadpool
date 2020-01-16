@@ -112,7 +112,7 @@ struct Env {
 impl Env {
     pub fn new() -> Self {
         Self {
-            backup: HashMap::new()
+            backup: HashMap::new(),
         }
     }
     pub fn set(&mut self, name: &str, value: &str) {
