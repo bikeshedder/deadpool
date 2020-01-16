@@ -10,8 +10,10 @@ use crate::Pool;
 #[derive(Debug)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 pub struct Config {
-    url: Option<String>,
-    pool: Option<PoolConfig>,
+    /// AMQP server URL
+    pub url: Option<String>,
+    /// Pool configuration
+    pub pool: Option<PoolConfig>,
 }
 
 impl Config {

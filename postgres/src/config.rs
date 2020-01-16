@@ -84,12 +84,13 @@ impl Into<PgChannelBinding> for ChannelBinding {
 /// crate.
 /// ## Example environment
 /// ```env
-/// PG_HOST = pg.example.com
-/// PG_USER = john_doe
-/// PG_PASSWORD = topsecret
-/// PG_DBNAME = example
-/// PG_POOL.TIMEOUTS.WAIT.SECS = 5
-/// PG_POOL.TIMEOUTS.WAIT.NANOS = 0
+/// PG_HOST=pg.example.com
+/// PG_USER=john_doe
+/// PG_PASSWORD=topsecret
+/// PG_DBNAME=example
+/// PG_POOL.MAX_SIZE=16
+/// PG_POOL.TIMEOUTS.WAIT.SECS=5
+/// PG_POOL.TIMEOUTS.WAIT.NANOS=0
 /// ```
 /// ## Example usage
 /// ```rust,ignore
@@ -98,22 +99,46 @@ impl Into<PgChannelBinding> for ChannelBinding {
 #[derive(Debug)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 pub struct Config {
-    user: Option<String>,
-    password: Option<String>,
-    dbname: Option<String>,
-    options: Option<String>,
-    application_name: Option<String>,
-    ssl_mode: Option<SslMode>,
-    host: Option<String>,
-    hosts: Option<Vec<String>>,
-    port: Option<u16>,
-    ports: Option<Vec<u16>>,
-    connect_timeout: Option<Duration>,
-    keepalives: Option<bool>,
-    keepalives_idle: Option<Duration>,
-    target_session_attrs: Option<TargetSessionAttrs>,
-    channel_binding: Option<ChannelBinding>,
-    pool: Option<PoolConfig>,
+    /// See `tokio_postgres::Config::user`
+    pub user: Option<String>,
+    /// See `tokio_postgres::Config::password`
+    pub password: Option<String>,
+    /// See `tokio_postgres::Config::dbname`
+    pub dbname: Option<String>,
+    /// See `tokio_postgres::Config::options`
+    pub options: Option<String>,
+    /// See `tokio_postgres::Config::application_name`
+    pub application_name: Option<String>,
+    /// See `tokio_postgres::Config::ssl_mode`
+    pub ssl_mode: Option<SslMode>,
+    /// This is similar to `hosts` but only allows one host to be specified.
+    /// Unlike `tokio-postgres::Config` this structure differenciates between
+    /// one host and more than one host. This makes it possible to store this
+    /// configuration in an envorinment variable.
+    /// See `tokio_postgres::Config::host`
+    pub host: Option<String>,
+    /// See `tokio_postgres::Config::hosts`
+    pub hosts: Option<Vec<String>>,
+    /// This is similar to `ports` but only allows one port to be specified.
+    /// Unlike `tokio-postgres::Config` this structure differenciates between
+    /// one port and more than one port. This makes it possible to store this
+    /// configuration in an environment variable.
+    /// See `tokio_postgres::Config::port`
+    pub port: Option<u16>,
+    /// See `tokio_postgres::Config::port`
+    pub ports: Option<Vec<u16>>,
+    /// See `tokio_postgres::Config::connect_timeout`
+    pub connect_timeout: Option<Duration>,
+    /// See `tokio_postgres::Config::keepalives`
+    pub keepalives: Option<bool>,
+    /// See `tokio_postgres::Config::keepalives_idle`
+    pub keepalives_idle: Option<Duration>,
+    /// See `tokio_postgres::Config::target_session_attrs`
+    pub target_session_attrs: Option<TargetSessionAttrs>,
+    /// See `tokio_postgres::Config::channel_binding`
+    pub channel_binding: Option<ChannelBinding>,
+    /// Pool configuration
+    pub pool: Option<PoolConfig>,
 }
 
 impl Config {

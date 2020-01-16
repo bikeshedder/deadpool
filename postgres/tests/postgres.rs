@@ -140,6 +140,7 @@ fn test_config_from_env() {
     // tests which also use the "PG" prefix to fail.
     let mut env = Env::new();
     env.set("PG_ENV_TEST_HOST", "pg.example.com");
+    env.set("PG_ENV_TEST_PORT", "5433");
     env.set("PG_ENV_TEST_USER", "john_doe");
     env.set("PG_ENV_TEST_PASSWORD", "topsecret");
     env.set("PG_ENV_TEST_DBNAME", "example");
@@ -151,9 +152,14 @@ fn test_config_from_env() {
     env.set("PG_ENV_TEST_POOL.TIMEOUTS.RECYCLE.SECS", "3");
     env.set("PG_ENV_TEST_POOL.TIMEOUTS.RECYCLE.NANOS", "0");
     let cfg = Config::from_env("PG_ENV_TEST").unwrap();
-    // FIXME add tests for db connection parameters
-    //let pg_cfg = cfg.get_pg_config();
-    //assert_eq!(pg_cfg.host, vec![tokio_postgres::config::Host::Tcp("pg.example.com")]);
+    // `tokio_postgres::Config` does not provide any read access to its
+    // internals so we can only check if the environment was actually read
+    // correctly.
+    assert_eq!(cfg.host, Some("pg.example.com".to_string()));
+    assert_eq!(cfg.port, Some(5433));
+    assert_eq!(cfg.user, Some("john_doe".to_string()));
+    assert_eq!(cfg.password, Some("topsecret".to_string()));
+    assert_eq!(cfg.dbname, Some("example".to_string()));
     let pool_cfg = cfg.get_pool_config();
     assert_eq!(pool_cfg.max_size, 42);
     assert_eq!(pool_cfg.timeouts.wait, Some(Duration::from_secs(1)));

@@ -6,12 +6,26 @@ use crate::{Pool, RedisResult};
 
 /// Configuration object. By enabling the `config` feature you can
 /// read the configuration using the [`config`](https://crates.io/crates/config)
-/// crate. e.g.:
+/// crate.
+/// ## Example environment
+/// ```env
+/// REDIS_URL=pg.example.com
+/// REDIS_POOL.MAX_SIZE=16
+/// REDIS_POOL.TIMEOUTS.WAIT.SECS=2
+/// REDIS_POOL.TIMEOUTS.WAIT.NANOS=0
+/// ```
+/// ## Example usage
+/// ```rust,ignore
+/// Config::from_env("REDIS");
+/// ```
 #[derive(Debug)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 pub struct Config {
-    url: Option<String>,
-    pool: Option<PoolConfig>,
+    /// Redis URL
+    /// See https://docs.rs/redis/0.15.1/redis/#connection-parameters
+    pub url: Option<String>,
+    /// Pool configuration
+    pub pool: Option<PoolConfig>,
 }
 
 impl Config {
