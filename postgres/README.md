@@ -17,15 +17,13 @@ and `tokio_postgres::Transaction`.
 ## Example
 
 ```rust
-use std::env;
-
 use deadpool_postgres::{Config, Manager, Pool};
 use tokio_postgres::{NoTls};
 
 #[tokio::main]
 async fn main() {
     let mut cfg = Config::from_env("PG").unwrap();
-    let pool = cfg.create_pool();
+    let pool = cfg.create_pool(NoTls);
     for i in 1..10 {
         let mut client = pool.get().await.unwrap();
         let stmt = client.prepare("SELECT 1 + $1").await.unwrap();

@@ -16,9 +16,6 @@ This crate provides two implementations:
     collection of objects.
   - Enabled via the `unmanaged` feature in your `Cargo.toml`
 
-When using this crate without specifying any `features` both implementations
-are enabled by default.
-
 ## Features
 
 | Feature | Description | Extra dependencies | Default |

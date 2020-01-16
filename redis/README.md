@@ -15,9 +15,7 @@ manager for [`redis`](https://crates.io/crates/redis).
 ## Example
 
 ```rust
-use std::env;
-
-use deadpool_redis::Config;
+use deadpool_redis::{cmd, Config};
 use redis::FromRedisValue;
 
 #[tokio::main]
@@ -26,16 +24,18 @@ async fn main() {
     let pool = cfg.create_pool().unwrap();
     {
         let mut conn = pool.get().await.unwrap();
-        let mut cmd = redis::cmd("SET");
-        cmd.arg(&["deadpool/test_key", "42"]);
-        conn.query(&cmd).await.unwrap();
+        cmd("SET")
+            .arg(&["deadpool/test_key", "42"])
+            .execute_async(&mut conn)
+            .await.unwrap();
     }
     {
         let mut conn = pool.get().await.unwrap();
-        let mut cmd = redis::cmd("GET");
-        cmd.arg(&["deadpool/test_key"]);
-        let value = conn.query(&cmd).await.unwrap();
-        assert_eq!(String::from_redis_value(&value).unwrap(), "42".to_string());
+        let value: String = cmd("GET")
+            .arg(&["deadpool/test_key"])
+            .query_async(&mut conn)
+            .await.unwrap();
+        assert_eq!(value, "42".to_string());
     }
 }
 ```

@@ -1,16 +1,22 @@
-//! Deadpool simple async pool for AMQP connections.
+//! # Deadpool for Lapin [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin)
+//!
+//! Deadpool is a dead simple async pool for connections and objects
+//! of any type.
 //!
 //! This crate implements a [`deadpool`](https://crates.io/crates/deadpool)
 //! manager for [`lapin`](https://crates.io/crates/lapin).
 //!
-//! You should not need to use `deadpool` directly. Use the `Pool` type
-//! provided by this crate instead.
+//! This crate depends on the current git version which adds `async/.await` support and is therefore considered an alpha version.
 //!
-//! # Example
+//! ## Features
+//!
+//! | Feature | Description | Extra dependencies | Default |
+//! | ------- | ----------- | ------------------ | ------- |
+//! | `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
+//!
+//! ## Example
 //!
 //! ```rust
-//! use std::env;
-//!
 //! use deadpool_lapin::Config;
 //! use lapin::{
 //!     options::BasicPublishOptions,
@@ -34,6 +40,15 @@
 //!     }
 //! }
 //! ```
+//!
+//! ## License
+//!
+//! Licensed under either of
+//!
+//! - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+//! - MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+//!
+//! at your option.
 #![warn(missing_docs)]
 
 use async_trait::async_trait;

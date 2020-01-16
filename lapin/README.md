@@ -17,8 +17,6 @@ This crate depends on the current git version which adds `async/.await` support 
 ## Example
 
 ```rust
-use std::env;
-
 use deadpool_lapin::Config;
 use lapin::{
     options::BasicPublishOptions,
