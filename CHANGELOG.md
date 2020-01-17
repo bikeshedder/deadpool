@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.5.1 (unreleased)
+
+* Add `managed::Object::take` method
+
 ## v0.5.0
 
 * Move current pool implementation into `managed` module
