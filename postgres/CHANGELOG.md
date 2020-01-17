@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.5.1 (unreleased)
+## v0.5.1
 
 * Fix windows support
 
