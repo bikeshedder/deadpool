@@ -165,7 +165,7 @@ impl<T> Pool<T> {
         })
     }
     /// Add object to pool. If the `size` has already reached `max_size`
-    /// the object is returned as `Err<T>`.
+    /// this function blocks until the object can be added to the pool.
     pub async fn add(&self, obj: T) {
         let permit = self.inner.size_semaphore.acquire().await;
         permit.forget();
