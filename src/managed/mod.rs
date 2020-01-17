@@ -82,6 +82,7 @@ enum ObjectState {
     Creating,
     Recycling,
     Ready,
+    Taken,
     Dropped,
 }
 
@@ -95,6 +96,15 @@ pub struct Object<T, E> {
     pool: Weak<PoolInner<T, E>>,
 }
 
+impl<T, E> Object<T, E> {
+    /// Take this object from the pool permanently. This reduces the size of
+    /// the pool.
+    pub fn take(mut this: Self) -> T {
+        this.state = ObjectState::Taken;
+        this.obj.take().unwrap()
+    }
+}
+
 impl<T, E> Drop for Object<T, E> {
     fn drop(&mut self) {
         if let Some(pool) = self.pool.upgrade() {
@@ -106,7 +116,7 @@ impl<T, E> Drop for Object<T, E> {
                     pool.available.fetch_add(1, Ordering::Relaxed);
                     pool.semaphore.add_permits(1);
                 }
-                ObjectState::Creating => {
+                ObjectState::Creating | ObjectState::Taken => {
                     pool.size.fetch_sub(1, Ordering::Relaxed);
                     pool.semaphore.add_permits(1);
                 }
