@@ -198,12 +198,21 @@ impl Config {
             for host in hosts.iter() {
                 cfg.host(host.as_str());
             }
-        } else if Path::new("/run/postgresql").exists() {
-            cfg.host_path("/run/postgresql");
-        } else if Path::new("/var/run/postgresql").exists() {
-            cfg.host_path("/var/run/postgresql");
         } else {
-            cfg.host_path("/tmp");
+            // Systems that support it default to unix domain sockets
+            #[cfg(unix)]
+            {
+                if Path::new("/run/postgresql").exists() {
+                    cfg.host_path("/run/postgresql");
+                } else if Path::new("/var/run/postgresql").exists() {
+                    cfg.host_path("/var/run/postgresql");
+                } else {
+                    cfg.host_path("/tmp");
+                }
+            }
+            // Windows and other systems use 127.0.0.1 instead
+            #[cfg(not(unix))]
+            cfg.host("127.0.0.1");
         }
         if let Some(port) = &self.port {
             cfg.port(*port);

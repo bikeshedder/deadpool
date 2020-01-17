@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.5.1 (unreleased)
+
+* Fix windows support
+
 ## v0.5.0
 
 * Add support for `config` crate
