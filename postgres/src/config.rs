@@ -1,9 +1,8 @@
 use std::env;
+use std::fmt;
 use std::path::Path;
 use std::time::Duration;
 
-#[cfg(feature = "config")]
-use ::config_crate::{ConfigError, Environment};
 use deadpool::managed::PoolConfig;
 use tokio_postgres::config::{
     ChannelBinding as PgChannelBinding, SslMode as PgSslMode,
@@ -13,6 +12,32 @@ use tokio_postgres::tls::{MakeTlsConnect, TlsConnect};
 use tokio_postgres::Socket;
 
 use crate::Pool;
+
+/// An error which is returned by `Config::create_pool` if something is
+/// wrong with the configuration.
+#[derive(Debug)]
+pub enum ConfigError {
+    Message(String),
+}
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Message(message) => write!(f, "{}", message),
+        }
+    }
+}
+
+#[cfg(feature = "config")]
+impl Into<::config_crate::ConfigError> for ConfigError {
+    fn into(self) -> ::config_crate::ConfigError {
+        match self {
+            Self::Message(message) => ::config_crate::ConfigError::Message(message),
+        }
+    }
+}
+
+impl std::error::Error for ConfigError {}
 
 /// Properties required of a session.
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -144,7 +169,8 @@ pub struct Config {
 impl Config {
     /// Create configuration from environment variables.
     #[cfg(feature = "config")]
-    pub fn from_env(prefix: &str) -> Result<Self, ConfigError> {
+    pub fn from_env(prefix: &str) -> Result<Self, ::config_crate::ConfigError> {
+        use ::config_crate::Environment;
         let mut cfg = ::config_crate::Config::new();
         cfg.merge(Environment::with_prefix(prefix))?;
         cfg.try_into()
@@ -176,14 +202,18 @@ impl Config {
         }
         match &self.dbname {
             Some(dbname) => match dbname.as_str() {
-                "" => return Err(ConfigError::Message(
-                    "configuration property \"dbname\" not found".to_string(),
-                )),
+                "" => {
+                    return Err(ConfigError::Message(
+                        "configuration property \"dbname\" not found".to_string(),
+                    ))
+                }
                 dbname => cfg.dbname(dbname),
             },
-            None => return Err(ConfigError::Message(
-                "configuration property \"dbname\" contains an empty string".to_string(),
-            )),
+            None => {
+                return Err(ConfigError::Message(
+                    "configuration property \"dbname\" contains an empty string".to_string(),
+                ))
+            }
         };
         if let Some(options) = &self.options {
             cfg.options(options.as_str());
