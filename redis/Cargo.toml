@@ -13,7 +13,7 @@ edition = "2018"
 all-features = true
 
 [dependencies]
-deadpool = { path = "../", version = "0.5.0", features = ["managed"] }
+deadpool = { path = "../", version = "0.5.0", default-features = false, features = ["managed"] }
 async-trait = "0.1.17"
 futures = { version = "0.3.1", features = ["compat" ] }
 log = "0.4"

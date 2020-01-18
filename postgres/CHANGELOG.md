@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.5.2 (unreleased)
+
+* Disable `default-features` for `deadpool` dependency
+
 ## v0.5.1
 
 * Fix windows support

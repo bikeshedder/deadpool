@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.5.1 (unreleased)
+
+* Disable `default-features` for `deadpool` dependency
+
 ## v0.5.0
 
 * Update `redis` dependency to version 0.14.0
