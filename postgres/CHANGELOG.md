@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.5.2 (unreleased)
+## v0.5.2
 
 * Disable `default-features` for `deadpool` dependency
 
