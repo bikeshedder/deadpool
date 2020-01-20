@@ -7,7 +7,7 @@ use crate::Pool;
 /// Configuration object. By enabling the `config` feature you can
 /// read the configuration using the [`config`](https://crates.io/crates/config)
 /// crate. e.g.:
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 pub struct Config {
     /// AMQP server URL

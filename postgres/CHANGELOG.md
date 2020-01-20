@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.5.3 (unreleased)
+
+* Add `#[derive(Clone)]` to `Config` struct
+
 ## v0.5.2
 
 * Disable `default-features` for `deadpool` dependency

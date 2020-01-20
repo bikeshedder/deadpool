@@ -121,7 +121,7 @@ impl Into<PgChannelBinding> for ChannelBinding {
 /// ```rust,ignore
 /// Config::from_env("PG");
 /// ```
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 pub struct Config {
     /// See `tokio_postgres::Config::user`

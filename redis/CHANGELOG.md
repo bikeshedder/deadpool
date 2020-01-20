@@ -3,6 +3,7 @@
 ## v0.5.2 (unreleased)
 
 * Update `redis` dependency to version `0.15.1`
+* Add `#[derive(Clone)]` to `Config` struct
 
 ## v0.5.1
 

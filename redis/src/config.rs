@@ -18,7 +18,7 @@ use crate::{Pool, RedisResult};
 /// ```rust,ignore
 /// Config::from_env("REDIS");
 /// ```
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 pub struct Config {
     /// Redis URL
