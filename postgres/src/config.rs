@@ -1,3 +1,5 @@
+//! This module describes configuration used for [`Pool`] creation.
+
 use std::env;
 use std::fmt;
 use std::path::Path;
@@ -17,6 +19,7 @@ use crate::Pool;
 /// wrong with the configuration.
 #[derive(Debug)]
 pub enum ConfigError {
+    /// Message of the error.
     Message(String),
 }
 
@@ -82,6 +85,7 @@ impl Into<PgSslMode> for SslMode {
     }
 }
 
+/// Channel binding configuration.
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 #[non_exhaustive]

@@ -3,6 +3,7 @@
 ## v0.5.3 (unreleased)
 
 * Add `#[derive(Clone)]` to `Config` struct
+* Make `config` module public
 
 ## v0.5.2
 

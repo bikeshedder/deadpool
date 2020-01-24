@@ -42,7 +42,8 @@
 //! - MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 //!
 //! at your option.
-#![warn(missing_docs)]
+
+#![warn(missing_docs, unreachable_pub)]
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -59,7 +60,7 @@ use tokio_postgres::{
     Error, Socket, Statement, Transaction as PgTransaction,
 };
 
-mod config;
+pub mod config;
 pub use crate::config::Config;
 
 /// A type alias for using `deadpool::Pool` with `tokio_postgres`
