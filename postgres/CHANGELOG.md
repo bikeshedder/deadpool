@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.5.3 (unreleased)
+## v0.5.3
 
 * Add `#[derive(Clone)]` to `Config` struct
 * Make `config` module public
