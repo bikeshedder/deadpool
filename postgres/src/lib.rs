@@ -277,3 +277,9 @@ impl<'a> Deref for Transaction<'a> {
         &self.txn
     }
 }
+
+impl<'a> DerefMut for Transaction<'a> {
+    fn deref_mut(&mut self) -> &mut PgTransaction<'a> {
+        &mut self.txn
+    }
+}

@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.5.4
+
+* Implement `DerefMut` for `Transaction` wrapper
+
 ## v0.5.3
 
 * Add `#[derive(Clone)]` to `Config` struct
