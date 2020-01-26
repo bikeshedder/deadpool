@@ -3,6 +3,7 @@
 ## v0.5.4
 
 * Implement `DerefMut` for `Transaction` wrapper
+* Add `transaction` method to `Transaction` wrapper
 
 ## v0.5.3
 

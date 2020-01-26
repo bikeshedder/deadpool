@@ -269,6 +269,13 @@ impl<'a> Transaction<'a> {
     pub async fn rollback(self) -> Result<(), Error> {
         self.txn.rollback().await
     }
+    /// Like `tokio_postgres::Transaction::transaction`
+    pub async fn transaction<'b>(&'b mut self) -> Result<Transaction<'b>, Error> {
+        Ok(Transaction {
+            txn: PgTransaction::transaction(&mut self.txn).await?,
+            statement_cache: &mut self.statement_cache,
+        })
+    }
 }
 
 impl<'a> Deref for Transaction<'a> {
