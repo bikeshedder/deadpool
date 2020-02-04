@@ -2,14 +2,26 @@ use std::fmt;
 use std::net::SocketAddr;
 
 use config::ConfigError;
-use deadpool_postgres::{Client, Config, Pool, PoolError};
+use deadpool_postgres::{Client, Pool, PoolError};
 use dotenv::dotenv;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, header, Method, Request, Response, Server, StatusCode};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-const SERVER_ADDR: &str = "127.0.0.1:8080";
+#[derive(Debug, Deserialize)]
+struct Config {
+    listen: String,
+    pg: deadpool_postgres::Config,
+}
+
+impl Config {
+    fn from_env() -> Result<Self, ConfigError> {
+        let mut cfg = ::config::Config::new();
+        cfg.merge(::config::Environment::new())?;
+        cfg.try_into()
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 struct Event {
@@ -71,17 +83,12 @@ async fn handle(req: Request<Body>, pool: Pool) -> Result<Response<Body>, Error>
     }
 }
 
-fn create_pool() -> Result<Pool, ConfigError> {
-    let cfg = Config::from_env("PG")?;
-    cfg.create_pool(tokio_postgres::NoTls)
-}
-
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-
-    let addr: SocketAddr = SERVER_ADDR.parse().unwrap();
-    let pool = create_pool().unwrap();
+    let config = Config::from_env()?;
+    let addr: SocketAddr = config.listen.parse()?;
+    let pool = config.pg.create_pool(tokio_postgres::NoTls)?;
 
     let make_svc = make_service_fn(|_conn| {
         let pool = pool.clone();
@@ -92,10 +99,12 @@ async fn main() {
 
     let server = Server::bind(&addr).serve(make_svc);
 
-    println!("Server running at http://{}/", SERVER_ADDR);
-    println!("Try the following URLs: http://{}/v1.0/event.list", SERVER_ADDR);
+    println!("Server running at http://{}/", &config.listen);
+    println!("Try the following URLs: http://{}/v1.0/event.list", &config.listen);
 
     if let Err(e) = server.await {
         eprintln!("server error: {}", e);
     }
+
+    Ok(())
 }

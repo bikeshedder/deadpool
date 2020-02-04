@@ -44,7 +44,8 @@ psql -f fixture.sql deadpool
 Create `.env` file in this directory
 
 ```env
-PG_DBNAME=deadpool
+LISTEN=[::1]:8000
+PG.DBNAME=deadpool
 ```
 
 Run the example
@@ -59,11 +60,11 @@ If you want to connect to your database using a TCP/IP socket you can use
 the following template for your `.env` file:
 
 ```env
-PG_HOST=127.0.0.1
-PG_PORT=5432
-PG_USER=deadpool
-PG_PASSWORD=somepassword
-PG_DBNAME=deadpool
+PG.HOST=127.0.0.1
+PG.PORT=5432
+PG.USER=deadpool
+PG.PASSWORD=somepassword
+PG.DBNAME=deadpool
 ```
 
 For more configuration options see `deadpool_postgres::Config`.

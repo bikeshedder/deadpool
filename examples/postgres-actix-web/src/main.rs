@@ -1,11 +1,23 @@
 use actix_web::{error, get, web, App, HttpResponse, HttpServer};
 use config::ConfigError;
-use deadpool_postgres::{Client, Config, Pool, PoolError};
+use deadpool_postgres::{Client, Pool, PoolError};
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-const SERVER_ADDR: &str = "127.0.0.1:8080";
+#[derive(Debug, Deserialize)]
+struct Config {
+    listen: String,
+    pg: deadpool_postgres::Config,
+}
+
+impl Config {
+    fn from_env() -> Result<Self, ConfigError> {
+        let mut cfg = ::config::Config::new();
+        cfg.merge(::config::Environment::new())?;
+        cfg.try_into()
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 struct Event {
@@ -46,22 +58,18 @@ async fn index(db_pool: web::Data<Pool>) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().json(events))
 }
 
-fn create_pool() -> Result<Pool, ConfigError> {
-    let cfg = Config::from_env("PG")?;
-    cfg.create_pool(tokio_postgres::NoTls)
-}
-
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
-    let pool = create_pool().unwrap();
+    let config = Config::from_env().unwrap();
+    let pool = config.pg.create_pool(tokio_postgres::NoTls).unwrap();
     let server = HttpServer::new(move || App::new().data(pool.clone()).service(index))
-        .bind(SERVER_ADDR)?
+        .bind(&config.listen)?
         .run();
-    println!("Server running at http://{}/", SERVER_ADDR);
+    println!("Server running at http://{}/", &config.listen);
     println!(
         "Try the following URLs: http://{}/v1.0/event.list",
-        SERVER_ADDR
+        &config.listen,
     );
     server.await
 }
