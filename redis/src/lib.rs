@@ -63,6 +63,9 @@ pub type Pool = deadpool::managed::Pool<ConnectionWrapper, RedisError>;
 /// A type alias for using `deadpool::PoolError` with `redis`
 pub type PoolError = deadpool::managed::PoolError<RedisError>;
 
+/// A type alias for using `deadpool::Object` with `redis`
+pub type Connection = deadpool::managed::Object<ConnectionWrapper, RedisError>;
+
 type RecycleResult = deadpool::managed::RecycleResult<RedisError>;
 
 mod config;
@@ -72,8 +75,6 @@ pub use cmd_wrapper::{cmd, Cmd};
 mod pipeline_wrapper;
 pub use pipeline_wrapper::{pipe, Pipeline};
 
-/// A type alias for using `deadpool::Object` with `redis`
-///
 /// A wrapper for `redis::Connection`. The `query_async` and `execute_async`
 /// functions of `redis::Cmd` and `redis::Pipeline` consume the connection.
 /// This wrapper makes it possible to replace the internal connection after

@@ -4,6 +4,7 @@
 
 * Update `redis` dependency to version `0.15.1`
 * Add `#[derive(Clone)]` to `Config` struct
+* Add `Connection` type alias
 
 ## v0.5.1
 
