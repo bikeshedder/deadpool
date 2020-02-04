@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.5.2 (unreleased)
+## v0.5.2
 
 * Update `redis` dependency to version `0.15.1`
 * Add `#[derive(Clone)]` to `Config` struct
