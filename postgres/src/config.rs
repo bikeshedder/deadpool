@@ -108,6 +108,43 @@ impl Into<PgChannelBinding> for ChannelBinding {
     }
 }
 
+/// This enum is used to control how the connection is recycled.
+/// **Attention:** The current default is `Verified` but will be changed
+/// to `Fast` in the next minor release of `deadpool-postgres`. Please
+/// make sure to explicitly state this if you want to keep using the
+/// `Verified` recycling method.
+#[derive(Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "config", derive(serde::Deserialize))]
+pub enum RecyclingMethod {
+    /// Only run `Client::is_closed` when recycling existing connections.
+    /// Unless you have special needs this is a safe choice.
+    Fast,
+    /// Run `Client::is_closed` and execute a test query. This is slower
+    /// but guarantees that the database connection is ready to be used.
+    /// Normally `Client::is_closed` should be enough to filter out bad
+    /// connections but under some circumstances (i.e. hard-closed
+    /// network connections) it is possible that `Client::is_closed` returns
+    /// `false` but the connection is dead. You will receive an error on
+    /// your first query then.
+    Verified,
+}
+
+impl Default for RecyclingMethod {
+    fn default() -> Self {
+        Self::Verified
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "config", derive(serde::Deserialize))]
+/// Configuration object for the manager. This currently only makes it
+/// possible to specify which recycling method should be used when retrieving
+/// existing objects from the pool.
+pub struct ManagerConfig {
+    /// This controls how the connection is recycled. See `RecyclingMethod`
+    pub recycling_method: RecyclingMethod,
+}
+
 /// Configuration object. By enabling the `config` feature you can
 /// read the configuration using the [`config`](https://crates.io/crates/config)
 /// crate.
@@ -125,7 +162,7 @@ impl Into<PgChannelBinding> for ChannelBinding {
 /// ```rust,ignore
 /// Config::from_env("PG");
 /// ```
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 pub struct Config {
     /// See `tokio_postgres::Config::user`
@@ -166,6 +203,8 @@ pub struct Config {
     pub target_session_attrs: Option<TargetSessionAttrs>,
     /// See `tokio_postgres::Config::channel_binding`
     pub channel_binding: Option<ChannelBinding>,
+    /// Manager configuration
+    pub manager: Option<ManagerConfig>,
     /// Pool configuration
     pub pool: Option<PoolConfig>,
 }
@@ -192,7 +231,8 @@ impl Config {
         <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
     {
         let pg_config = self.get_pg_config()?;
-        let manager = crate::Manager::new(pg_config, tls);
+        let manager_config = self.get_manager_config();
+        let manager = crate::Manager::from_config(pg_config, tls, manager_config);
         let pool_config = self.get_pool_config();
         Ok(Pool::from_config(manager, pool_config))
     }
@@ -271,32 +311,14 @@ impl Config {
         }
         Ok(cfg)
     }
+    /// Get `deadpool_postgres::ManagerConfig` which can be used to
+    /// construct a `deadpool::managed::Pool` instance.
+    pub fn get_manager_config(&self) -> ManagerConfig {
+        self.manager.clone().unwrap_or_default()
+    }
     /// Get `deadpool::PoolConfig` which can be used to construct a
     /// `deadpool::managed::Pool` instance.
     pub fn get_pool_config(&self) -> PoolConfig {
         self.pool.clone().unwrap_or_default()
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            user: None,
-            password: None,
-            dbname: None,
-            options: None,
-            application_name: None,
-            ssl_mode: None,
-            host: None,
-            hosts: None,
-            port: None,
-            ports: None,
-            connect_timeout: None,
-            keepalives: None,
-            keepalives_idle: None,
-            target_session_attrs: None,
-            channel_binding: None,
-            pool: None,
-        }
     }
 }

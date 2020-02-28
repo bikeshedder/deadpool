@@ -21,7 +21,8 @@ impl Config {
     }
     pub fn from_env_with_prefix(prefix: &str) -> Self {
         let mut cfg = ::config_crate::Config::new();
-        cfg.merge(::config_crate::Environment::with_prefix(prefix)).unwrap();
+        cfg.merge(::config_crate::Environment::with_prefix(prefix))
+            .unwrap();
         cfg.try_into().unwrap()
     }
 }

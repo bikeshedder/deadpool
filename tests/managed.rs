@@ -129,5 +129,4 @@ mod tests {
         assert_eq!(status.size, 2);
         assert_eq!(status.available, 2);
     }
-
 }

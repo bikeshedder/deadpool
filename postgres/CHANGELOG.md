@@ -3,6 +3,10 @@
 ## v0.5.5 (unreleased)
 
 * Deprecate `Config::from_env`
+* Add `Manager::from_config`, `ManagerConfig` and `RecyclingMethod` which
+  makes it possible to specify how connections are recycled. The current
+  default recycling method is `Verified` which is the same as before. The
+  upcoming `0.6` release of this crate will change the default to `Fast`.
 
 ## v0.5.4
 

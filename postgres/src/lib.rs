@@ -61,7 +61,7 @@ use tokio_postgres::{
 };
 
 pub mod config;
-pub use crate::config::Config;
+pub use crate::config::{Config, ManagerConfig, RecyclingMethod};
 
 /// A type alias for using `deadpool::Pool` with `tokio_postgres`
 pub type Pool = deadpool::managed::Pool<ClientWrapper, tokio_postgres::Error>;
@@ -73,19 +73,35 @@ pub type PoolError = deadpool::managed::PoolError<tokio_postgres::Error>;
 pub type Client = deadpool::managed::Object<ClientWrapper, tokio_postgres::Error>;
 
 type RecycleResult = deadpool::managed::RecycleResult<Error>;
+type RecycleError = deadpool::managed::RecycleError<Error>;
 
 /// The manager for creating and recyling postgresql connections
 pub struct Manager<T: MakeTlsConnect<Socket>> {
-    config: PgConfig,
+    config: ManagerConfig,
+    pg_config: PgConfig,
     tls: T,
 }
 
 impl<T: MakeTlsConnect<Socket>> Manager<T> {
-    /// Create manager using `PgConfig` and a `TlsConnector`
-    pub fn new(config: PgConfig, tls: T) -> Manager<T> {
+    /// Create manager using a `tokio_postgres::Config` and a `TlsConnector`.
+    pub fn new(pg_config: tokio_postgres::Config, tls: T) -> Manager<T> {
         Manager {
-            config: config,
-            tls: tls,
+            config: ManagerConfig::default(),
+            pg_config,
+            tls,
+        }
+    }
+    /// Create manager using a `tokio_postgres::Config` and a `TlsConnector`
+    /// and also
+    pub fn from_config(
+        pg_config: tokio_postgres::Config,
+        tls: T,
+        config: ManagerConfig,
+    ) -> Manager<T> {
+        Manager {
+            config,
+            pg_config,
+            tls,
         }
     }
 }
@@ -99,7 +115,7 @@ where
     <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
 {
     async fn create(&self) -> Result<ClientWrapper, Error> {
-        let (client, connection) = self.config.connect(self.tls.clone()).await?;
+        let (client, connection) = self.pg_config.connect(self.tls.clone()).await?;
         let connection = connection.map(|r| {
             if let Err(e) = r {
                 warn!(target: "deadpool.postgres", "Connection error: {}", e);
@@ -109,12 +125,19 @@ where
         Ok(ClientWrapper::new(client))
     }
     async fn recycle(&self, client: &mut ClientWrapper) -> RecycleResult {
-        match client.simple_query("").await {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                info!(target: "deadpool.postgres", "Connection could not be recycled: {}", e);
-                Err(e.into())
-            }
+        if client.is_closed() {
+            info!(target: "deadpool.postgres", "Connection could not be recycled: Connection closed");
+            return Err(RecycleError::Message("Connection closed".to_string()));
+        }
+        match self.config.recycling_method {
+            RecyclingMethod::Fast => Ok(()),
+            RecyclingMethod::Verified => match client.simple_query("").await {
+                Ok(_) => Ok(()),
+                Err(e) => {
+                    info!(target: "deadpool.postgres", "Connection could not be recycled: {}", e);
+                    Err(e.into())
+                }
+            },
         }
     }
 }
