@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.5.5 (unreleased)
+## v0.5.5
 
 * Deprecate `Config::from_env`
 * Add `Manager::from_config`, `ManagerConfig` and `RecyclingMethod` which
