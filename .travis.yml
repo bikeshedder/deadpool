@@ -14,11 +14,11 @@ cache: cargo
 
 env:
   global:
-    - PG_HOST=localhost
-    - PG_PORT=5432
-    - PG_USER=postgres
-    - PG_PASSWORD=
-    - PG_DBNAME=deadpool
+    - PG.HOST=localhost
+    - PG.PORT=5432
+    - PG.USER=postgres
+    - PG.PASSWORD=
+    - PG.DBNAME=deadpool
     - AMQP_ADDR=amqp://guest:guest@127.0.0.1:5672/%2f
 
 services:
