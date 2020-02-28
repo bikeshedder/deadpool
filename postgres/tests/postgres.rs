@@ -3,13 +3,32 @@ use std::env;
 use std::time::Duration;
 
 use futures::future::join_all;
+use serde::Deserialize;
 use tokio_postgres::types::Type;
 
-use deadpool_postgres::{Config, Pool};
+use deadpool_postgres::Pool;
+
+#[derive(Debug, Deserialize)]
+struct Config {
+    pg: deadpool_postgres::Config,
+}
+
+impl Config {
+    pub fn from_env() -> Self {
+        let mut cfg = ::config_crate::Config::new();
+        cfg.merge(::config_crate::Environment::new()).unwrap();
+        cfg.try_into().unwrap()
+    }
+    pub fn from_env_with_prefix(prefix: &str) -> Self {
+        let mut cfg = ::config_crate::Config::new();
+        cfg.merge(::config_crate::Environment::with_prefix(prefix)).unwrap();
+        cfg.try_into().unwrap()
+    }
+}
 
 fn create_pool() -> Pool {
-    let cfg = Config::from_env("PG").unwrap();
-    cfg.create_pool(tokio_postgres::NoTls).unwrap()
+    let cfg = Config::from_env();
+    cfg.pg.create_pool(tokio_postgres::NoTls).unwrap()
 }
 
 #[tokio::main]
@@ -139,28 +158,28 @@ fn test_config_from_env() {
     // This test must not use "PG" as prefix as this can cause the other
     // tests which also use the "PG" prefix to fail.
     let mut env = Env::new();
-    env.set("PG_ENV_TEST_HOST", "pg.example.com");
-    env.set("PG_ENV_TEST_PORT", "5433");
-    env.set("PG_ENV_TEST_USER", "john_doe");
-    env.set("PG_ENV_TEST_PASSWORD", "topsecret");
-    env.set("PG_ENV_TEST_DBNAME", "example");
-    env.set("PG_ENV_TEST_POOL.MAX_SIZE", "42");
-    env.set("PG_ENV_TEST_POOL.TIMEOUTS.WAIT.SECS", "1");
-    env.set("PG_ENV_TEST_POOL.TIMEOUTS.WAIT.NANOS", "0");
-    env.set("PG_ENV_TEST_POOL.TIMEOUTS.CREATE.SECS", "2");
-    env.set("PG_ENV_TEST_POOL.TIMEOUTS.CREATE.NANOS", "0");
-    env.set("PG_ENV_TEST_POOL.TIMEOUTS.RECYCLE.SECS", "3");
-    env.set("PG_ENV_TEST_POOL.TIMEOUTS.RECYCLE.NANOS", "0");
-    let cfg = Config::from_env("PG_ENV_TEST").unwrap();
+    env.set("ENV_TEST_PG.HOST", "pg.example.com");
+    env.set("ENV_TEST_PG.PORT", "5433");
+    env.set("ENV_TEST_PG.USER", "john_doe");
+    env.set("ENV_TEST_PG.PASSWORD", "topsecret");
+    env.set("ENV_TEST_PG.DBNAME", "example");
+    env.set("ENV_TEST_PG.POOL.MAX_SIZE", "42");
+    env.set("ENV_TEST_PG.POOL.TIMEOUTS.WAIT.SECS", "1");
+    env.set("ENV_TEST_PG.POOL.TIMEOUTS.WAIT.NANOS", "0");
+    env.set("ENV_TEST_PG.POOL.TIMEOUTS.CREATE.SECS", "2");
+    env.set("ENV_TEST_PG.POOL.TIMEOUTS.CREATE.NANOS", "0");
+    env.set("ENV_TEST_PG.POOL.TIMEOUTS.RECYCLE.SECS", "3");
+    env.set("ENV_TEST_PG.POOL.TIMEOUTS.RECYCLE.NANOS", "0");
+    let cfg = Config::from_env_with_prefix("ENV_TEST");
     // `tokio_postgres::Config` does not provide any read access to its
     // internals so we can only check if the environment was actually read
     // correctly.
-    assert_eq!(cfg.host, Some("pg.example.com".to_string()));
-    assert_eq!(cfg.port, Some(5433));
-    assert_eq!(cfg.user, Some("john_doe".to_string()));
-    assert_eq!(cfg.password, Some("topsecret".to_string()));
-    assert_eq!(cfg.dbname, Some("example".to_string()));
-    let pool_cfg = cfg.get_pool_config();
+    assert_eq!(cfg.pg.host, Some("pg.example.com".to_string()));
+    assert_eq!(cfg.pg.port, Some(5433));
+    assert_eq!(cfg.pg.user, Some("john_doe".to_string()));
+    assert_eq!(cfg.pg.password, Some("topsecret".to_string()));
+    assert_eq!(cfg.pg.dbname, Some("example".to_string()));
+    let pool_cfg = cfg.pg.get_pool_config();
     assert_eq!(pool_cfg.max_size, 42);
     assert_eq!(pool_cfg.timeouts.wait, Some(Duration::from_secs(1)));
     assert_eq!(pool_cfg.timeouts.create, Some(Duration::from_secs(2)));
