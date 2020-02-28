@@ -172,6 +172,10 @@ pub struct Config {
 
 impl Config {
     /// Create configuration from environment variables.
+    #[deprecated(
+        since = "0.5.5",
+        note = "Please embed this structure in your own config structure and use `config::Config` directly."
+    )]
     #[cfg(feature = "config")]
     pub fn from_env(prefix: &str) -> Result<Self, ::config_crate::ConfigError> {
         use ::config_crate::Environment;

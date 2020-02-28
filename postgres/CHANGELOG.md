@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.5.5 (unreleased)
+
+* Deprecate `Config::from_env`
+
 ## v0.5.4
 
 * Implement `DerefMut` for `Transaction` wrapper
