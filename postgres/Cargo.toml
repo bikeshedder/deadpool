@@ -24,6 +24,7 @@ config-crate = { package = "config", version = "0.10.1", default-features = fals
 serde = { version = "1.0", features = ["derive"], optional = true}
 
 [dev-dependencies]
+dotenv = "0.15.0"
 tokio = { version = "0.2.9", features = ["sync", "macros"] }
 
 [features]
