@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-lapin"
-version = "0.0.0"
+version = "0.5.0"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for lapin"
 keywords = ["async", "lapin", "pool", "amqp", "rabbitmq"]
@@ -22,7 +22,7 @@ config-crate = { package = "config", version = "0.10.1", default-features = fals
 serde = { version = "1.0", features = ["derive"], optional = true}
 
 [dependencies.lapin]
-git = "https://github.com/sozu-proxy/lapin"
+version = "0.33"
 default-features = false
 features = ["futures"]
 

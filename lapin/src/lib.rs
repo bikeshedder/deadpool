@@ -6,8 +6,6 @@
 //! This crate implements a [`deadpool`](https://crates.io/crates/deadpool)
 //! manager for [`lapin`](https://crates.io/crates/lapin).
 //!
-//! This crate depends on the current git version which adds `async/.await` support and is therefore considered an alpha version.
-//!
 //! ## Features
 //!
 //! | Feature | Description | Extra dependencies | Default |
