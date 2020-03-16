@@ -116,10 +116,9 @@ things a little different and that is the main reason for it to exist:
 - [`r2d2`](https://crates.io/crates/r2d2) provides a lot more configuration
   options but only provides a synchroneous interface.
 
-- [`bb8`](https://crates.io/crates/bb8) uses a callback based interface (See
-  [`pool.run`](https://docs.rs/bb8/0.3.1/bb8/struct.Pool.html#method.run))
-  and provides the same configuration options as `r2d2`. At the time of
-  writing there is no official release which supports `async/.await`.
+- [`bb8`](https://crates.io/crates/bb8) provides an `async/.await` based
+  interface and provides the same configuration options as `r2d2`. It
+  depends on the tokio executor though and the code is more complex.
 
 - [`mobc`](https://crates.io/crates/mobc) provides an `async/.await` based
   interface and provides a lot more configuration options. It requires an
