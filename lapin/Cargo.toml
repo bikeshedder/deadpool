@@ -22,9 +22,8 @@ config-crate = { package = "config", version = "0.10.1", default-features = fals
 serde = { version = "1.0", features = ["derive"], optional = true}
 
 [dependencies.lapin]
-version = "0.33"
+version = "0.39.7"
 default-features = false
-features = ["futures"]
 
 [dev-dependencies]
 tokio = { version = "0.2.9", features = ["sync", "macros"] }
