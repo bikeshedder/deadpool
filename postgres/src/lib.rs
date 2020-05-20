@@ -124,8 +124,8 @@
 //!
 //! - **Why are connections retrieved from the pool sometimes unuseable?**
 //!
-//!   In deadpool `0.5.5` a new recycling method was implemented which will
-//!   become the default in `0.6`. With that recycling method the manager no
+//!   In deadpool-postgres `0.5.5` a new recycling method was implemented which
+//!   will become the default in `0.6`. With that recycling method the manager no
 //!   longer performs a test query prior returning the connection but relies
 //!   solely on `tokio_postgres::Client::is_closed` instead. Under some rare
 //!   circumstances (e.g. unreliable networks) this can lead to `tokio_postgres`
