@@ -75,10 +75,7 @@ pub struct Manager {
 
 impl Manager {
     /// Create manager using `PgConfig` and a `TlsConnector`
-    pub fn new(
-        addr: String,
-        connection_properties: ConnectionProperties,
-    ) -> Self {
+    pub fn new(addr: String, connection_properties: ConnectionProperties) -> Self {
         Self {
             addr: addr,
             connection_properties: connection_properties,
@@ -89,17 +86,12 @@ impl Manager {
 #[async_trait]
 impl deadpool::managed::Manager<lapin::Connection, Error> for Manager {
     async fn create(&self) -> Result<lapin::Connection, Error> {
-        let connection = lapin::Connection::connect(
-            self.addr.as_str(),
-            self.connection_properties.clone(),
-        )
-        .await?;
+        let connection =
+            lapin::Connection::connect(self.addr.as_str(), self.connection_properties.clone())
+                .await?;
         Ok(connection.into_inner())
     }
-    async fn recycle(
-        &self,
-        connection: &mut lapin::Connection,
-    ) -> RecycleResult {
+    async fn recycle(&self, connection: &mut lapin::Connection) -> RecycleResult {
         match connection.status().state() {
             lapin::ConnectionState::Connected => Ok(()),
             other_state => Err(RecycleError::Message(format!(
