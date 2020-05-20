@@ -158,7 +158,8 @@ use tokio::spawn;
 use tokio::sync::RwLock;
 use tokio_postgres::{
     tls::MakeTlsConnect, tls::TlsConnect, types::Type, Client as PgClient, Config as PgConfig,
-    Error, Socket, Statement, Transaction as PgTransaction,
+    Error, IsolationLevel, Socket, Statement, Transaction as PgTransaction,
+    TransactionBuilder as PgTransactionBuilder,
 };
 
 pub mod config;
@@ -340,6 +341,18 @@ impl ClientWrapper {
             statement_cache: &mut self.statement_cache,
         })
     }
+    /// Returns a builder for a transaction with custom settings.
+    ///
+    /// Unlike the `transaction` method, the builder can be used to control the
+    /// transaction's isolation level and other attributes.
+    ///
+    /// See [`tokio_postgres::Client::transaction_builder`](#method.transaction_builder-1)
+    pub fn build_transaction(&mut self) -> TransactionBuilder {
+        TransactionBuilder {
+            builder: self.client.build_transaction(),
+            statement_cache: &mut self.statement_cache,
+        }
+    }
 }
 
 impl Deref for ClientWrapper {
@@ -412,5 +425,72 @@ impl<'a> Deref for Transaction<'a> {
 impl<'a> DerefMut for Transaction<'a> {
     fn deref_mut(&mut self) -> &mut PgTransaction<'a> {
         &mut self.txn
+    }
+}
+
+/// A wrapper for `tokio_postgres::TransactionBuilder` which uses the
+/// statement cache from the client object it was created by.
+pub struct TransactionBuilder<'a> {
+    builder: PgTransactionBuilder<'a>,
+    statement_cache: &'a mut StatementCache,
+}
+
+impl<'a> TransactionBuilder<'a> {
+    /// Sets the isolation level of the transaction.
+    ///
+    /// Like `tokio_postgres::TransactionBuilder::isolation_level`
+    pub fn isolation_level(self, isolation_level: IsolationLevel) -> Self {
+        Self {
+            builder: self.builder.isolation_level(isolation_level),
+            statement_cache: self.statement_cache,
+        }
+    }
+    /// Sets the access mode of the transaction.
+    ///
+    /// Like `tokio_postgres::TransactionBuilder::read_only`
+    pub fn read_only(self, read_only: bool) -> Self {
+        Self {
+            builder: self.builder.read_only(read_only),
+            statement_cache: self.statement_cache,
+        }
+    }
+    /// Sets the deferrability of the transaction.
+    ///
+    /// If the transaction is also serializable and read only, creation
+    /// of the transaction may block, but when it completes the transaction
+    /// is able to run with less overhead and a guarantee that it will not
+    /// be aborted due to serialization failure.
+    ///
+    /// Like `tokio_postgres::TransactionBuilder::deferrable`
+    pub fn deferrable(self, deferrable: bool) -> Self {
+        Self {
+            builder: self.builder.deferrable(deferrable),
+            statement_cache: self.statement_cache,
+        }
+    }
+    /// Begins the transaction.
+    ///
+    /// The transaction will roll back by default - use the commit method
+    /// to commit it.
+    ///
+    /// Like `tokio_postgres::TransactionBuilder::start`
+    pub async fn start(self) -> Result<Transaction<'a>, Error> {
+        Ok(Transaction {
+            txn: self.builder.start().await?,
+            statement_cache: self.statement_cache,
+        })
+    }
+}
+
+impl<'a> Deref for TransactionBuilder<'a> {
+    type Target = PgTransactionBuilder<'a>;
+    fn deref(&self) -> &Self::Target {
+        &self.builder
+    }
+}
+
+impl<'a> DerefMut for TransactionBuilder<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.builder
     }
 }

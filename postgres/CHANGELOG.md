@@ -3,6 +3,8 @@
 ## v0.5.6 (unreleased)
 
 * Add `Config::new` method
+* Add `Client::build_transaction` method which makes it possible to
+  use the `TransactionBuilder` with the statement cache.
 
 ## v0.5.5
 

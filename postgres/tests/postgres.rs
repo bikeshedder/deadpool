@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use futures::future::join_all;
 use serde::Deserialize;
-use tokio_postgres::types::Type;
+use tokio_postgres::{types::Type, IsolationLevel};
 
 use deadpool_postgres::Pool;
 
@@ -123,6 +123,25 @@ async fn test_transaction_pipeline() {
     for i in 0..100 {
         assert_eq!(results[i], (i as i32) + 1);
     }
+}
+
+#[tokio::main]
+#[test]
+async fn test_transaction_builder() {
+    let pool = create_pool();
+    let mut client = pool.get().await.unwrap();
+    let txn = client
+        .build_transaction()
+        .isolation_level(IsolationLevel::ReadUncommitted)
+        .read_only(true)
+        .deferrable(true)
+        .start()
+        .await
+        .unwrap();
+    let rows = txn.query("SELECT 1 + 2", &[]).await.unwrap();
+    let value: i32 = rows[0].get(0);
+    assert_eq!(value, 3);
+    txn.commit().await.unwrap();
 }
 
 struct Env {
