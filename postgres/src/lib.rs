@@ -113,7 +113,7 @@
 //!
 //! ## FAQ
 //!
-//! - **The database is unreachable. Why does pool creation not fail?**
+//! - **The database is unreachable. Why does the pool creation not fail?**
 //!
 //!   Deadpool has [identical startup and runtime behaviour](https://crates.io/crates/deadpool/#reasons-for-yet-another-connection-pool)
 //!   and therefore the pool creation will never fail.
@@ -124,10 +124,10 @@
 //!
 //! - **Why are connections retrieved from the pool sometimes unuseable?**
 //!
-//!   In deadpool `0.5.5` a new recycling method was implemented which is the
-//!   new default in `0.6`. With that recycling method the manager no longer
-//!   performs a test query prior returning the connection but relies solely
-//!   on `tokio_postgres::Client::is_closed` instead. Under some rare
+//!   In deadpool `0.5.5` a new recycling method was implemented which will
+//!   become the default in `0.6`. With that recycling method the manager no
+//!   longer performs a test query prior returning the connection but relies
+//!   solely on `tokio_postgres::Client::is_closed` instead. Under some rare
 //!   circumstances (e.g. unreliable networks) this can lead to `tokio_postgres`
 //!   not noticing a disconnect and reporting the connection as useable.
 //!
