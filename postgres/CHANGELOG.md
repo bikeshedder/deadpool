@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.5.6 (unreleased)
+
+* Add `Config::new` method
+
 ## v0.5.5
 
 * Deprecate `Config::from_env`

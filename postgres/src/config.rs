@@ -210,6 +210,11 @@ pub struct Config {
 }
 
 impl Config {
+    /// Create new config instance with default values. This function is
+    /// identical to `Config::default`.
+    pub fn new() -> Self {
+        Self::default()
+    }
     /// Create configuration from environment variables.
     #[deprecated(
         since = "0.5.5",
