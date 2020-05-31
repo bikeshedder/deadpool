@@ -1,5 +1,5 @@
 #[cfg(feature = "config")]
-use ::config_crate::{ConfigError, Environment};
+use config_crate::{ConfigError, Environment};
 use deadpool::managed::PoolConfig;
 
 use crate::Pool;
