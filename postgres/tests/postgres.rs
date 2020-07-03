@@ -144,6 +144,18 @@ async fn test_transaction_builder() {
     txn.commit().await.unwrap();
 }
 
+#[tokio::main]
+#[test]
+async fn test_generic_client() {
+    let pool = create_pool();
+    let client = pool.get().await.unwrap();
+    _use_generic_client(&**client);
+}
+
+fn _use_generic_client(_client: &impl tokio_postgres::GenericClient) {
+    // nop
+}
+
 struct Env {
     backup: HashMap<String, Option<String>>,
 }
