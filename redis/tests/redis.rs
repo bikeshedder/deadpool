@@ -1,8 +1,23 @@
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize, Default)]
+struct Config {
+    #[serde(default)]
+    redis: deadpool_redis::Config,
+}
+
+impl Config {
+    pub fn from_env() -> Self {
+        let mut cfg = ::config_crate::Config::default();
+        cfg.merge(::config_crate::Environment::new().separator("__"))
+            .unwrap();
+        cfg.try_into().unwrap()
+    }
+}
+
 fn create_pool() -> deadpool_redis::Pool {
-    use deadpool_redis::Config;
-    let cfg = Config::from_env("REDIS").unwrap();
-    let pool = cfg.create_pool().unwrap();
-    pool
+    let cfg = Config::from_env();
+    cfg.redis.create_pool().unwrap()
 }
 
 #[tokio::main]
@@ -27,7 +42,7 @@ async fn test_pipeline() {
 #[tokio::main]
 #[test]
 async fn test_high_level_commands() {
-    use redis::AsyncCommands;
+    use deadpool_redis::redis::AsyncCommands;
     let pool = create_pool();
     let mut conn = pool.get().await.unwrap();
     let _: () = conn.set("deadpool/hlc_test_key", 42).await.unwrap();
