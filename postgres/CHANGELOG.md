@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.5.6 (unreleased)
+## v0.5.6
 
 * Add `Config::new` method
 * Add `Client::build_transaction` method which makes it possible to
