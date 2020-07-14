@@ -14,7 +14,7 @@
 //!
 //! ## Example
 //!
-//! ```rust
+//! ```rust,ignore
 //! use deadpool_redis::{cmd, Config};
 //! use deadpool_redis::redis::FromRedisValue;
 //!
