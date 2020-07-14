@@ -16,7 +16,7 @@ and `tokio_postgres::Transaction`.
 
 ## Example
 
-```rust
+```rust,ignore
 use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod };
 use tokio_postgres::{NoTls};
 
@@ -84,7 +84,7 @@ In your own code you will probably want to use `::config::ConfigError` and
 
 ## Example using an existing `tokio_postgres::Config` object
 
-```rust
+```rust,ignore
 use std::env;
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
 use tokio_postgres::{NoTls};

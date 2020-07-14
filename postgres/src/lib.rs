@@ -16,7 +16,7 @@
 //!
 //! ## Example
 //!
-//! ```rust
+//! ```rust,ignore
 //! use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod };
 //! use tokio_postgres::{NoTls};
 //!
@@ -84,7 +84,7 @@
 //!
 //! ## Example using an existing `tokio_postgres::Config` object
 //!
-//! ```rust
+//! ```rust,ignore
 //! use std::env;
 //! use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
 //! use tokio_postgres::{NoTls};
