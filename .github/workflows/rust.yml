@@ -30,9 +30,9 @@ jobs:
       rabbitmq:
         image: rabbitmq
         env:
-          RABBITMQ_DEFAULT_USER=deadpool
-          RABBITMQ_DEFAULT_PASS=deadpool
-          RABBITMQ_DEFAULT_VHOST=deadpool
+          RABBITMQ_DEFAULT_USER: deadpool
+          RABBITMQ_DEFAULT_PASS: deadpool
+          RABBITMQ_DEFAULT_VHOST: deadpool
 
     steps:
     - uses: actions/checkout@v2
