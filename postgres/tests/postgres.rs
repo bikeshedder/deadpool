@@ -6,7 +6,7 @@ use futures::future::join_all;
 use serde::Deserialize;
 use tokio_postgres::{types::Type, IsolationLevel};
 
-use deadpool_postgres::Pool;
+use deadpool_postgres::{Pool, ManagerConfig, RecyclingMethod};
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -150,6 +150,30 @@ async fn test_generic_client() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
     _use_generic_client(&**client);
+}
+
+#[tokio::main]
+#[test]
+async fn test_recycling_methods() {
+    let recycling_methods = vec![
+        RecyclingMethod::Fast,
+        RecyclingMethod::Verified,
+        RecyclingMethod::Clean,
+        RecyclingMethod::Custom("DISCARD ALL;".to_string()),
+    ];
+    let mut cfg = Config::from_env();
+    for recycling_method in recycling_methods {
+        cfg.pg.manager = Some(ManagerConfig {
+            recycling_method,
+        });
+        let pool = cfg.pg.create_pool(tokio_postgres::NoTls).unwrap();
+        for _ in 0usize..20usize {
+            let client = pool.get().await.unwrap();
+            let rows = client.query("SELECT 1 + 2", &[]).await.unwrap();
+            let value: i32 = rows[0].get(0);
+            assert_eq!(value, 3);
+        }
+    }
 }
 
 fn _use_generic_client(_client: &impl tokio_postgres::GenericClient) {

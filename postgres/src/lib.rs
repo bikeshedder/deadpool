@@ -231,15 +231,15 @@ where
             info!(target: "deadpool.postgres", "Connection could not be recycled: Connection closed");
             return Err(RecycleError::Message("Connection closed".to_string()));
         }
-        match self.config.recycling_method {
-            RecyclingMethod::Fast => Ok(()),
-            RecyclingMethod::Verified => match client.simple_query("").await {
+        match self.config.recycling_method.query() {
+            Some(sql) => match client.simple_query(sql).await {
                 Ok(_) => Ok(()),
                 Err(e) => {
                     info!(target: "deadpool.postgres", "Connection could not be recycled: {}", e);
                     Err(e.into())
                 }
             },
+            None => Ok(()),
         }
     }
 }

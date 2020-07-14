@@ -5,6 +5,10 @@
 * Add `Config::new` method
 * Add `Client::build_transaction` method which makes it possible to
   use the `TransactionBuilder` with the statement cache.
+* Add `RecyclingMethod::Clean` which works similar to `DISCARD ALL`
+  but makes sure the statement cache is not rendered ineffective.
+* Add `RecyclingMethod::Custom` which allows to execute arbitary SQL
+  when recycling connections.
 
 ## v0.5.5
 

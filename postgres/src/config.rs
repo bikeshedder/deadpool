@@ -113,7 +113,7 @@ impl Into<PgChannelBinding> for ChannelBinding {
 /// to `Fast` in the next minor release of `deadpool-postgres`. Please
 /// make sure to explicitly state this if you want to keep using the
 /// `Verified` recycling method.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 pub enum RecyclingMethod {
     /// Only run `Client::is_closed` when recycling existing connections.
@@ -127,6 +127,46 @@ pub enum RecyclingMethod {
     /// `false` but the connection is dead. You will receive an error on
     /// your first query then.
     Verified,
+    /// Like `Verified` query method but instead use the following sequence of
+    /// statements which guarantees a prestine connection:
+    ///
+    /// ```rust,ignore
+    /// CLOSE ALL;
+    /// SET SESSION AUTHORIZATION DEFAULT;
+    /// RESET ALL;
+    /// UNLISTEN *;
+    /// SELECT pg_advisory_unlock_all();
+    /// DISCARD TEMP;
+    /// DISCARD SEQUENCES;
+    /// ```
+    ///
+    /// This is similar to calling `DISCARD ALL` but does not call
+    /// `DEALLOCATE ALL` and `DISCARD PLAN` so that the statement cache
+    /// is not rendered ineffective.
+    Clean,
+    /// Like `Verified` but allows to specify a custom SQL to be executed.
+    Custom(String),
+}
+
+const DISCARD_SQL: &str = "
+CLOSE ALL;
+SET SESSION AUTHORIZATION DEFAULT;
+RESET ALL;
+UNLISTEN *;
+SELECT pg_advisory_unlock_all();
+DISCARD TEMP;
+DISCARD SEQUENCES;
+";
+
+impl RecyclingMethod {
+    pub fn query<'a>(&'a self) -> Option<&'a str> {
+        match self {
+            Self::Fast => None,
+            Self::Verified => Some(""),
+            Self::Clean => Some(DISCARD_SQL),
+            Self::Custom(sql) => Some(&sql),
+        }
+    }
 }
 
 impl Default for RecyclingMethod {
