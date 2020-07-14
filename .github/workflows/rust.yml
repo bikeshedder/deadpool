@@ -40,4 +40,4 @@ jobs:
         PG__USER: deadpool
         PG__PASSWORD: deadpool
         PG__DBNAME: deadpool
-        REDIS__HOST: redis
+        REDIS__URL: redis://redis/
