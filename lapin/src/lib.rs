@@ -67,6 +67,9 @@ pub type Connection = deadpool::managed::Object<lapin::Connection, Error>;
 type RecycleResult = deadpool::managed::RecycleResult<Error>;
 type RecycleError = deadpool::managed::RecycleError<Error>;
 
+/// Re-export lapin crate
+pub use lapin;
+
 /// The manager for creating and recyling lapin connections
 pub struct Manager {
     addr: String,

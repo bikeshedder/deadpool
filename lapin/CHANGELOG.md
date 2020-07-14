@@ -3,6 +3,7 @@
 ## v0.5.2 (unreleased)
 
 * Update `lapin` dependency to version 1.0.0
+* Re-export for `lapin` crate
 
 ## v0.5.1
 
