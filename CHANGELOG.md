@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.5.2 (unreleased)
+## v0.5.2
 
 * Deprecate `managed::Config::from_env`
 * Deprecate `unmanaged::Config::from_env`
