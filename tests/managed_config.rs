@@ -2,6 +2,7 @@
 mod tests {
 
     use deadpool::managed::PoolConfig;
+    use serde::Deserialize;
     use std::collections::HashMap;
     use std::env;
     use std::time::Duration;
@@ -33,20 +34,28 @@ mod tests {
         }
     }
 
+    #[derive(Debug, Deserialize)]
+    struct TestConfig {
+        pool: PoolConfig,
+    }
+
     #[test]
     fn test_from_env() {
         let mut env = Env::new();
-        env.set("POOL_MAX_SIZE", "42");
-        env.set("POOL_TIMEOUTS.WAIT.SECS", "1");
-        env.set("POOL_TIMEOUTS.WAIT.NANOS", "0");
-        env.set("POOL_TIMEOUTS.CREATE.SECS", "2");
-        env.set("POOL_TIMEOUTS.CREATE.NANOS", "0");
-        env.set("POOL_TIMEOUTS.RECYCLE.SECS", "3");
-        env.set("POOL_TIMEOUTS.RECYCLE.NANOS", "0");
-        let cfg = PoolConfig::from_env("POOL").unwrap();
-        assert_eq!(cfg.max_size, 42);
-        assert_eq!(cfg.timeouts.wait, Some(Duration::from_secs(1)));
-        assert_eq!(cfg.timeouts.create, Some(Duration::from_secs(2)));
-        assert_eq!(cfg.timeouts.recycle, Some(Duration::from_secs(3)));
+        env.set("POOL__MAX_SIZE", "42");
+        env.set("POOL__TIMEOUTS__WAIT__SECS", "1");
+        env.set("POOL__TIMEOUTS__WAIT__NANOS", "0");
+        env.set("POOL__TIMEOUTS__CREATE__SECS", "2");
+        env.set("POOL__TIMEOUTS__CREATE__NANOS", "0");
+        env.set("POOL__TIMEOUTS__RECYCLE__SECS", "3");
+        env.set("POOL__TIMEOUTS__RECYCLE__NANOS", "0");
+        let mut cfg = ::config_crate::Config::new();
+        cfg.merge(::config_crate::Environment::new().separator("__"))
+            .unwrap();
+        let cfg: TestConfig = cfg.try_into().unwrap();
+        assert_eq!(cfg.pool.max_size, 42);
+        assert_eq!(cfg.pool.timeouts.wait, Some(Duration::from_secs(1)));
+        assert_eq!(cfg.pool.timeouts.create, Some(Duration::from_secs(2)));
+        assert_eq!(cfg.pool.timeouts.recycle, Some(Duration::from_secs(3)));
     }
 }
