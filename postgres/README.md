@@ -40,7 +40,7 @@ async fn main() {
 
 ```env
 # .env
-PG.DBNAME=deadpool
+PG__DBNAME=deadpool
 ```
 
 ```rust
@@ -57,7 +57,7 @@ struct Config {
 impl Config {
     pub fn from_env() -> Result<Self, ::config_crate::ConfigError> {
         let mut cfg = ::config_crate::Config::new();
-        cfg.merge(::config_crate::Environment::new())?;
+        cfg.merge(::config_crate::Environment::new().separator("__"))?;
         cfg.try_into()
     }
 }

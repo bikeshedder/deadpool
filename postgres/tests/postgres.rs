@@ -16,12 +16,12 @@ struct Config {
 impl Config {
     pub fn from_env() -> Self {
         let mut cfg = ::config_crate::Config::new();
-        cfg.merge(::config_crate::Environment::new()).unwrap();
+        cfg.merge(::config_crate::Environment::new().separator("__")).unwrap();
         cfg.try_into().unwrap()
     }
     pub fn from_env_with_prefix(prefix: &str) -> Self {
         let mut cfg = ::config_crate::Config::new();
-        cfg.merge(::config_crate::Environment::with_prefix(prefix))
+        cfg.merge(::config_crate::Environment::with_prefix(prefix).separator("__"))
             .unwrap();
         cfg.try_into().unwrap()
     }
@@ -212,18 +212,18 @@ fn test_config_from_env() {
     // This test must not use "PG" as prefix as this can cause the other
     // tests which also use the "PG" prefix to fail.
     let mut env = Env::new();
-    env.set("ENV_TEST_PG.HOST", "pg.example.com");
-    env.set("ENV_TEST_PG.PORT", "5433");
-    env.set("ENV_TEST_PG.USER", "john_doe");
-    env.set("ENV_TEST_PG.PASSWORD", "topsecret");
-    env.set("ENV_TEST_PG.DBNAME", "example");
-    env.set("ENV_TEST_PG.POOL.MAX_SIZE", "42");
-    env.set("ENV_TEST_PG.POOL.TIMEOUTS.WAIT.SECS", "1");
-    env.set("ENV_TEST_PG.POOL.TIMEOUTS.WAIT.NANOS", "0");
-    env.set("ENV_TEST_PG.POOL.TIMEOUTS.CREATE.SECS", "2");
-    env.set("ENV_TEST_PG.POOL.TIMEOUTS.CREATE.NANOS", "0");
-    env.set("ENV_TEST_PG.POOL.TIMEOUTS.RECYCLE.SECS", "3");
-    env.set("ENV_TEST_PG.POOL.TIMEOUTS.RECYCLE.NANOS", "0");
+    env.set("ENV_TEST_PG__HOST", "pg.example.com");
+    env.set("ENV_TEST_PG__PORT", "5433");
+    env.set("ENV_TEST_PG__USER", "john_doe");
+    env.set("ENV_TEST_PG__PASSWORD", "topsecret");
+    env.set("ENV_TEST_PG__DBNAME", "example");
+    env.set("ENV_TEST_PG__POOL__MAX_SIZE", "42");
+    env.set("ENV_TEST_PG__POOL__TIMEOUTS__WAIT__SECS", "1");
+    env.set("ENV_TEST_PG__POOL__TIMEOUTS__WAIT__NANOS", "0");
+    env.set("ENV_TEST_PG__POOL__TIMEOUTS__CREATE__SECS", "2");
+    env.set("ENV_TEST_PG__POOL__TIMEOUTS__CREATE__NANOS", "0");
+    env.set("ENV_TEST_PG__POOL__TIMEOUTS__RECYCLE__SECS", "3");
+    env.set("ENV_TEST_PG__POOL__TIMEOUTS__RECYCLE__NANOS", "0");
     let cfg = Config::from_env_with_prefix("ENV_TEST");
     // `tokio_postgres::Config` does not provide any read access to its
     // internals so we can only check if the environment was actually read

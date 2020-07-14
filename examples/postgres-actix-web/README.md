@@ -45,7 +45,7 @@ Create `.env` file in this directory
 
 ```env
 LISTEN=[::1]:8000
-PG.DBNAME=deadpool
+PG__DBNAME=deadpool
 ```
 
 Run the example
@@ -60,11 +60,11 @@ If you want to connect to your database using a TCP/IP socket you can use
 the following template for your `.env` file:
 
 ```env
-PG.HOST=127.0.0.1
-PG.PORT=5432
-PG.USER=deadpool
-PG.PASSWORD=somepassword
-PG.DBNAME=deadpool
+PG__HOST=127.0.0.1
+PG__PORT=5432
+PG__USER=deadpool
+PG__PASSWORD=somepassword
+PG__DBNAME=deadpool
 ```
 
 For more configuration options see `deadpool_postgres::Config`.
