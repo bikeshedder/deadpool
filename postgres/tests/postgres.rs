@@ -10,6 +10,7 @@ use deadpool_postgres::{ManagerConfig, Pool, RecyclingMethod};
 
 #[derive(Debug, Deserialize)]
 struct Config {
+    #[serde(default)]
     pg: deadpool_postgres::Config,
 }
 
