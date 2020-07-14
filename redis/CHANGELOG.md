@@ -1,8 +1,9 @@
 # Change Log
 
-## v0.5.3 (unreleased)
+## v0.6.0 (unreleased)
 
 * Update `redis` dependency to version `0.16.0`
+* Re-export `redis` crate
 
 ## v0.5.2
 

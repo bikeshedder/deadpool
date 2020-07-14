@@ -68,6 +68,9 @@ pub type Connection = deadpool::managed::Object<ConnectionWrapper, RedisError>;
 
 type RecycleResult = deadpool::managed::RecycleResult<RedisError>;
 
+/// Re-export redis crate
+pub use redis;
+
 mod config;
 pub use config::Config;
 mod cmd_wrapper;
