@@ -14,7 +14,7 @@
 //!
 //! ## Example
 //!
-//! ```rust
+//! ```rust,ignore
 //! use deadpool_lapin::{Config, Manager, Pool };
 //! use deadpool_lapin::lapin::{
 //!     options::BasicPublishOptions,
