@@ -27,6 +27,12 @@ jobs:
           --health-retries 5
       redis:
         image: redis
+      rabbitmq:
+        image: rabbitmq
+        env:
+          RABBITMQ_DEFAULT_USER=deadpool
+          RABBITMQ_DEFAULT_PASS=deadpool
+          RABBITMQ_DEFAULT_VHOST=deadpool
 
     steps:
     - uses: actions/checkout@v2
@@ -41,3 +47,7 @@ jobs:
         PG__PASSWORD: deadpool
         PG__DBNAME: deadpool
         REDIS__URL: redis://redis/
+        AMQP__HOST: rabbitmq
+        AMQP__USER: deadpool
+        AMQP__PASS: deadpool
+        AMQP__VHOST: deadpool
