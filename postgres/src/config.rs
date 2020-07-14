@@ -189,19 +189,30 @@ pub struct ManagerConfig {
 /// Configuration object. By enabling the `config` feature you can
 /// read the configuration using the [`config`](https://crates.io/crates/config)
 /// crate.
+///
 /// ## Example environment
 /// ```env
-/// PG_HOST=pg.example.com
-/// PG_USER=john_doe
-/// PG_PASSWORD=topsecret
-/// PG_DBNAME=example
-/// PG_POOL.MAX_SIZE=16
-/// PG_POOL.TIMEOUTS.WAIT.SECS=5
-/// PG_POOL.TIMEOUTS.WAIT.NANOS=0
+/// PG__HOST=pg.example.com
+/// PG__USER=john_doe
+/// PG__PASSWORD=topsecret
+/// PG__DBNAME=example
+/// PG__POOL__MAX_SIZE=16
+/// PG__POOL__TIMEOUTS__WAIT__SECS=5
+/// PG__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
+///
 /// ## Example usage
 /// ```rust,ignore
-/// Config::from_env("PG");
+/// struct Config {
+///     pg: deadpool_postgres::Config,
+/// }
+/// impl Config {
+///     pub fn from_env() -> Result<Self, ConfigError> {
+///         let mut cfg = config::Config::new();
+///         cfg.merge(config::Environment::new().separator("__")).unwrap();
+///         cfg.try_into().unwrap()
+///     }
+/// }
 /// ```
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]

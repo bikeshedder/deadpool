@@ -9,14 +9,23 @@ use crate::{Pool, RedisResult};
 /// crate.
 /// ## Example environment
 /// ```env
-/// REDIS_URL=pg.example.com
-/// REDIS_POOL.MAX_SIZE=16
-/// REDIS_POOL.TIMEOUTS.WAIT.SECS=2
-/// REDIS_POOL.TIMEOUTS.WAIT.NANOS=0
+/// REDIS__URL=pg.example.com
+/// REDIS__POOL__MAX_SIZE=16
+/// REDIS__POOL__TIMEOUTS__WAIT__SECS=2
+/// REDIS__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ## Example usage
 /// ```rust,ignore
-/// Config::from_env("REDIS");
+/// struct Config {
+///     redis: deadpool_postgres::Config,
+/// }
+/// impl Config {
+///     pub fn from_env() -> Result<Self, config::ConfigError> {
+///         let mut cfg = config::Config::new();
+///         cfg.merge(config::Environment::new().separator("__")).unwrap();
+///         cfg.try_into().unwrap()
+///     }
+/// }
 /// ```
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
