@@ -6,7 +6,7 @@ use futures::future::join_all;
 use serde::Deserialize;
 use tokio_postgres::{types::Type, IsolationLevel};
 
-use deadpool_postgres::{Pool, ManagerConfig, RecyclingMethod};
+use deadpool_postgres::{ManagerConfig, Pool, RecyclingMethod};
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -163,9 +163,7 @@ async fn test_recycling_methods() {
     ];
     let mut cfg = Config::from_env();
     for recycling_method in recycling_methods {
-        cfg.pg.manager = Some(ManagerConfig {
-            recycling_method,
-        });
+        cfg.pg.manager = Some(ManagerConfig { recycling_method });
         let pool = cfg.pg.create_pool(tokio_postgres::NoTls).unwrap();
         for _ in 0usize..20usize {
             let client = pool.get().await.unwrap();
