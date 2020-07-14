@@ -47,7 +47,4 @@ jobs:
         PG__PASSWORD: deadpool
         PG__DBNAME: deadpool
         REDIS__URL: redis://redis/
-        AMQP__HOST: rabbitmq
-        AMQP__USER: deadpool
-        AMQP__PASS: deadpool
-        AMQP__VHOST: deadpool
+        AMQP__URL: amqp://deadpool:deadpool@rabbitmq/deadpool
