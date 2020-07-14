@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-lapin"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for lapin"
 keywords = ["async", "lapin", "pool", "amqp", "rabbitmq"]

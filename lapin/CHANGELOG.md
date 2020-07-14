@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.6.0 (unreleased)
+## v0.6.0
 
 * Update `lapin` dependency to version 1.0.0
 * Re-export for `lapin` crate
