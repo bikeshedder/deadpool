@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.5.2 (unreleased)
+
+* Deprecate `managed::Config::from_env`
+* Deprecate `unmanaged::Config::from_env`
+
 ## v0.5.1
 
 * Add `managed::Object::take` method
