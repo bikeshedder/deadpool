@@ -1,4 +1,4 @@
-# Deadpool [![Latest Version](https://img.shields.io/crates/v/deadpool.svg)](https://crates.io/crates/deadpool) [![Build Status](https://travis-ci.org/bikeshedder/deadpool.svg?branch=master)](https://github.com/bikeshedder/deadpool/actions)
+# Deadpool [![Latest Version](https://img.shields.io/crates/v/deadpool.svg)](https://crates.io/crates/deadpool) [![Build Status](https://img.shields.io/github/workflow/status/bikeshedder/deadpool/Rust)](https://github.com/bikeshedder/deadpool/actions?query=workflow%3ARust)
 
 
 Deadpool is a dead simple async pool for connections and objects
