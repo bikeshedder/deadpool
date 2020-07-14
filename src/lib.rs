@@ -6,12 +6,12 @@
 //!
 //! This crate provides two implementations:
 //!
-//! - Managed pool (`deadpool::managed::Pool`)  
-//!   - Creates and recycles objects as needed  
+//! - Managed pool (`deadpool::managed::Pool`)
+//!   - Creates and recycles objects as needed
 //!   - Useful for [database connection pools](#database-connection-pools)
 //!   - Enabled via the `managed` feature in your `Cargo.toml`
 //!
-//! - Unmanaged pool (`deadpool::unmanaged::Pool`)  
+//! - Unmanaged pool (`deadpool::unmanaged::Pool`)
 //!   - All objects either need to to be created by the user and added to the
 //!     pool manually. It is also possible to create a pool from an existing
 //!     collection of objects.
@@ -75,11 +75,11 @@
 //! `deadpool::managed::Manager` trait. The following backends are
 //! currently supported:
 //!
-//! Backend                                                     | Crate
-//! ----------------------------------------------------------- | -----
-//! [tokio-postgres](https://crates.io/crates/tokio-postgres)   | [deadpool-postgres](https://crates.io/crates/deadpool-postgres)
-//! [lapin](https://crates.io/crates/lapin) (AMQP)              | [deadpool-lapin](https://crates.io/crates/deadpool-lapin)
-//! [redis](https://crates.io/crates/redis)                     | [deadpool-redis](https://crates.io/crates/deadpool-redis)
+//! Backend | Crate | Latest Version |
+//! ------- | ----- | -------------- |
+//! [tokio-postgres](https://crates.io/crates/tokio-postgres) | [deadpool-postgres](https://crates.io/crates/deadpool-postgres) | [![Latest Version](https://img.shields.io/crates/v/deadpool-postgres.svg)](https://crates.io/crates/deadpool-postgres) |
+//! [lapin](https://crates.io/crates/lapin) (AMQP) | [deadpool-lapin](https://crates.io/crates/deadpool-lapin) | [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin) |
+//! [redis](https://crates.io/crates/redis) | [deadpool-redis](https://crates.io/crates/deadpool-redis) | [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis) |
 //!
 //! ### Reasons for yet another connection pool
 //!
