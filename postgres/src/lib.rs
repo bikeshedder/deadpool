@@ -177,6 +177,9 @@ pub type Client = deadpool::managed::Object<ClientWrapper, tokio_postgres::Error
 type RecycleResult = deadpool::managed::RecycleResult<Error>;
 type RecycleError = deadpool::managed::RecycleError<Error>;
 
+/// Re-export tokio_postgres crate
+pub use tokio_postgres;
+
 /// The manager for creating and recyling postgresql connections
 pub struct Manager<T: MakeTlsConnect<Socket>> {
     config: ManagerConfig,

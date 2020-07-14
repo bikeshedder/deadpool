@@ -9,6 +9,7 @@
   but makes sure the statement cache is not rendered ineffective.
 * Add `RecyclingMethod::Custom` which allows to execute arbitary SQL
   when recycling connections.
+* Re-export `tokio_postgres` crate
 
 ## v0.5.5
 
