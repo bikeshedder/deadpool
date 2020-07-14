@@ -7,6 +7,27 @@ use crate::Pool;
 /// Configuration object. By enabling the `config` feature you can
 /// read the configuration using the [`config`](https://crates.io/crates/config)
 /// crate. e.g.:
+///
+/// ## Example environment
+/// ```env
+/// AMQP__URL=amqp://127.0.0.1:5672/%2f
+/// AMQP__POOL__MAX_SIZE=16
+/// AMQP__POOL__TIMEOUTS__WAIT__SECS=2
+/// AMQP__POOL__TIMEOUTS__WAIT__NANOS=0
+/// ```
+/// ## Example usage
+/// ```rust,ignore
+/// struct Config {
+///     amqp: deadpool_lapin::Config,
+/// }
+/// impl Config {
+///     pub fn from_env() -> Result<Self, config::ConfigError> {
+///         let mut cfg = config::Config::new();
+///         cfg.merge(config::Environment::new().separator("__")).unwrap();
+///         cfg.try_into().unwrap()
+///     }
+/// }
+/// ```
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 pub struct Config {
