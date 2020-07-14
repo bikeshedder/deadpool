@@ -27,6 +27,7 @@ default-features = false
 
 [dev-dependencies]
 tokio = { version = "0.2.9", features = ["sync", "macros"] }
+dotenv = "0.15.0"
 
 [features]
 default = ["config"]

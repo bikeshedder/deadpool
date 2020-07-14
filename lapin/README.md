@@ -14,18 +14,62 @@ manager for [`lapin`](https://crates.io/crates/lapin).
 
 ## Example
 
-```rust
-use deadpool_lapin::Config;
-use lapin::{
+```rust,ignore
+use deadpool_lapin::{Config, Manager, Pool };
+use deadpool_lapin::lapin::{
     options::BasicPublishOptions,
     BasicProperties
 };
 
 #[tokio::main]
 async fn main() {
-    let cfg = Config::from_env("AMQP").unwrap();
+    let mut cfg = Config::default();
+    cfg.url = Some("amqp://localhost/%2f".to_string());
     let pool = cfg.create_pool();
-    for i in 1..10 {
+    for i in 1..10usize {
+        let mut connection = pool.get().await.unwrap();
+        let channel = connection.create_channel().await.unwrap();
+        channel.basic_publish(
+            "",
+            "hello",
+            BasicPublishOptions::default(),
+            b"hello from deadpool".to_vec(),
+            BasicProperties::default()
+        ).await.unwrap();
+    }
+}
+```
+
+## Example with `config` and `dotenv` crate
+
+```rust
+use deadpool_lapin::lapin::{
+    options::BasicPublishOptions,
+    BasicProperties
+};
+use dotenv::dotenv;
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+struct Config {
+    #[serde(default)]
+    amqp: deadpool_lapin::Config
+}
+
+impl Config {
+    pub fn from_env() -> Result<Self, ::config_crate::ConfigError> {
+        let mut cfg = ::config_crate::Config::new();
+        cfg.merge(::config_crate::Environment::new().separator("__"))?;
+        cfg.try_into()
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    dotenv().ok();
+    let cfg = Config::from_env().unwrap();
+    let pool = cfg.amqp.create_pool();
+    for i in 1..10usize {
         let mut connection = pool.get().await.unwrap();
         let channel = connection.create_channel().await.unwrap();
         channel.basic_publish(
