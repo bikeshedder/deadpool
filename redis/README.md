@@ -14,14 +14,60 @@ manager for [`redis`](https://crates.io/crates/redis).
 
 ## Example
 
-```rust
+```rust,ignore
 use deadpool_redis::{cmd, Config};
-use redis::FromRedisValue;
+use deadpool_redis::redis::FromRedisValue;
 
 #[tokio::main]
 async fn main() {
-    let cfg = Config::from_env("REDIS").unwrap();
+    let mut cfg = Config::default();
+    cfg.url = Some("redis://127.0.0.1/".to_string());
     let pool = cfg.create_pool().unwrap();
+    {
+        let mut conn = pool.get().await.unwrap();
+        cmd("SET")
+            .arg(&["deadpool/test_key", "42"])
+            .execute_async(&mut conn)
+            .await.unwrap();
+    }
+    {
+        let mut conn = pool.get().await.unwrap();
+        let value: String = cmd("GET")
+            .arg(&["deadpool/test_key"])
+            .query_async(&mut conn)
+            .await.unwrap();
+        assert_eq!(value, "42".to_string());
+    }
+}
+```
+
+## Example with `config` and `dotenv` crate
+
+```rust
+use deadpool_redis::cmd;
+use deadpool_redis::redis::FromRedisValue;
+use dotenv::dotenv;
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+struct Config {
+    #[serde(default)]
+    redis: deadpool_redis::Config
+}
+
+impl Config {
+    pub fn from_env() -> Result<Self, ::config_crate::ConfigError> {
+        let mut cfg = ::config_crate::Config::new();
+        cfg.merge(::config_crate::Environment::new().separator("__"))?;
+        cfg.try_into()
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    dotenv().ok();
+    let cfg = Config::from_env().unwrap();
+    let pool = cfg.redis.create_pool().unwrap();
     {
         let mut conn = pool.get().await.unwrap();
         cmd("SET")
