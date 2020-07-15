@@ -11,6 +11,8 @@ manager for [`redis`](https://crates.io/crates/redis).
 | Feature | Description | Extra dependencies | Default |
 | ------- | ----------- | ------------------ | ------- |
 | `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
+| `tokio-comp` | [redis](https://crates.io/crates/redis) will use [`tokio`](https://crates.io/crates/tokio) runtime for AIO | `tokio` | yes |
+| `async-std-comp` | [redis](https://crates.io/crates/redis) will use [`async-std`](https://crates.io/crates/async-std) runtime for AIO | `async-std` | no |
 
 ## Example
 

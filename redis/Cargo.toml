@@ -17,7 +17,7 @@ deadpool = { path = "../", version = "0.5.0", default-features = false, features
 async-trait = "0.1.17"
 futures = { version = "0.3.1", features = ["compat"] }
 log = "0.4"
-redis = { version = "0.16.0", default-features = false }
+redis = { version = "0.16.0", default-features = false, features = ["aio"] }
 # only required when using the config feature
 config-crate = { package = "config", version = "0.10.1", default-features = false, optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true}
@@ -27,5 +27,7 @@ tokio = { version = "0.2.9", features = ["macros", "rt-core"] }
 dotenv = "0.15.0"
 
 [features]
-default = ["config"]
+default = ["config", "tokio-comp"]
 config = ["config-crate", "serde", "deadpool/config"]
+tokio-comp = ["redis/tokio-comp"]
+async-std-comp = ["redis/async-std-comp"]
