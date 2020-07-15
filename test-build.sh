@@ -20,7 +20,7 @@ cargo build --no-default-features --features managed,unmanaged
 (
 	cd redis
 	cargo build
-	cargo build --no-default-features
+	cargo build --no-default-features --features async-std-comp
 )
 
 (
