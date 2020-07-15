@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.?.?
+
+* Import `redis` with `default-features = false`.
+
 ## v0.6.0
 
 * Update `redis` dependency to version `0.16.0`
