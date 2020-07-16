@@ -27,7 +27,7 @@ tokio = { version = "0.2.9", features = ["macros", "rt-core"] }
 dotenv = "0.15.0"
 
 [features]
-default = ["config", "tokio-comp"]
+default = ["config", "with-tokio"]
 config = ["config-crate", "serde", "deadpool/config"]
-tokio-comp = ["redis/tokio-comp"]
-async-std-comp = ["redis/async-std-comp"]
+with-tokio = ["redis/tokio-comp"]
+with-async-std = ["redis/async-std-comp"]

@@ -1,10 +1,10 @@
 # Change Log
 
-## v0.?.?
+## v0.7.0
 
-* Import `redis` with `default-features = false`.
-* Add `tokio-comp` default feature that enables [tokio](https://crates.io/crates/tokio) async runtime.
-* Add `async-std-comp` feature that enables [async-std](https://crates.io/crates/async-std) async runtime.
+* Import [redis](https://crates.io/crates/redis) with `default-features = false`.
+* Add `with-tokio` default feature that enables [tokio](https://crates.io/crates/tokio) async runtime.
+* Add `with-async-std` feature that enables [async-std](https://crates.io/crates/async-std) async runtime.
 
 ## v0.6.0
 
