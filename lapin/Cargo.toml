@@ -32,3 +32,4 @@ dotenv = "0.15.0"
 [features]
 default = ["config"]
 config = ["config-crate", "serde", "deadpool/config"]
+rustls = ["lapin/rustls"]
