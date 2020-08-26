@@ -18,7 +18,7 @@
 //!
 //! ```rust,ignore
 //! use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod };
-//! use tokio_postgres::{NoTls};
+//! use tokio_postgres::NoTls;
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -47,7 +47,7 @@
 //! use deadpool_postgres::{Manager, Pool};
 //! use dotenv::dotenv;
 //! use serde::Deserialize;
-//! use tokio_postgres::{NoTls};
+//! use tokio_postgres::NoTls;
 //!
 //! #[derive(Debug, Deserialize)]
 //! struct Config {
@@ -87,7 +87,7 @@
 //! ```rust,ignore
 //! use std::env;
 //! use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
-//! use tokio_postgres::{NoTls};
+//! use tokio_postgres::NoTls;
 //!
 //! #[tokio::main]
 //! async fn main() {
