@@ -18,7 +18,7 @@ and `tokio_postgres::Transaction`.
 
 ```rust,ignore
 use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod };
-use tokio_postgres::{NoTls};
+use tokio_postgres::NoTls;
 
 #[tokio::main]
 async fn main() {
@@ -47,7 +47,7 @@ PG__DBNAME=deadpool
 use deadpool_postgres::{Manager, Pool};
 use dotenv::dotenv;
 use serde::Deserialize;
-use tokio_postgres::{NoTls};
+use tokio_postgres::NoTls;
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -87,7 +87,7 @@ In your own code you will probably want to use `::config::ConfigError` and
 ```rust,ignore
 use std::env;
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
-use tokio_postgres::{NoTls};
+use tokio_postgres::NoTls;
 
 #[tokio::main]
 async fn main() {
