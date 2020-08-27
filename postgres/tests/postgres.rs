@@ -17,7 +17,8 @@ struct Config {
 impl Config {
     pub fn from_env() -> Self {
         let mut cfg = ::config_crate::Config::new();
-        cfg.merge(::config_crate::Environment::new().separator("__")).unwrap();
+        cfg.merge(::config_crate::Environment::new().separator("__"))
+            .unwrap();
         cfg.try_into().unwrap()
     }
     pub fn from_env_with_prefix(prefix: &str) -> Self {
