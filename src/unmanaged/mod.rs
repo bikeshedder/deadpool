@@ -66,7 +66,7 @@ impl<T> Drop for Object<T> {
     fn drop(&mut self) {
         if let Some(obj) = self.obj.take() {
             if let Some(pool) = self.pool.upgrade() {
-                pool.queue.push(obj).unwrap();
+                pool.queue.push(obj).ok().unwrap();
                 pool.available.fetch_add(1, Ordering::Relaxed);
                 pool.semaphore.add_permits(1);
             }
@@ -188,7 +188,7 @@ impl<T> Pool<T> {
     /// `size_semaphore`.
     fn _add(&self, obj: T) {
         self.inner.size.fetch_add(1, Ordering::Relaxed);
-        self.inner.queue.push(obj).unwrap();
+        self.inner.queue.push(obj).ok().unwrap();
         self.inner.available.fetch_add(1, Ordering::Relaxed);
         self.inner.semaphore.add_permits(1);
     }
@@ -238,7 +238,7 @@ where
         let size = iter.len();
         let queue = ArrayQueue::new(size);
         for obj in iter {
-            queue.push(obj).unwrap();
+            queue.push(obj).ok().unwrap();
         }
         Pool {
             inner: Arc::new(PoolInner {

@@ -123,7 +123,7 @@ impl<T, E> Drop for Object<T, E> {
                 ObjectState::Recycling | ObjectState::Ready => {
                     pool.available.fetch_add(1, Ordering::Relaxed);
                     let obj = self.obj.take().unwrap();
-                    pool.queue.push(obj).unwrap();
+                    pool.queue.push(obj).ok().unwrap();
                     pool.semaphore.add_permits(1);
                 }
                 ObjectState::Dropped => {
@@ -248,7 +248,7 @@ impl<T, E> Pool<T, E> {
         loop {
             obj.state = ObjectState::Receiving;
             match self.inner.queue.pop() {
-                Ok(inner_obj) => {
+                Some(inner_obj) => {
                     // Recycle existing object
                     obj.state = ObjectState::Recycling;
                     obj.obj = Some(inner_obj);
@@ -263,7 +263,7 @@ impl<T, E> Pool<T, E> {
                         Err(_) => continue,
                     }
                 }
-                Err(_) => {
+                None => {
                     // Create new object
                     obj.state = ObjectState::Creating;
                     self.inner.available.fetch_add(1, Ordering::Relaxed);

@@ -14,7 +14,7 @@ all-features = true
 
 [dependencies]
 tokio = { version = "0.3.0", features = ["sync", "time"] }
-crossbeam-queue = "0.2.0"
+crossbeam-queue = "0.3"
 num_cpus = "1.11.1"
 # only required when using the `managed` feature
 async-trait = { version = "0.1.17", optional = true }
