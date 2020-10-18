@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.7.0 (unreleased)
+
+* Update `tokio` dependency to version `0.3.0`
+
 ## v0.6.1
 
 * Change `redis` dependency to version range `0.15` to `0.17`

@@ -34,8 +34,7 @@ fn create_pool() -> Pool {
     cfg.pg.create_pool(tokio_postgres::NoTls).unwrap()
 }
 
-#[tokio::main]
-#[test]
+#[tokio::test]
 async fn test_basic() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
@@ -46,8 +45,7 @@ async fn test_basic() {
     assert_eq!(client.statement_cache.size(), 1);
 }
 
-#[tokio::main]
-#[test]
+#[tokio::test]
 async fn test_prepare_typed() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
@@ -60,8 +58,7 @@ async fn test_prepare_typed() {
     assert_eq!(value, 43i32);
 }
 
-#[tokio::main]
-#[test]
+#[tokio::test]
 async fn test_prepare_typed_error() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
@@ -72,8 +69,7 @@ async fn test_prepare_typed_error() {
     assert!(client.query(&stmt, &[&42i32]).await.is_err());
 }
 
-#[tokio::main]
-#[test]
+#[tokio::test]
 async fn test_transaction_1() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
@@ -88,8 +84,7 @@ async fn test_transaction_1() {
     assert_eq!(client.statement_cache.size(), 1);
 }
 
-#[tokio::main]
-#[test]
+#[tokio::test]
 async fn test_transaction_2() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
@@ -104,8 +99,7 @@ async fn test_transaction_2() {
     assert_eq!(client.statement_cache.size(), 1);
 }
 
-#[tokio::main]
-#[test]
+#[tokio::test]
 async fn test_transaction_pipeline() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
@@ -127,8 +121,7 @@ async fn test_transaction_pipeline() {
     }
 }
 
-#[tokio::main]
-#[test]
+#[tokio::test]
 async fn test_transaction_builder() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
@@ -146,16 +139,14 @@ async fn test_transaction_builder() {
     txn.commit().await.unwrap();
 }
 
-#[tokio::main]
-#[test]
+#[tokio::test]
 async fn test_generic_client() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
     _use_generic_client(&**client);
 }
 
-#[tokio::main]
-#[test]
+#[tokio::test]
 async fn test_recycling_methods() {
     let recycling_methods = vec![
         RecyclingMethod::Fast,

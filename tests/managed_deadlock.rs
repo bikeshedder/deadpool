@@ -70,7 +70,7 @@ mod tests {
     }
 
     // When the pool is drained, all connections fail to create and the
-    #[tokio::main(basic_scheduler)]
+    #[tokio::main(flavor = "current_thread")]
     #[test]
     async fn test_pool_drained() {
         let manager = Manager::new();

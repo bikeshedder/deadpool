@@ -4,7 +4,7 @@ mod tests {
     use std::time::Duration;
 
     use async_trait::async_trait;
-    use tokio::time::delay_for;
+    use tokio::time::sleep;
 
     use deadpool::managed::{Object, Pool, RecycleResult};
 
@@ -60,7 +60,7 @@ mod tests {
         assert_eq!(status.available, 3);
     }
 
-    #[tokio::test(threaded_scheduler)]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_managed_concurrent() {
         let mgr = Manager {};
         let pool = Pool::new(mgr, 3);
@@ -72,7 +72,7 @@ mod tests {
                 tokio::spawn(async move {
                     let mut obj = pool.get().await.unwrap();
                     *obj += 1;
-                    delay_for(Duration::from_millis(1)).await;
+                    sleep(Duration::from_millis(1)).await;
                 })
             })
             .collect::<Vec<_>>();
@@ -96,7 +96,7 @@ mod tests {
         assert_eq!(values.iter().map(|obj| **obj).sum::<usize>(), 100);
     }
 
-    #[tokio::test(threaded_scheduler)]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_managed_object_take() {
         let mgr = Manager {};
         let pool = Pool::new(mgr, 2);

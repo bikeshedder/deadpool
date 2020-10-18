@@ -34,7 +34,7 @@ mod tests {
         assert_eq!(status.available, 0);
     }
 
-    #[tokio::test(threaded_scheduler)]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_unmanaged_concurrent() {
         let pool = Pool::from(vec![0usize, 0, 0]);
 
@@ -63,7 +63,7 @@ mod tests {
         assert_eq!(values.iter().map(|obj| **obj).sum::<usize>(), 100);
     }
 
-    #[tokio::test(threaded_scheduler)]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_unmanaged_add_remove() {
         let pool = Pool::new(2);
         pool.add(1).await;
@@ -90,7 +90,7 @@ mod tests {
         assert_eq!(pool.status().size, 0);
     }
 
-    #[tokio::test(threaded_scheduler)]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_unmanaged_try_add_try_remove() {
         let pool = Pool::new(2);
         pool.try_add(1).unwrap();
@@ -107,7 +107,7 @@ mod tests {
         assert_eq!(pool.status().size, 0);
     }
 
-    #[tokio::test(threaded_scheduler)]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_unmanaged_add_timeout() {
         let pool = Pool::from(vec![1]);
         let add = {

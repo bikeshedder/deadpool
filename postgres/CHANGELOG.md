@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.6.0 (unreleased)
+
+* Update `tokio` dependency to version `0.3.0`
+* Update `tokio-postgres` dependency to version `0.6.0`
+
 ## v0.5.6
 
 * Add `Config::new` method
