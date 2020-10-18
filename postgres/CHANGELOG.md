@@ -2,8 +2,8 @@
 
 ## v0.6.0 (unreleased)
 
-* Update `tokio` dependency to version `0.3.0`
-* Update `tokio-postgres` dependency to version `0.6.0`
+* Update `tokio` dependency to version `0.3`
+* Update `tokio-postgres` dependency to version `0.6`
 
 ## v0.5.6
 

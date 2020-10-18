@@ -2,7 +2,7 @@
 
 ## v0.7.0 (unreleased)
 
-* Update `tokio` dependency to version `0.3.0`
+* Update `tokio` dependency to version `0.3`
 
 ## v0.6.0
 
