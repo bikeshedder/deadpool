@@ -310,7 +310,7 @@ impl ClientWrapper {
     /// Create new wrapper instance using an existing `tokio_postgres::Client`
     pub fn new(client: PgClient) -> Self {
         Self {
-            client: client,
+            client,
             statement_cache: StatementCache::new(),
         }
     }
@@ -338,7 +338,7 @@ impl ClientWrapper {
     /// Begins a new database transaction which supports the statement cache.
     ///
     /// See [`tokio_postgres::Client::transaction`](#method.transaction-1)
-    pub async fn transaction<'a>(&'a mut self) -> Result<Transaction<'a>, Error> {
+    pub async fn transaction(&mut self) -> Result<Transaction<'_>, Error> {
         Ok(Transaction {
             txn: PgClient::transaction(&mut self.client).await?,
             statement_cache: &mut self.statement_cache,

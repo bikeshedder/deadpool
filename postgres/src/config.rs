@@ -160,7 +160,7 @@ DISCARD SEQUENCES;
 
 impl RecyclingMethod {
     /// Return SQL query to be executed when recycling a connection.
-    pub fn query<'a>(&'a self) -> Option<&'a str> {
+    pub fn query(&self) -> Option<&str> {
         match self {
             Self::Fast => None,
             Self::Verified => Some(""),

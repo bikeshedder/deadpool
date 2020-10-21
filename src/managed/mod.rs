@@ -198,7 +198,7 @@ impl<T, E> Pool<T, E> {
                 size: AtomicUsize::new(0),
                 available: AtomicIsize::new(0),
                 semaphore: Semaphore::new(config.max_size),
-                config: config,
+                config,
             }),
         }
     }
