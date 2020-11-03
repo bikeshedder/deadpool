@@ -167,11 +167,7 @@
 #![warn(missing_docs)]
 
 #[cfg(feature = "managed")]
-mod compat_0_4;
-#[cfg(feature = "managed")]
 pub mod managed;
-#[cfg(feature = "managed")]
-pub use compat_0_4::*;
 
 #[cfg(feature = "unmanaged")]
 pub mod unmanaged;
