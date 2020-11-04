@@ -5,7 +5,8 @@ use config::ConfigError;
 use deadpool_postgres::{Client, Pool, PoolError};
 use dotenv::dotenv;
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, header, Method, Request, Response, Server, StatusCode};
+use hyper::{header, Body, Method, Request, Response, Server, StatusCode};
+use tokio_compat_02::FutureExt;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -37,7 +38,7 @@ enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::PoolError(err) => write!(f, "{}", err)
+            Self::PoolError(err) => write!(f, "{}", err),
         }
     }
 }
@@ -85,26 +86,29 @@ async fn handle(req: Request<Body>, pool: Pool) -> Result<Response<Body>, Error>
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    dotenv().ok();
-    let config = Config::from_env()?;
-    let addr: SocketAddr = config.listen.parse()?;
-    let pool = config.pg.create_pool(tokio_postgres::NoTls)?;
+    async {
+        dotenv().ok();
+        let config = Config::from_env()?;
+        let addr: SocketAddr = config.listen.parse()?;
+        let pool = config.pg.create_pool(tokio_postgres::NoTls)?;
 
-    let make_svc = make_service_fn(|_conn| {
-        let pool = pool.clone();
-        async {
-            Ok::<_, Error>(service_fn(move |req| handle(req, pool.clone())))
+        let make_svc = make_service_fn(|_conn| {
+            let pool = pool.clone();
+            async { Ok::<_, Error>(service_fn(move |req| handle(req, pool.clone()))) }
+        });
+
+        let server = Server::bind(&addr).serve(make_svc);
+
+        println!("Server running at http://{}/", &config.listen);
+        println!(
+            "Try the following URLs: http://{}/v1.0/event.list",
+            &config.listen
+        );
+
+        if let Err(e) = server.await {
+            eprintln!("server error: {}", e);
         }
-    });
 
-    let server = Server::bind(&addr).serve(make_svc);
-
-    println!("Server running at http://{}/", &config.listen);
-    println!("Try the following URLs: http://{}/v1.0/event.list", &config.listen);
-
-    if let Err(e) = server.await {
-        eprintln!("server error: {}", e);
-    }
-
-    Ok(())
+        Ok(())
+    }.compat().await
 }
