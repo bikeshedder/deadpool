@@ -1,8 +1,8 @@
 # Change Log
 
-## v0.7.0 (unreleased)
+## v0.6.1 (unreleased)
 
-* Update `tokio` dependency to version `0.3`
+* Add support for `deadpool 0.5` (`tokio 0.2`) and `deadpool 0.6` (`tokio 0.3`)
 
 ## v0.6.0
 
