@@ -86,6 +86,20 @@ async fn main() {
 }
 ```
 
+## FAQ
+
+- **How can I enable features of the `redis` crate?**
+
+  Make sure that you depend on the same version of `redis` as
+  `deadpool-redis` does and enable the needed features in your own
+  `Crate.toml` file:
+
+  ```toml
+  [dependencies]
+  deadpool-redis = { version = "0.6", features = ["config"] }
+  redis = { version = "0.17", default-features = false, features = ["tls"] }
+  ```
+
 ## License
 
 Licensed under either of

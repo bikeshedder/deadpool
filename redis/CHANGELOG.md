@@ -1,8 +1,9 @@
 # Change Log
 
-## v0.6.2 (unreleased)
+## v0.7.0 (unreleased)
 
 * Add support for `deadpool 0.5` (`tokio 0.2`) and `deadpool 0.6` (`tokio 0.3`)
+* Disable `redis` default features by default
 
 ## v0.6.1
 

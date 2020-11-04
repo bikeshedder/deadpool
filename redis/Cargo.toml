@@ -17,15 +17,16 @@ deadpool = { path = "../", version = ">=0.5,<=0.6", default-features = false, fe
 async-trait = "0.1.17"
 futures = { version = "0.3.1", features = ["compat" ] }
 log = "0.4"
-redis = ">=0.15,<=0.17"
+redis = { version = ">=0.15,<=0.17", default-features = false, features = ["aio"] }
 # only required when using the config feature
 config-crate = { package = "config", version = "0.10.1", default-features = false, optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true}
 
 [dev-dependencies]
-tokio = { version = "0.3.0", features = ["macros", "rt"] }
+tokio = { version = "0.3.0", features = ["macros", "rt-multi-thread"] }
 dotenv = "0.15.0"
 
 [features]
-default = ["config"]
+default = ["config", "redis_default"]
 config = ["config-crate", "serde", "deadpool/config"]
+redis_default = ["redis/default"]
