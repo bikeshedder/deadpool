@@ -58,7 +58,7 @@ async fn index(db_pool: web::Data<Pool>) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().json(events))
 }
 
-#[actix_rt::main]
+#[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     let config = Config::from_env().unwrap();

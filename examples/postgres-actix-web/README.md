@@ -4,6 +4,13 @@ This example combines `deadpool-postgres` with a `actix-web` webservice to
 implement a simple API service that responds with JSON read from
 PostgreSQL.
 
+# Incompatibility
+
+> **The `actix-web` crate currently is not compatible with `tokio 0.3`.
+`deadpool-postgres` and `deadpool` have both been upgraded to use the
+latest version of `tokio` and `tokio-postgres`. Because of that this
+example only works with `deadpool-postgres 0.5`.**
+
 ## Running the example
 
 The following instructions assumes that your current user can access the
