@@ -1,6 +1,6 @@
 [package]
 name = "deadpool"
-version = "0.5.2"
+version = "0.6.0"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool"
 keywords = ["async", "database", "pool"]

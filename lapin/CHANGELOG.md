@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.6.1 (unreleased)
+## v0.6.1
 
 * Add support for `deadpool 0.5` (`tokio 0.2`) and `deadpool 0.6` (`tokio 0.3`)
 
