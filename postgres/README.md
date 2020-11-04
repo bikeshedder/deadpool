@@ -135,6 +135,23 @@ async fn main() {
   `ManagerConfig::recycling_method` to `RecyclingMethod::Verified` or when
   using the `config` crate by setting `PG.MANAGER.RECYCLING_METHOD=Verified`.
 
+- **How can I enable features of the `tokio-postgres` crate?**
+
+  Make sure that you depend on the same version of `tokio-postgres` as
+  `deadpool-postgres` does and enable the needed features in your own
+  `Crate.toml` file:
+
+  ```toml
+  [dependencies]
+  deadpool-postgres = { version = "0.6" }
+  tokio-postgres = { version = "0.6", features = ["with-uuid-0_8"] }
+  ```
+
+  **Important:** The version numbers of `deadpool-postgres` and
+  `tokio-postgres` do not necessarily match. It is just a coincidence
+  that both crates have the same MAJOR and MINOR version number at the
+  time of this writing.
+
 ## License
 
 Licensed under either of
