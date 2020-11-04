@@ -59,7 +59,10 @@ impl Pipeline {
         &self,
         con: &mut ConnectionWrapper,
     ) -> RedisResult<T> {
-        self.pipeline.query_async(DerefMut::deref_mut(con)).compat().await
+        self.pipeline
+            .query_async(DerefMut::deref_mut(con))
+            .compat()
+            .await
     }
     /// See [redis::Pipeline::execute_async](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.execute_async)
     pub async fn execute_async(&self, con: &mut ConnectionWrapper) -> RedisResult<()> {
