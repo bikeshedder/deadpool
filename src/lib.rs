@@ -80,6 +80,7 @@
 //! [tokio-postgres](https://crates.io/crates/tokio-postgres) | [deadpool-postgres](https://crates.io/crates/deadpool-postgres) | [![Latest Version](https://img.shields.io/crates/v/deadpool-postgres.svg)](https://crates.io/crates/deadpool-postgres) |
 //! [lapin](https://crates.io/crates/lapin) (AMQP) | [deadpool-lapin](https://crates.io/crates/deadpool-lapin) | [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin) |
 //! [redis](https://crates.io/crates/redis) | [deadpool-redis](https://crates.io/crates/deadpool-redis) | [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis) |
+//! [async-memcached](https://crates.io/crates/async-memcached) | [deadpool-memcached](https://crates.io/crates/deadpool-memcached) | [![Latest Version](https://img.shields.io/crates/v/deadpool-memcached.svg)](https://crates.io/crates/deadpool-memcached) |
 //!
 //! ### Reasons for yet another connection pool
 //!

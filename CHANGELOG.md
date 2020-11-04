@@ -5,6 +5,7 @@
 * Update `tokio` dependency to version `0.3`
 * Update `crossbeam-queue` dependency to version `0.3`
 * Remove deprecated `deadpool::*` types
+* Add `deadpool-memcached` to README
 
 ## v0.5.2
 
