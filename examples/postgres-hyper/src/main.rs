@@ -84,6 +84,24 @@ async fn handle(req: Request<Body>, pool: Pool) -> Result<Response<Body>, Error>
     }
 }
 
+// The following code was taken from the `hyper_server` example in
+// the `tokio-compat-02` crate:
+// https://github.com/LucioFranco/tokio-compat-02/blob/main/examples/hyper_server.rs
+// Once a new version of `hyper``is released with `tokio 0.3` support
+// this compatibility layer is no longer needed.
+
+#[derive(Clone)]
+struct Tokio03Executor;
+
+impl<F> hyper::rt::Executor<F> for Tokio03Executor
+where
+    F: std::future::Future + Send + 'static,
+{
+    fn execute(&self, fut: F) {
+        tokio::spawn(async move { fut.compat().await; });
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     async {
@@ -97,7 +115,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             async { Ok::<_, Error>(service_fn(move |req| handle(req, pool.clone()))) }
         });
 
-        let server = Server::bind(&addr).serve(make_svc);
+        let server = Server::bind(&addr)
+            .executor(Tokio03Executor)
+            .serve(make_svc);
 
         println!("Server running at http://{}/", &config.listen);
         println!(
