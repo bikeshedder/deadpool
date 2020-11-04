@@ -1,6 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
 use redis::{FromRedisValue, RedisResult, ToRedisArgs};
+use tokio_compat_02::FutureExt;
 
 use crate::{Cmd, ConnectionWrapper};
 
@@ -58,11 +59,11 @@ impl Pipeline {
         &self,
         con: &mut ConnectionWrapper,
     ) -> RedisResult<T> {
-        self.pipeline.query_async(DerefMut::deref_mut(con)).await
+        self.pipeline.query_async(DerefMut::deref_mut(con)).compat().await
     }
     /// See [redis::Pipeline::execute_async](https://docs.rs/redis/latest/redis/struct.Pipeline.html#method.execute_async)
     pub async fn execute_async(&self, con: &mut ConnectionWrapper) -> RedisResult<()> {
-        self.query_async::<redis::Value>(con).await?;
+        self.query_async::<redis::Value>(con).compat().await?;
         Ok(())
     }
 }

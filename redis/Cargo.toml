@@ -21,12 +21,13 @@ redis = { version = ">=0.15,<=0.17", default-features = false, features = ["aio"
 # only required when using the config feature
 config-crate = { package = "config", version = "0.10.1", default-features = false, optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true}
+tokio-compat-02 = "0.1"
 
 [dev-dependencies]
 tokio = { version = "0.3.0", features = ["macros", "rt-multi-thread"] }
+redis = { version = "0.17", default-features = false, features = ["tokio-comp"] }
 dotenv = "0.15.0"
 
 [features]
-default = ["config", "redis_default"]
+default = ["config"]
 config = ["config-crate", "serde", "deadpool/config"]
-redis_default = ["redis/default"]
