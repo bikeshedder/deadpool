@@ -35,6 +35,9 @@ pub struct Config {
     pub url: Option<String>,
     /// Pool configuration
     pub pool: Option<PoolConfig>,
+    /// Connection properties
+    #[serde(skip)]
+    pub connection_properties: lapin::ConnectionProperties,
 }
 
 impl Config {
@@ -48,7 +51,7 @@ impl Config {
     /// Create pool using the current configuration
     pub fn create_pool(&self) -> Pool {
         let url = self.get_url().to_string();
-        let manager = crate::Manager::new(url, lapin::ConnectionProperties::default());
+        let manager = crate::Manager::new(url, self.connection_properties.clone());
         let pool_config = self.get_pool_config();
         Pool::from_config(manager, pool_config)
     }
@@ -73,6 +76,7 @@ impl Default for Config {
         Self {
             url: None,
             pool: None,
+            connection_properties: lapin::ConnectionProperties::default(),
         }
     }
 }
