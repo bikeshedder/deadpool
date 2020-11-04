@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.6.2 (unreleased)
+## v0.6.2
 
 * Add support for `ConnectionProperties`
 
