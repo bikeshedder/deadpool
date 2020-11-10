@@ -28,7 +28,7 @@ use tokio_amqp::LapinTokioExt;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rt = Arc::new(Runtime::new()?);
     let mut cfg = Config::default();
-    cfg.url = Some("amqp://localhost/%2f".to_string());
+    cfg.url = Some("amqp://127.0.0.1:5672/%2f".to_string());
     cfg.connection_properties = lapin::ConnectionProperties::default()
             .with_tokio(rt.clone());
     let pool = cfg.create_pool();
