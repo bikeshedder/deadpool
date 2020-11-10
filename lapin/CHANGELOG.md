@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.6.3 (unreleased)
+
+* Mark `Config::from_env` as deprecated
+
 ## v0.6.2
 
 * Add support for `ConnectionProperties`

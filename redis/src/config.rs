@@ -40,6 +40,10 @@ pub struct Config {
 impl Config {
     /// Create configuration from environment variables.
     #[cfg(feature = "config")]
+    #[deprecated(
+        since = "0.7.0",
+        note = "Please embed this structure in your own config structure and use `config::Config` directly."
+    )]
     pub fn from_env(prefix: &str) -> Result<Self, ConfigError> {
         let mut cfg = ::config_crate::Config::new();
         cfg.merge(Environment::with_prefix(prefix))?;
