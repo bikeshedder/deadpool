@@ -87,6 +87,18 @@ impl<T> DerefMut for Object<T> {
     }
 }
 
+impl<T> AsRef<T> for Object<T> {
+    fn as_ref(&self) -> &T {
+        self
+    }
+}
+
+impl<T> AsMut<T> for Object<T> {
+    fn as_mut(&mut self) -> &mut T {
+        self
+    }
+}
+
 struct PoolInner<T> {
     queue: ArrayQueue<T>,
     max_size: usize,
