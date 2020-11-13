@@ -14,7 +14,7 @@ manager for [`lapin`](https://crates.io/crates/lapin).
 
 ## Example with `tokio-amqp` crate
 
-```rust
+```rust,ignore
 use std::sync::Arc;
 
 use deadpool_lapin::{Config, Manager, Pool };
