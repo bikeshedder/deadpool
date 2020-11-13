@@ -149,6 +149,18 @@ impl<T, E> DerefMut for Object<T, E> {
     }
 }
 
+impl<T, E> AsRef<T> for Object<T, E> {
+    fn as_ref(&self) -> &T {
+        self
+    }
+}
+
+impl<T, E> AsMut<T> for Object<T, E> {
+    fn as_mut(&mut self) -> &mut T {
+        self
+    }
+}
+
 struct PoolInner<T, E> {
     manager: Box<dyn Manager<T, E> + Sync + Send>,
     queue: ArrayQueue<T>,
