@@ -19,13 +19,17 @@ impl Config {
         let mut cfg = ::config_crate::Config::new();
         cfg.merge(::config_crate::Environment::new().separator("__"))
             .unwrap();
-        cfg.try_into().unwrap()
+        let mut cfg = cfg.try_into::<Self>().unwrap();
+        cfg.pg.dbname.get_or_insert("deadpool".to_string());
+        cfg
     }
     pub fn from_env_with_prefix(prefix: &str) -> Self {
         let mut cfg = ::config_crate::Config::new();
         cfg.merge(::config_crate::Environment::with_prefix(prefix).separator("__"))
             .unwrap();
-        cfg.try_into().unwrap()
+        let mut cfg = cfg.try_into::<Self>().unwrap();
+        cfg.pg.dbname.get_or_insert("deadpool".to_string());
+        cfg
     }
 }
 
