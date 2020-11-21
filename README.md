@@ -21,8 +21,8 @@ This crate provides two implementations:
 
 | Feature | Description | Extra dependencies | Default |
 | ------- | ----------- | ------------------ | ------- |
-| `managed` | Enable managed pool implementation | – | yes |
-| `unmanaged` | Enable unmanaged pool implementation | `async-trait` | yes |
+| `managed` | Enable managed pool implementation | `async-trait` | yes |
+| `unmanaged` | Enable unmanaged pool implementation | - | yes |
 | `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
 
 ## Managed pool (aka. connection pool)
