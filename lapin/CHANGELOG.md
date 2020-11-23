@@ -3,6 +3,7 @@
 ## v0.6.3 (unreleased)
 
 * Mark `Config::from_env` as deprecated
+* Re-export `deadpool::managed::PoolConfig`
 
 ## v0.6.2
 

@@ -1,8 +1,7 @@
 #[cfg(feature = "config")]
 use config_crate::{ConfigError, Environment};
-use deadpool::managed::PoolConfig;
 
-use crate::Pool;
+use crate::{Pool, PoolConfig};
 
 /// Configuration object. By enabling the `config` feature you can
 /// read the configuration using the [`config`](https://crates.io/crates/config)

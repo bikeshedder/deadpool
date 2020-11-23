@@ -117,6 +117,9 @@ use lapin::{ConnectionProperties, Error};
 mod config;
 pub use crate::config::Config;
 
+/// Re-export deadpool::managed::PoolConfig
+use deadpool::managed::PoolConfig;
+
 /// A type alias for using `deadpool::Pool` with `lapin`
 pub type Pool = deadpool::managed::Pool<lapin::Connection, Error>;
 

@@ -5,7 +5,6 @@ use std::fmt;
 use std::path::Path;
 use std::time::Duration;
 
-use deadpool::managed::PoolConfig;
 use tokio_postgres::config::{
     ChannelBinding as PgChannelBinding, SslMode as PgSslMode,
     TargetSessionAttrs as PgTargetSessionAttrs,
@@ -13,7 +12,7 @@ use tokio_postgres::config::{
 use tokio_postgres::tls::{MakeTlsConnect, TlsConnect};
 use tokio_postgres::Socket;
 
-use crate::Pool;
+use crate::{Pool, PoolConfig};
 
 /// An error which is returned by `Config::create_pool` if something is
 /// wrong with the configuration.

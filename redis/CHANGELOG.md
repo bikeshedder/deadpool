@@ -5,6 +5,7 @@
 * Update to `deadpool 0.6` (`tokio 0.3`)
 * Disable `redis` default features
 * Mark `Config::from_env` as deprecated
+* Re-export `deadpool::managed::PoolConfig`
 
 ## v0.6.1
 

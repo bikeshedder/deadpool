@@ -118,6 +118,9 @@ use redis::{
 };
 use tokio_compat_02::FutureExt;
 
+/// Re-export deadpool::managed::PoolConfig
+pub use deadpool::managed::PoolConfig;
+
 /// A type alias for using `deadpool::Pool` with `redis`
 pub type Pool = deadpool::managed::Pool<ConnectionWrapper, RedisError>;
 
