@@ -299,6 +299,21 @@ impl StatementCache {
         map.clear();
         self.size.store(0, Ordering::Relaxed);
     }
+    /// Remove statement from cache
+    pub async fn remove(&self, query: &str, types: &[Type]) -> Option<Statement> {
+        let key = StatementCacheKey {
+            query: Cow::Owned(query.to_owned()),
+            types: Cow::Owned(types.to_owned()),
+        };
+        let mut map = self.map.write().await;
+        let removed = map.remove(&key).map(|stmt| stmt.to_owned());
+
+        if removed.is_some() {
+            self.size.fetch_sub(1, Ordering::Relaxed);
+        }
+
+        removed
+    }
     /// Get statement from cache
     async fn get<'a>(&self, query: &str, types: &[Type]) -> Option<Statement> {
         let key = StatementCacheKey {
