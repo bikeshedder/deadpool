@@ -1,7 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
 use redis::{FromRedisValue, RedisResult, ToRedisArgs};
-use tokio_compat_02::FutureExt;
 
 use crate::ConnectionWrapper;
 
@@ -40,12 +39,11 @@ impl Cmd {
     ) -> RedisResult<T> {
         self.cmd
             .query_async(DerefMut::deref_mut(conn))
-            .compat()
             .await
     }
     /// See [redis::Cmd::execute_async](https://docs.rs/redis/latest/redis/struct.Cmd.html#method.execute_async)
     pub async fn execute_async(&self, con: &mut ConnectionWrapper) -> RedisResult<()> {
-        self.query_async::<redis::Value>(con).compat().await?;
+        self.query_async::<redis::Value>(con).await?;
         Ok(())
     }
 }

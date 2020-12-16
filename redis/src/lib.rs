@@ -116,8 +116,6 @@ use async_trait::async_trait;
 use redis::{
     aio::Connection as RedisConnection, Client, IntoConnectionInfo, RedisError, RedisResult,
 };
-use tokio_compat_02::FutureExt;
-
 /// Re-export deadpool::managed::PoolConfig
 pub use deadpool::managed::PoolConfig;
 
@@ -180,7 +178,7 @@ impl Manager {
 #[async_trait]
 impl deadpool::managed::Manager<ConnectionWrapper, RedisError> for Manager {
     async fn create(&self) -> Result<ConnectionWrapper, RedisError> {
-        let conn = self.client.get_async_connection().compat().await?;
+        let conn = self.client.get_async_connection().await?;
         Ok(ConnectionWrapper { conn })
     }
 

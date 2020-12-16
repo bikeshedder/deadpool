@@ -1,8 +1,9 @@
 # Change Log
 
-## v0.7.0 (unreleased)
+## v0.6.2 (unreleased)
 
-* Update to `deadpool 0.6` (`tokio 0.3`)
+* Update `deadpool` dependency to version `0.3`
+* Update `redis` dependency to version `0.18`
 * Disable `redis` default features
 * Mark `Config::from_env` as deprecated
 * Re-export `deadpool::managed::PoolConfig`
