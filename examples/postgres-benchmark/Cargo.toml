@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 config = { package = "config", version = "0.10.1" }
 serde = { version = "1", features = ["derive"] }
-deadpool-postgres = { version = "0.6", path = "../../postgres" }
+deadpool-postgres = { version = "0.7", path = "../../postgres" }
 dotenv = "0.15"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tokio-postgres = { version = "0.7" }
