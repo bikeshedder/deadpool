@@ -7,13 +7,12 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hyper = "0.13.1"
-config = "0.10.1"
-deadpool-postgres = { version = "0.5.0", path = "../../postgres" }
-dotenv = "0.15.0"
-serde = { version = "1.0.104", features = ["derive"] }
-tokio-postgres = { version = "0.6", features = ["with-uuid-0_8"] }
-uuid = { version = "0.8.1", features = ["serde"] }
-tokio = { version = "0.3", features = ["macros", "rt", "rt-multi-thread"] }
-tokio-compat-02 = "0.1"
-serde_json = "1.0.44"
+hyper = { version = "0.14", features = ["http1", "http2", "server", "runtime"] }
+config = "0.10"
+deadpool-postgres = { version = "0.6", path = "../../postgres" }
+dotenv = "0.15"
+serde = { version = "1", features = ["derive"] }
+tokio-postgres = { version = "0.7", features = ["with-uuid-0_8"] }
+uuid = { version = "0.8", features = ["serde"] }
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
+serde_json = "1.0"

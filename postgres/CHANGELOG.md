@@ -1,7 +1,8 @@
 # Change Log
 
-## v0.6.1 (unreleased)
+## v0.7.0 (unreleased)
 
+* Update `tokio` dependency to version `1`
 * Re-export `deadpool::managed::PoolConfig`
 
 ## v0.6.0

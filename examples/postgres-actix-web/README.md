@@ -6,10 +6,12 @@ PostgreSQL.
 
 # Incompatibility
 
-> **The `actix-web` crate currently is not compatible with `tokio 0.3`.
+> **The `actix-web` crate currently is not compatible with `tokio 1.0`.
 `deadpool-postgres` and `deadpool` have both been upgraded to use the
 latest version of `tokio` and `tokio-postgres`. Because of that this
 example only works with `deadpool-postgres 0.5`.**
+
+https://github.com/bikeshedder/deadpool/issues/72
 
 ## Running the example
 

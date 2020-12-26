@@ -248,7 +248,7 @@ impl<T, E> Pool<T, E> {
                 .map_err(|_| PoolError::Timeout(TimeoutType::Wait))?
         } else {
             apply_timeout(
-                self.inner.semaphore.acquire(),
+                async { self.inner.semaphore.acquire().await.unwrap() },
                 TimeoutType::Wait,
                 self.inner.config.timeouts.wait,
             )

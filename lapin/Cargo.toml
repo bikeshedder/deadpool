@@ -26,9 +26,9 @@ version = "1"
 default-features = false
 
 [dev-dependencies]
-tokio = { version = "0.3.0", features = ["sync", "macros", "rt-multi-thread"] }
-tokio-amqp = "0.2"
-dotenv = "0.15.0"
+tokio = { version = "1", features = ["sync", "macros", "rt-multi-thread"] }
+tokio-amqp = "1"
+dotenv = "0.15"
 
 [features]
 default = ["config"]

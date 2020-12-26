@@ -25,27 +25,25 @@ use deadpool_lapin::lapin::{
 use tokio::runtime::Runtime;
 use tokio_amqp::LapinTokioExt;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let rt = Arc::new(Runtime::new()?);
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cfg = Config::default();
     cfg.url = Some("amqp://127.0.0.1:5672/%2f".to_string());
     cfg.connection_properties = lapin::ConnectionProperties::default()
-            .with_tokio(rt.clone());
+            .with_tokio();
     let pool = cfg.create_pool();
-    rt.block_on(async move {
-        for i in 1..10usize {
-            let mut connection = pool.get().await?;
-            let channel = connection.create_channel().await?;
-            channel.basic_publish(
-                "",
-                "hello",
-                BasicPublishOptions::default(),
-                b"hello from deadpool".to_vec(),
-                BasicProperties::default()
-            ).await?;
-        }
-        Ok(())
-    })
+    for i in 1..10usize {
+        let mut connection = pool.get().await?;
+        let channel = connection.create_channel().await?;
+        channel.basic_publish(
+            "",
+            "hello",
+            BasicPublishOptions::default(),
+            b"hello from deadpool".to_vec(),
+            BasicProperties::default()
+        ).await?;
+    }
+    Ok(())
 }
 ```
 
@@ -60,7 +58,6 @@ use deadpool_lapin::lapin::{
 };
 use dotenv::dotenv;
 use serde::Deserialize;
-use tokio::runtime::Runtime;
 use tokio_amqp::LapinTokioExt;
 
 #[derive(Debug, Deserialize)]
@@ -77,27 +74,25 @@ impl Config {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-    let rt = Arc::new(Runtime::new()?);
     let mut cfg = Config::from_env().unwrap();
     cfg.amqp.connection_properties = lapin::ConnectionProperties::default()
-            .with_tokio(rt.clone());
+            .with_tokio();
     let pool = cfg.amqp.create_pool();
-    rt.block_on(async move {
-        for i in 1..10usize {
-            let mut connection = pool.get().await?;
-            let channel = connection.create_channel().await?;
-            channel.basic_publish(
-                "",
-                "hello",
-                BasicPublishOptions::default(),
-                b"hello from deadpool".to_vec(),
-                BasicProperties::default()
-            ).await?;
-        }
-        Ok(())
-    })
+    for i in 1..10usize {
+        let mut connection = pool.get().await?;
+        let channel = connection.create_channel().await?;
+        channel.basic_publish(
+            "",
+            "hello",
+            BasicPublishOptions::default(),
+            b"hello from deadpool".to_vec(),
+            BasicProperties::default()
+        ).await?;
+    }
+    Ok(())
 }
 ```
 

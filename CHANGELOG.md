@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.7.0 (unreleased)
+
+* Update `tokio` dependency to version `1`
+
 ## v0.6.0
 
 * Update `tokio` dependency to version `0.3`

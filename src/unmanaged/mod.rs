@@ -155,7 +155,7 @@ impl<T> Pool<T> {
     }
     /// Retrieve object from pool or wait for one to become available.
     pub async fn get(&self) -> Object<T> {
-        let permit = self.inner.semaphore.acquire().await;
+        let permit = self.inner.semaphore.acquire().await.unwrap();
         let obj = self.inner.queue.pop().unwrap();
         permit.forget();
         self.inner.available.fetch_sub(1, Ordering::Relaxed);
@@ -179,7 +179,7 @@ impl<T> Pool<T> {
     /// Add object to pool. If the `size` has already reached `max_size`
     /// this function blocks until the object can be added to the pool.
     pub async fn add(&self, obj: T) {
-        let permit = self.inner.size_semaphore.acquire().await;
+        let permit = self.inner.size_semaphore.acquire().await.unwrap();
         permit.forget();
         self._add(obj);
     }
