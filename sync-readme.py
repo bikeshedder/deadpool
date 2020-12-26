@@ -3,15 +3,19 @@
 import os
 import itertools
 
+BASE_DIR = os.path.dirname(__file__)
+
 CRATES = [
-    ['README.md', 'src/lib.rs'],
-    ['postgres/README.md', 'postgres/src/lib.rs'],
-    ['redis/README.md', 'redis/src/lib.rs'],
-    ['lapin/README.md', 'lapin/src/lib.rs'],
+    '.',
+    'postgres',
+    'redis',
+    'lapin',
 ]
 
 if __name__ == '__main__':
-    for readme_filename, src_filename in CRATES:
+    for crate_name in CRATES:
+        readme_filename = os.path.join(BASE_DIR, crate_name, 'README.md')
+        src_filename = os.path.join(BASE_DIR, crate_name, 'src', 'lib.rs')
         with open(readme_filename) as fh:
             readme = fh.readlines()
         with open(src_filename) as fh:
