@@ -1,9 +1,9 @@
 # Change Log
 
-## v0.6.2 (unreleased)
+## v0.7.0 (unreleased)
 
 * Update `deadpool` dependency to version `0.3`
-* Update `redis` dependency to version `0.18`
+* Update `redis` dependency to version `0.19`
 * Disable `redis` default features
 * Mark `Config::from_env` as deprecated
 * Re-export `deadpool::managed::PoolConfig`
