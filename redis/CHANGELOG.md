@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.7.0 (unreleased)
+## v0.7.0
 
 * Update `deadpool` dependency to version `0.3`
 * Update `redis` dependency to version `0.19`
