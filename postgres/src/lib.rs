@@ -307,11 +307,9 @@ impl StatementCache {
         };
         let mut map = self.map.write().await;
         let removed = map.remove(&key).map(|stmt| stmt.to_owned());
-
         if removed.is_some() {
             self.size.fetch_sub(1, Ordering::Relaxed);
         }
-
         removed
     }
     /// Get statement from cache
@@ -329,8 +327,9 @@ impl StatementCache {
             types: Cow::Owned(types.to_owned()),
         };
         let mut map = self.map.write().await;
-        map.insert(key, stmt);
-        self.size.fetch_add(1, Ordering::Relaxed);
+        if map.insert(key, stmt).is_none() {
+            self.size.fetch_add(1, Ordering::Relaxed);
+        }
     }
 }
 

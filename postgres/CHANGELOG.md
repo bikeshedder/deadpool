@@ -4,6 +4,7 @@
 
 * Update `tokio` dependency to version `1`
 * Re-export `deadpool::managed::PoolConfig`
+* Add `StatementCache::remove` method
 
 ## v0.6.0
 
