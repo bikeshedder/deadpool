@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.7.0 (unreleased)
+## v0.7.0
 
 * Update `tokio` dependency to version `1`
 * Update `tokio-amqp` dependency to version `1`
