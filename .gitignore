@@ -1,3 +1,4 @@
+.vscode
 *.swp
 /target
 **/*.rs.bk
