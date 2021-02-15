@@ -332,7 +332,8 @@ impl Config {
             for host in hosts.iter() {
                 cfg.host(host.as_str());
             }
-        } else {
+        }
+        if self.host.is_none() && self.hosts.is_none() {
             // Systems that support it default to unix domain sockets
             #[cfg(unix)]
             {
