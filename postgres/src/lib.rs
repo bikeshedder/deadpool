@@ -125,7 +125,7 @@
 //! - **Why are connections retrieved from the pool sometimes unuseable?**
 //!
 //!   In deadpool-postgres `0.5.5` a new recycling method was implemented which
-//!   will become the default in `0.6`. With that recycling method the manager no
+//!   will become the default in `0.8`. With that recycling method the manager no
 //!   longer performs a test query prior returning the connection but relies
 //!   solely on `tokio_postgres::Client::is_closed` instead. Under some rare
 //!   circumstances (e.g. unreliable networks) this can lead to `tokio_postgres`
@@ -133,7 +133,7 @@
 //!
 //!   The old and slightly slower recycling method can be enabled by setting
 //!   `ManagerConfig::recycling_method` to `RecyclingMethod::Verified` or when
-//!   using the `config` crate by setting `PG.MANAGER.RECYCLING_METHOD=Verified`.
+//!   using the `config` crate by setting `PG__MANAGER__RECYCLING_METHOD=Verified`.
 //!
 //! - **How can I enable features of the `tokio-postgres` crate?**
 //!
@@ -143,8 +143,8 @@
 //!
 //!   ```toml
 //!   [dependencies]
-//!   deadpool-postgres = { version = "0.6" }
-//!   tokio-postgres = { version = "0.6", features = ["with-uuid-0_8"] }
+//!   deadpool-postgres = { version = "0.7" }
+//!   tokio-postgres = { version = "0.7", features = ["with-uuid-0_8"] }
 //!   ```
 //!
 //!   **Important:** The version numbers of `deadpool-postgres` and
