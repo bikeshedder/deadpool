@@ -2,7 +2,6 @@
 
 use std::env;
 use std::fmt;
-use std::path::Path;
 use std::time::Duration;
 
 use tokio_postgres::config::{
@@ -337,13 +336,9 @@ impl Config {
             // Systems that support it default to unix domain sockets
             #[cfg(unix)]
             {
-                if Path::new("/run/postgresql").exists() {
-                    cfg.host_path("/run/postgresql");
-                } else if Path::new("/var/run/postgresql").exists() {
-                    cfg.host_path("/var/run/postgresql");
-                } else {
-                    cfg.host_path("/tmp");
-                }
+                cfg.host_path("/run/postgresql");
+                cfg.host_path("/var/run/postgresql");
+                cfg.host_path("/tmp");
             }
             // Windows and other systems use 127.0.0.1 instead
             #[cfg(not(unix))]

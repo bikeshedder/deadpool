@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.7.1 (unreleased)
+
+* Do not detect unix domain socket paths at config creation.
+
 ## v0.7.0
 
 * Update `tokio` dependency to version `1`
