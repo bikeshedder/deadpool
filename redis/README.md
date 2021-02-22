@@ -96,8 +96,8 @@ async fn main() {
 
   ```toml
   [dependencies]
-  deadpool-redis = { version = "0.6", features = ["config"] }
-  redis = { version = "0.17", default-features = false, features = ["tls"] }
+  deadpool-redis = { version = "0.7.1", features = ["config"] }
+  redis = { version = "0.20", default-features = false, features = ["tls"] }
   ```
 
 ## License
