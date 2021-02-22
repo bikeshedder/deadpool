@@ -53,7 +53,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use crossbeam_queue::ArrayQueue;
-use tokio::sync::Semaphore;
+use tokio::sync::{Semaphore, TryAcquireError};
 use tokio::time::timeout;
 
 mod config;
@@ -242,13 +242,19 @@ impl<T, E> Pool<T, E> {
         };
 
         let permit = if non_blocking {
-            self.inner
-                .semaphore
-                .try_acquire()
-                .map_err(|_| PoolError::Timeout(TimeoutType::Wait))?
+            self.inner.semaphore.try_acquire().map_err(|e| match e {
+                TryAcquireError::Closed => PoolError::Closed,
+                TryAcquireError::NoPermits => PoolError::Timeout(TimeoutType::Wait),
+            })?
         } else {
             apply_timeout(
-                async { self.inner.semaphore.acquire().await.unwrap() },
+                async {
+                    self.inner
+                        .semaphore
+                        .acquire()
+                        .await
+                        .map_err(|_| PoolError::Closed)
+                },
                 TimeoutType::Wait,
                 self.inner.config.timeouts.wait,
             )
@@ -269,7 +275,7 @@ impl<T, E> Pool<T, E> {
                         TimeoutType::Recycle,
                         self.inner.config.timeouts.recycle,
                     )
-                    .await?
+                    .await
                     {
                         Ok(_) => break,
                         Err(_) => continue,
@@ -286,7 +292,7 @@ impl<T, E> Pool<T, E> {
                             TimeoutType::Create,
                             self.inner.config.timeouts.create,
                         )
-                        .await??,
+                        .await?,
                     );
                     break;
                 }
@@ -295,6 +301,13 @@ impl<T, E> Pool<T, E> {
 
         obj.state = ObjectState::Ready;
         Ok(obj)
+    }
+    /// Close the pool
+    ///
+    /// All current and future tasks waiting for objects return
+    /// `Err(PoolError::Closed)` immediately.
+    pub fn close(&self) {
+        self.inner.semaphore.close();
     }
     /// Retrieve status of the pool
     pub fn status(&self) -> Status {
@@ -309,19 +322,16 @@ impl<T, E> Pool<T, E> {
     }
 }
 
-async fn apply_timeout<F, O, E>(
-    future: F,
+async fn apply_timeout<O, E>(
+    future: impl Future<Output = Result<O, impl Into<PoolError<E>>>>,
     timeout_type: TimeoutType,
     duration: Option<Duration>,
-) -> Result<O, PoolError<E>>
-where
-    F: Future<Output = O>,
-{
+) -> Result<O, PoolError<E>> {
     match duration {
         Some(duration) => match timeout(duration, future).await {
-            Ok(result) => Ok(result),
+            Ok(result) => result.map_err(Into::into),
             Err(_) => Err(PoolError::Timeout(timeout_type)),
         },
-        None => Ok(future.await),
+        None => future.await.map_err(Into::into),
     }
 }

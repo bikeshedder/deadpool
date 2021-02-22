@@ -48,6 +48,8 @@ pub enum PoolError<E> {
     Timeout(TimeoutType),
     /// The backend reported an error
     Backend(E),
+    /// The pool has been closed
+    Closed,
 }
 
 impl<E> From<E> for PoolError<E> {
@@ -71,6 +73,7 @@ where
                 TimeoutType::Recycle => write!(f, "A timeout occured while recycling an object"),
             },
             Self::Backend(e) => write!(f, "An error occured while creating a new object: {}", e),
+            Self::Closed => write!(f, "The pool has been closed."),
         }
     }
 }

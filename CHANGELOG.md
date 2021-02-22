@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.8.0 (unreleased)
+
+* Add support for closing pools
+
 ## v0.7.0
 
 * Update `tokio` dependency to version `1`

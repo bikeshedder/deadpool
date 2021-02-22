@@ -5,7 +5,7 @@ mod tests {
 
     use tokio::time::{interval, timeout};
 
-    use deadpool::unmanaged::Pool;
+    use deadpool::unmanaged::{Pool, PoolError};
 
     #[tokio::test]
     async fn test_unmanaged_basic() {
@@ -34,6 +34,20 @@ mod tests {
         assert_eq!(status.available, 0);
     }
 
+    #[tokio::test]
+    async fn test_unmanaged_close() {
+        let pool = Pool::<i64>::new(1);
+        let join_handle = {
+            let pool = pool.clone();
+            tokio::spawn(async move { pool.get().await })
+        };
+        tokio::task::yield_now().await;
+        pool.close();
+        assert!(matches!(join_handle.await.unwrap(), Err(PoolError::Closed)));
+        assert!(matches!(pool.get().await, Err(PoolError::Closed)));
+        assert!(matches!(pool.try_get(), Err(PoolError::Closed)));
+    }
+
     #[tokio::test(flavor = "multi_thread")]
     async fn test_unmanaged_concurrent() {
         let pool = Pool::from(vec![0usize, 0, 0]);
@@ -43,7 +57,7 @@ mod tests {
             .map(|_| {
                 let pool = pool.clone();
                 tokio::spawn(async move {
-                    *pool.get().await += 1;
+                    *pool.get().await.unwrap() += 1;
                 })
             })
             .collect::<Vec<_>>();
@@ -60,15 +74,21 @@ mod tests {
 
         let values = [pool.get().await, pool.get().await, pool.get().await];
 
-        assert_eq!(values.iter().map(|obj| **obj).sum::<usize>(), 100);
+        assert_eq!(
+            values
+                .iter()
+                .map(|obj| **obj.as_ref().unwrap())
+                .sum::<usize>(),
+            100
+        );
     }
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_unmanaged_add_remove() {
         let pool = Pool::new(2);
-        pool.add(1).await;
+        pool.add(1).await.unwrap();
         assert_eq!(pool.status().size, 1);
-        pool.add(2).await;
+        pool.add(2).await.unwrap();
         assert_eq!(pool.status().size, 2);
         assert!(
             timeout(Duration::from_millis(10), pool.add(3))
@@ -76,7 +96,7 @@ mod tests {
                 .is_err(),
             "adding a third item should timeout"
         );
-        pool.remove().await;
+        pool.remove().await.unwrap();
         assert_eq!(pool.status().size, 1);
         assert!(
             timeout(Duration::from_millis(10), pool.add(3))
@@ -84,9 +104,9 @@ mod tests {
                 .is_ok(),
             "adding a third item should not timeout"
         );
-        pool.remove().await;
+        pool.remove().await.unwrap();
         assert_eq!(pool.status().size, 1);
-        pool.remove().await;
+        pool.remove().await.unwrap();
         assert_eq!(pool.status().size, 0);
     }
 
@@ -113,7 +133,7 @@ mod tests {
         let add = {
             let pool = pool.clone();
             tokio::spawn(async move {
-                pool.add(2).await;
+                pool.add(2).await.unwrap();
             })
         };
         let mut iv = interval(Duration::from_millis(10));

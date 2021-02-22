@@ -152,7 +152,7 @@
 //!         Computer {},
 //!         Computer {},
 //!     ]);
-//!     let s = pool.get().await;
+//!     let s = pool.get().await.unwrap();
 //!     assert_eq!(s.get_answer().await, 42);
 //! }
 //! ```

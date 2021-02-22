@@ -22,7 +22,7 @@
 //!         Computer {},
 //!         Computer {},
 //!     ]);
-//!     let s = pool.get().await;
+//!     let s = pool.get().await.unwrap();
 //!     assert_eq!(s.get_answer().await, 42);
 //! }
 //! ```
@@ -33,12 +33,14 @@ use std::sync::atomic::{AtomicIsize, AtomicUsize, Ordering};
 use std::sync::{Arc, Weak};
 
 use crossbeam_queue::ArrayQueue;
-use tokio::sync::Semaphore;
+use tokio::sync::{Semaphore, TryAcquireError};
 
 pub use crate::Status;
 
 mod config;
 pub use self::config::PoolConfig;
+mod errors;
+pub use self::errors::PoolError;
 
 /// A wrapper around the actual pooled object which implements the traits
 /// `Deref`, `DerefMut` and `Drop`. Use this object just as if it was of type
@@ -154,44 +156,64 @@ impl<T> Pool<T> {
         }
     }
     /// Retrieve object from pool or wait for one to become available.
-    pub async fn get(&self) -> Object<T> {
-        let permit = self.inner.semaphore.acquire().await.unwrap();
+    pub async fn get(&self) -> Result<Object<T>, PoolError> {
+        let permit = self
+            .inner
+            .semaphore
+            .acquire()
+            .await
+            .map_err(|_| PoolError::Closed)?;
         let obj = self.inner.queue.pop().unwrap();
         permit.forget();
         self.inner.available.fetch_sub(1, Ordering::Relaxed);
-        Object {
+        Ok(Object {
             pool: Arc::downgrade(&self.inner),
             obj: Some(obj),
-        }
+        })
     }
     /// Retrieve object from the pool and do not wait if there is currently
     /// no object available and the maximum pool size has been reached.
-    pub fn try_get(&self) -> Option<Object<T>> {
-        let permit = self.inner.semaphore.try_acquire().ok()?;
+    pub fn try_get(&self) -> Result<Object<T>, PoolError> {
+        let permit = self.inner.semaphore.try_acquire().map_err(|e| match e {
+            TryAcquireError::NoPermits => PoolError::Timeout,
+            TryAcquireError::Closed => PoolError::Closed,
+        })?;
         let obj = self.inner.queue.pop().unwrap();
         permit.forget();
         self.inner.available.fetch_sub(1, Ordering::Relaxed);
-        Some(Object {
+        Ok(Object {
             pool: Arc::downgrade(&self.inner),
             obj: Some(obj),
         })
     }
     /// Add object to pool. If the `size` has already reached `max_size`
     /// this function blocks until the object can be added to the pool.
-    pub async fn add(&self, obj: T) {
-        let permit = self.inner.size_semaphore.acquire().await.unwrap();
-        permit.forget();
-        self._add(obj);
+    /// If the pool has been closed a tuple containing the object and
+    /// the error is returned instead.
+    pub async fn add(&self, obj: T) -> Result<(), (T, PoolError)> {
+        match self.inner.size_semaphore.acquire().await {
+            Ok(permit) => {
+                permit.forget();
+                self._add(obj);
+                Ok(())
+            }
+            Err(_) => Err((obj, PoolError::Closed)),
+        }
     }
     /// Try to add a pool to the object. If the `size` has already reached
-    /// `max_size` the object is returned as `Err<T>`.
-    pub fn try_add(&self, obj: T) -> Result<(), T> {
-        if let Ok(permit) = self.inner.size_semaphore.try_acquire() {
-            permit.forget();
-            self._add(obj);
-            Ok(())
-        } else {
-            Err(obj)
+    /// `max_size` or the pool has been closed a tuple containing the object
+    /// and the cause of the error is returned instead.
+    pub fn try_add(&self, obj: T) -> Result<(), (T, PoolError)> {
+        match self.inner.size_semaphore.try_acquire() {
+            Ok(permit) => {
+                permit.forget();
+                self._add(obj);
+                Ok(())
+            }
+            Err(e) => match e {
+                TryAcquireError::NoPermits => Err((obj, PoolError::Timeout)),
+                TryAcquireError::Closed => Err((obj, PoolError::Closed)),
+            },
         }
     }
     /// Internal function which adds an object to the pool. Prior calling
@@ -208,8 +230,8 @@ impl<T> Pool<T> {
     /// ```rust,ignore
     /// Object::take(pool.get().await)
     /// ```
-    pub async fn remove(&self) -> T {
-        Object::take(self.get().await)
+    pub async fn remove(&self) -> Result<T, PoolError> {
+        self.get().await.map(Object::take)
     }
     /// Try to remove an object from the pool. This is a shortcut for
     /// ```rust,ignore
@@ -219,12 +241,16 @@ impl<T> Pool<T> {
     ///     None
     /// }
     /// ```
-    pub fn try_remove(&self) -> Option<T> {
-        if let Some(obj) = self.try_get() {
-            Some(Object::take(obj))
-        } else {
-            None
-        }
+    pub fn try_remove(&self) -> Result<T, PoolError> {
+        self.try_get().map(Object::take)
+    }
+    /// Close the pool
+    ///
+    /// All current and future tasks waiting for objects return
+    /// `Err(PoolError::Closed)` immediately.
+    pub fn close(&self) {
+        self.inner.semaphore.close();
+        self.inner.size_semaphore.close();
     }
     /// Retrieve status of the pool
     pub fn status(&self) -> Status {

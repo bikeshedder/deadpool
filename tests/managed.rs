@@ -6,7 +6,7 @@ mod tests {
     use async_trait::async_trait;
     use tokio::time::sleep;
 
-    use deadpool::managed::{Object, Pool, RecycleResult};
+    use deadpool::managed::{Object, Pool, PoolError, RecycleResult};
 
     struct Manager {}
 
@@ -58,6 +58,23 @@ mod tests {
         let status = pool.status();
         assert_eq!(status.size, 3);
         assert_eq!(status.available, 3);
+    }
+
+    #[tokio::test]
+    async fn test_managed_close() {
+        let mgr = Manager {};
+        let pool = Pool::new(mgr, 1);
+        // fetch the only object from the pool
+        let _obj = pool.get().await;
+        let join_handle = {
+            let pool = pool.clone();
+            tokio::spawn(async move { pool.get().await })
+        };
+        tokio::task::yield_now().await;
+        pool.close();
+        assert!(matches!(join_handle.await.unwrap(), Err(PoolError::Closed)));
+        assert!(matches!(pool.get().await, Err(PoolError::Closed)));
+        assert!(matches!(pool.try_get().await, Err(PoolError::Closed)));
     }
 
     #[tokio::test(flavor = "multi_thread")]
