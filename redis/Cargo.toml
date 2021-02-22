@@ -16,14 +16,14 @@ all-features = true
 deadpool = { path = "../", version = "0.7", default-features = false, features = ["managed"] }
 async-trait = "0.1.17"
 log = "0.4"
-redis = { version = "0.19", default-features = false, features = ["aio"] }
+redis = { version = ">=0.19,<=0.20", default-features = false, features = ["aio"] }
 # only required when using the config feature
 config-crate = { package = "config", version = "0.10.1", default-features = false, optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true}
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-redis = { version = "0.19", default-features = false, features = ["tokio-comp"] }
+redis = { version = ">=0.19,<=0.20", default-features = false, features = ["tokio-comp"] }
 dotenv = "0.15.0"
 
 [features]
