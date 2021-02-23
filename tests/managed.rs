@@ -65,16 +65,23 @@ mod tests {
         let mgr = Manager {};
         let pool = Pool::new(mgr, 1);
         // fetch the only object from the pool
-        let _obj = pool.get().await;
+        let obj = pool.get().await;
         let join_handle = {
             let pool = pool.clone();
             tokio::spawn(async move { pool.get().await })
         };
         tokio::task::yield_now().await;
+        assert_eq!(pool.status().available, -1);
         pool.close();
+        tokio::task::yield_now().await;
+        assert_eq!(pool.status().available, 0);
         assert!(matches!(join_handle.await.unwrap(), Err(PoolError::Closed)));
         assert!(matches!(pool.get().await, Err(PoolError::Closed)));
         assert!(matches!(pool.try_get().await, Err(PoolError::Closed)));
+        drop(obj);
+        tokio::task::yield_now().await;
+        assert_eq!(pool.status().available, 0);
+
     }
 
     #[tokio::test(flavor = "multi_thread")]

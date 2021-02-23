@@ -37,15 +37,26 @@ mod tests {
     #[tokio::test]
     async fn test_unmanaged_close() {
         let pool = Pool::<i64>::new(1);
+        pool.try_add(42).unwrap();
+        let obj = pool.get().await.unwrap();
         let join_handle = {
             let pool = pool.clone();
             tokio::spawn(async move { pool.get().await })
         };
+        assert!(!pool.is_closed());
+        assert_eq!(pool.status().available, 0);
         tokio::task::yield_now().await;
         pool.close();
+        assert!(pool.is_closed());
+        tokio::task::yield_now().await;
+        assert_eq!(pool.status().available, 0);
         assert!(matches!(join_handle.await.unwrap(), Err(PoolError::Closed)));
         assert!(matches!(pool.get().await, Err(PoolError::Closed)));
         assert!(matches!(pool.try_get(), Err(PoolError::Closed)));
+        drop(obj);
+        assert!(pool.is_closed());
+        assert!(matches!(pool.try_get(), Err(PoolError::Closed)));
+        assert_eq!(pool.status().available, 0);
     }
 
     #[tokio::test(flavor = "multi_thread")]

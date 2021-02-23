@@ -127,6 +127,10 @@ impl<T, E> Drop for Object<T, E> {
                         queue.push(obj);
                     }
                     pool.semaphore.add_permits(1);
+                    // The pool might have been closed in the mean time.
+                    // Hand over control to the `_cleanup` method which
+                    // takes care of this.
+                    pool.clean_up();
                 }
                 ObjectState::Dropped => {
                     // The object has already been dropped.
@@ -314,6 +318,11 @@ impl<T, E> Pool<T, E> {
     /// `Err(PoolError::Closed)` immediately.
     pub fn close(&self) {
         self.inner.semaphore.close();
+        self.inner.clean_up();
+    }
+    /// Returns true if the pool has been closed
+    pub fn is_closed(&self) -> bool {
+        self.inner.is_closed()
     }
     /// Retrieve status of the pool
     pub fn status(&self) -> Status {
@@ -325,6 +334,33 @@ impl<T, E> Pool<T, E> {
             size,
             available,
         }
+    }
+}
+
+impl<T, E> PoolInner<T, E> {
+    /// Clean up internals of the pool.
+    ///
+    /// This method is called after closing the pool and whenever a
+    /// object is returned to the pool and makes sure closed pools
+    /// do not contain
+    fn clean_up(&self) {
+        if self.is_closed() {
+            self.clear();
+        }
+    }
+    /// Remove all objects which are currently part of the pool.
+    fn clear(&self) {
+        let mut queue = self.queue.lock().unwrap();
+        self.size.fetch_sub(queue.len(), Ordering::Relaxed);
+        self.available.fetch_sub(queue.len() as isize, Ordering::Relaxed);
+        queue.clear();
+    }
+    /// Returns true if the pool has been closed
+    fn is_closed(&self) -> bool {
+        matches!(
+            self.semaphore.try_acquire_many(0),
+            Err(TryAcquireError::Closed)
+        )
     }
 }
 

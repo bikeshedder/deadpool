@@ -73,6 +73,7 @@ impl<T> Drop for Object<T> {
                 }
                 pool.available.fetch_add(1, Ordering::Relaxed);
                 pool.semaphore.add_permits(1);
+                pool.clean_up();
             }
         }
     }
@@ -262,6 +263,11 @@ impl<T> Pool<T> {
     pub fn close(&self) {
         self.inner.semaphore.close();
         self.inner.size_semaphore.close();
+        self.inner.clear();
+    }
+    /// Returns true if the pool has been closed
+    pub fn is_closed(&self) -> bool {
+        self.inner.is_closed()
     }
     /// Retrieve status of the pool
     pub fn status(&self) -> Status {
@@ -273,6 +279,32 @@ impl<T> Pool<T> {
             size,
             available,
         }
+    }
+}
+
+impl<T> PoolInner<T> {
+    /// Clean up internals of the pool.
+    ///
+    /// This method is called after closing the pool and whenever a
+    /// object is returned to the pool and makes sure closed pools
+    /// do not contain objects.
+    fn clean_up(&self) {
+        if self.is_closed() {
+            self.clear();
+        }
+    }
+    /// Remove all objects which are currently part of the pool.
+    fn clear(&self) {
+        let mut queue = self.queue.lock().unwrap();
+        self.size.fetch_sub(queue.len(), Ordering::Relaxed);
+        self.available.fetch_sub(queue.len() as isize, Ordering::Relaxed);
+        queue.clear();
+    }
+    fn is_closed(&self) -> bool {
+        matches!(
+            self.semaphore.try_acquire_many(0),
+            Err(TryAcquireError::Closed)
+        )
     }
 }
 
