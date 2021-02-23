@@ -52,7 +52,6 @@ use std::sync::{Arc, Weak};
 use std::time::Duration;
 
 use async_trait::async_trait;
-use crossbeam_queue::ArrayQueue;
 use tokio::sync::{Semaphore, TryAcquireError};
 use tokio::time::timeout;
 
@@ -123,7 +122,10 @@ impl<T, E> Drop for Object<T, E> {
                 ObjectState::Recycling | ObjectState::Ready => {
                     pool.available.fetch_add(1, Ordering::Relaxed);
                     let obj = self.obj.take().unwrap();
-                    pool.queue.push(obj).ok().unwrap();
+                    {
+                        let mut queue = pool.queue.lock().unwrap();
+                        queue.push(obj);
+                    }
                     pool.semaphore.add_permits(1);
                 }
                 ObjectState::Dropped => {
@@ -163,7 +165,7 @@ impl<T, E> AsMut<T> for Object<T, E> {
 
 struct PoolInner<T, E> {
     manager: Box<dyn Manager<T, E> + Sync + Send>,
-    queue: ArrayQueue<T>,
+    queue: std::sync::Mutex<Vec<T>>,
     size: AtomicUsize,
     /// The number of available objects in the pool. If there are no
     /// objects in the pool this number can become negative and stores the
@@ -206,7 +208,7 @@ impl<T, E> Pool<T, E> {
         Pool {
             inner: Arc::new(PoolInner {
                 manager: Box::new(manager),
-                queue: ArrayQueue::new(config.max_size),
+                queue: std::sync::Mutex::new(Vec::with_capacity(config.max_size)),
                 size: AtomicUsize::new(0),
                 available: AtomicIsize::new(0),
                 semaphore: Semaphore::new(config.max_size),
@@ -265,7 +267,11 @@ impl<T, E> Pool<T, E> {
 
         loop {
             obj.state = ObjectState::Receiving;
-            match self.inner.queue.pop() {
+            let inner_obj = {
+                let mut queue = self.inner.queue.lock().unwrap();
+                queue.pop()
+            };
+            match inner_obj {
                 Some(inner_obj) => {
                     // Recycle existing object
                     obj.state = ObjectState::Recycling;

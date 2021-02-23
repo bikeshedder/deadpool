@@ -106,8 +106,10 @@
 //!   `pool.get().await.expect("DB connection failed")` right after creating
 //!   the pool.
 //!
-//! - **Deadpool is fast.** The code which returns connections to the pool
-//!   contains no blocking code and retrival uses only one locking primitive.
+//! - **Deadpool is fast.** Whenever working with locking primitives they are
+//!   held for the shortest duration possible. When returning an object to the
+//!   pool a single mutex is locked and when retrieving objects from the pool
+//!   a Semaphore is used to make this Mutex as little contested as possible.
 //!
 //! - **Deadpool is simple.** Dead simple. There is very little API surface.
 //!   The actual code is barely 100 lines of code and lives in the two functions

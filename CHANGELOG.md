@@ -3,6 +3,7 @@
 ## v0.8.0 (unreleased)
 
 * Add support for closing pools
+* Replace `crossbeam-queue` by `Mutex<Vec<_>>`
 
 ## v0.7.0
 

@@ -30,9 +30,8 @@
 use std::convert::TryInto;
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicIsize, AtomicUsize, Ordering};
-use std::sync::{Arc, Weak};
+use std::sync::{Arc, Mutex, Weak};
 
-use crossbeam_queue::ArrayQueue;
 use tokio::sync::{Semaphore, TryAcquireError};
 
 pub use crate::Status;
@@ -68,7 +67,10 @@ impl<T> Drop for Object<T> {
     fn drop(&mut self) {
         if let Some(obj) = self.obj.take() {
             if let Some(pool) = self.pool.upgrade() {
-                pool.queue.push(obj).ok().unwrap();
+                {
+                    let mut queue = pool.queue.lock().unwrap();
+                    queue.push(obj);
+                }
                 pool.available.fetch_add(1, Ordering::Relaxed);
                 pool.semaphore.add_permits(1);
             }
@@ -102,7 +104,7 @@ impl<T> AsMut<T> for Object<T> {
 }
 
 struct PoolInner<T> {
-    queue: ArrayQueue<T>,
+    queue: Mutex<Vec<T>>,
     max_size: usize,
     size: AtomicUsize,
     /// This semaphore has as many permits as `max_size - size`. Every time
@@ -146,7 +148,7 @@ impl<T> Pool<T> {
     pub fn new(max_size: usize) -> Self {
         Self {
             inner: Arc::new(PoolInner {
-                queue: ArrayQueue::new(max_size),
+                queue: Mutex::new(Vec::with_capacity(max_size)),
                 max_size,
                 size: AtomicUsize::new(0),
                 size_semaphore: Semaphore::new(max_size),
@@ -163,7 +165,10 @@ impl<T> Pool<T> {
             .acquire()
             .await
             .map_err(|_| PoolError::Closed)?;
-        let obj = self.inner.queue.pop().unwrap();
+        let obj = {
+            let mut queue = self.inner.queue.lock().unwrap();
+            queue.pop().unwrap()
+        };
         permit.forget();
         self.inner.available.fetch_sub(1, Ordering::Relaxed);
         Ok(Object {
@@ -178,7 +183,10 @@ impl<T> Pool<T> {
             TryAcquireError::NoPermits => PoolError::Timeout,
             TryAcquireError::Closed => PoolError::Closed,
         })?;
-        let obj = self.inner.queue.pop().unwrap();
+        let obj = {
+            let mut queue = self.inner.queue.lock().unwrap();
+            queue.pop().unwrap()
+        };
         permit.forget();
         self.inner.available.fetch_sub(1, Ordering::Relaxed);
         Ok(Object {
@@ -222,7 +230,10 @@ impl<T> Pool<T> {
     /// `size_semaphore`.
     fn _add(&self, obj: T) {
         self.inner.size.fetch_add(1, Ordering::Relaxed);
-        self.inner.queue.push(obj).ok().unwrap();
+        {
+            let mut queue = self.inner.queue.lock().unwrap();
+            queue.push(obj);
+        }
         self.inner.available.fetch_add(1, Ordering::Relaxed);
         self.inner.semaphore.add_permits(1);
     }
@@ -272,20 +283,16 @@ where
 {
     /// Create new pool from the given exact size iterator of objects.
     fn from(iter: I) -> Pool<T> {
-        let iter = iter.into_iter();
-        let size = iter.len();
-        let queue = ArrayQueue::new(size);
-        for obj in iter {
-            queue.push(obj).ok().unwrap();
-        }
+        let queue = iter.into_iter().collect::<Vec<_>>();
+        let len = queue.len();
         Pool {
             inner: Arc::new(PoolInner {
-                queue,
-                max_size: size,
-                size: AtomicUsize::new(size),
+                queue: Mutex::new(queue),
+                max_size: len,
+                size: AtomicUsize::new(len),
                 size_semaphore: Semaphore::new(0),
-                available: AtomicIsize::new(size.try_into().unwrap()),
-                semaphore: Semaphore::new(size),
+                available: AtomicIsize::new(len.try_into().unwrap()),
+                semaphore: Semaphore::new(len),
             }),
         }
     }
