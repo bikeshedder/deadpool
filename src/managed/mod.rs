@@ -228,8 +228,6 @@ impl<T, E> Pool<T, E> {
     /// Retrieve object using a different timeout config than the one
     /// configured.
     pub async fn timeout_get(&self, timeouts: &Timeouts) -> Result<Object<T, E>, PoolError<E>> {
-        self.inner.available.fetch_sub(1, Ordering::Relaxed);
-
         let mut obj = Object {
             obj: None,
             state: ObjectState::Waiting,
@@ -265,6 +263,7 @@ impl<T, E> Pool<T, E> {
 
         loop {
             obj.state = ObjectState::Receiving;
+            self.inner.available.fetch_sub(1, Ordering::Relaxed);
             match self.inner.queue.pop() {
                 Some(inner_obj) => {
                     // Recycle existing object
@@ -278,7 +277,10 @@ impl<T, E> Pool<T, E> {
                     .await
                     {
                         Ok(_) => break,
-                        Err(_) => continue,
+                        Err(_) => {
+                            self.inner.size.fetch_sub(1, Ordering::Relaxed);
+                            continue;
+                        }
                     }
                 }
                 None => {
