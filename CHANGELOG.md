@@ -4,6 +4,7 @@
 
 * Add support for closing pools
 * Replace `crossbeam-queue` by `Mutex<Vec<_>>`
+* Fix invalid `size` and `available` counts when recycling fails
 
 ## v0.7.0
 

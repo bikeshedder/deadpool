@@ -288,7 +288,11 @@ impl<T, E> Pool<T, E> {
                     .await
                     {
                         Ok(_) => break,
-                        Err(_) => continue,
+                        Err(_) => {
+                            self.inner.available.fetch_sub(1, Ordering::Relaxed);
+                            self.inner.size.fetch_sub(1, Ordering::Relaxed);
+                            continue;
+                        },
                     }
                 }
                 None => {

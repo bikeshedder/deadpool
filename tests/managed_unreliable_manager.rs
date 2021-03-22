@@ -67,14 +67,21 @@ mod tests {
         };
         let pool = Pool::new(manager, 16);
         {
-            assert_eq!(pool.get().await.is_ok(), true);
+            let _a = pool.get().await.unwrap();
+            let _b = pool.get().await.unwrap();
         }
         let status = pool.status();
-        assert_eq!(status.available, 1);
-        assert_eq!(status.size, 1);
+        assert_eq!(status.available, 2);
+        assert_eq!(status.size, 2);
         {
-            assert_eq!(pool.get().await.is_ok(), true);
+            let _a = pool.get().await.unwrap();
+            // All connections fail to recycle. Thus reducing the
+            // available counter to 0.
+            let status = pool.status();
+            assert_eq!(status.available, 0);
+            assert_eq!(status.size, 1);
         }
+        let status = pool.status();
         assert_eq!(status.available, 1);
         assert_eq!(status.size, 1);
     }
