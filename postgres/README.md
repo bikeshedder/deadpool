@@ -57,6 +57,7 @@ struct Config {
 impl Config {
     pub fn from_env() -> Result<Self, ::config_crate::ConfigError> {
         let mut cfg = ::config_crate::Config::new();
+        cfg.set_default("pg.dbname", "deadpool");
         cfg.merge(::config_crate::Environment::new().separator("__"))?;
         cfg.try_into()
     }
