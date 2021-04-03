@@ -140,6 +140,14 @@ pub struct ConnectionWrapper {
     conn: Connection,
 }
 
+impl ConnectionWrapper {
+    /// Take this object from the pool permanently. This reduces the size of
+    /// the pool.
+    pub fn take(this: Self) -> RedisConnection {
+        Connection::take(this.conn)
+    }
+}
+
 impl From<Connection> for ConnectionWrapper {
     fn from(conn: Connection) -> Self {
         Self {
