@@ -82,7 +82,6 @@ mod tests {
         drop(obj);
         tokio::task::yield_now().await;
         assert_eq!(pool.status().available, 0);
-
     }
 
     #[tokio::test(flavor = "multi_thread")]

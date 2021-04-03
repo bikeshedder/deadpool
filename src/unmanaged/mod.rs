@@ -297,7 +297,8 @@ impl<T> PoolInner<T> {
     fn clear(&self) {
         let mut queue = self.queue.lock().unwrap();
         self.size.fetch_sub(queue.len(), Ordering::Relaxed);
-        self.available.fetch_sub(queue.len() as isize, Ordering::Relaxed);
+        self.available
+            .fetch_sub(queue.len() as isize, Ordering::Relaxed);
         queue.clear();
     }
     fn is_closed(&self) -> bool {

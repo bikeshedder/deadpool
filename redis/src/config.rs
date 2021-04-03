@@ -52,7 +52,15 @@ impl Into<redis::ConnectionAddr> for ConnectionAddr {
     fn into(self) -> redis::ConnectionAddr {
         match self {
             Self::Tcp(host, port) => redis::ConnectionAddr::Tcp(host, port),
-            Self::TcpTls { host, port, insecure } => redis::ConnectionAddr::TcpTls { host, port, insecure },
+            Self::TcpTls {
+                host,
+                port,
+                insecure,
+            } => redis::ConnectionAddr::TcpTls {
+                host,
+                port,
+                insecure,
+            },
             Self::Unix(path) => redis::ConnectionAddr::Unix(path),
         }
     }
@@ -62,7 +70,15 @@ impl Into<ConnectionAddr> for redis::ConnectionAddr {
     fn into(self) -> ConnectionAddr {
         match self {
             redis::ConnectionAddr::Tcp(host, port) => ConnectionAddr::Tcp(host, port),
-            redis::ConnectionAddr::TcpTls { host, port, insecure } => ConnectionAddr::TcpTls { host, port, insecure },
+            redis::ConnectionAddr::TcpTls {
+                host,
+                port,
+                insecure,
+            } => ConnectionAddr::TcpTls {
+                host,
+                port,
+                insecure,
+            },
             redis::ConnectionAddr::Unix(path) => ConnectionAddr::Unix(path),
         }
     }
@@ -78,7 +94,7 @@ pub struct ConnectionInfo {
     addr: Box<ConnectionAddr>,
     db: i64,
     username: Option<String>,
-    passwd: Option<String>
+    passwd: Option<String>,
 }
 
 impl Into<redis::ConnectionInfo> for ConnectionInfo {
@@ -179,7 +195,11 @@ impl Config {
             (Some(url), None) => crate::Manager::new(url.as_str())?,
             (None, Some(connection)) => crate::Manager::new(connection.clone())?,
             (None, None) => crate::Manager::new(ConnectionInfo::default())?,
-            (Some(_), Some(_)) => return Err(CreatePoolError::Config("url and connection must not be specified at the same time.".to_owned())),
+            (Some(_), Some(_)) => {
+                return Err(CreatePoolError::Config(
+                    "url and connection must not be specified at the same time.".to_owned(),
+                ))
+            }
         };
         let pool_config = self.get_pool_config();
         Ok(Pool::from_config(manager, pool_config))

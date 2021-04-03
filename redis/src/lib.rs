@@ -113,7 +113,10 @@ use std::ops::{Deref, DerefMut};
 use async_trait::async_trait;
 /// Re-export deadpool::managed::PoolConfig
 pub use deadpool::managed::PoolConfig;
-use redis::{Client, IntoConnectionInfo, RedisError, RedisResult, aio::{Connection as RedisConnection, ConnectionLike}};
+use redis::{
+    aio::{Connection as RedisConnection, ConnectionLike},
+    Client, IntoConnectionInfo, RedisError, RedisResult,
+};
 
 /// A type alias for using `deadpool::Pool` with `redis`
 pub type Pool = deadpool::managed::Pool<RedisConnection, RedisError, ConnectionWrapper>;
@@ -150,9 +153,7 @@ impl ConnectionWrapper {
 
 impl From<Connection> for ConnectionWrapper {
     fn from(conn: Connection) -> Self {
-        Self {
-            conn
-        }
+        Self { conn }
     }
 }
 
@@ -182,7 +183,10 @@ impl AsMut<redis::aio::Connection> for ConnectionWrapper {
 }
 
 impl ConnectionLike for ConnectionWrapper {
-    fn req_packed_command<'a>(&'a mut self, cmd: &'a redis::Cmd) -> redis::RedisFuture<'a, redis::Value> {
+    fn req_packed_command<'a>(
+        &'a mut self,
+        cmd: &'a redis::Cmd,
+    ) -> redis::RedisFuture<'a, redis::Value> {
         self.conn.req_packed_command(cmd)
     }
     fn req_packed_commands<'a>(
@@ -219,7 +223,10 @@ impl deadpool::managed::Manager<RedisConnection, RedisError> for Manager {
         Ok(conn)
     }
     async fn recycle(&self, conn: &mut RedisConnection) -> RecycleResult {
-        match redis::cmd("PING").query_async::<_, redis::Value>(conn).await {
+        match redis::cmd("PING")
+            .query_async::<_, redis::Value>(conn)
+            .await
+        {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into()),
         }

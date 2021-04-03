@@ -45,11 +45,11 @@
 //! For a more complete example please see
 //! [`deadpool-postgres`](https://crates.io/crates/deadpool-postgres)
 
-use std::{future::Future, marker::PhantomData};
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicIsize, AtomicUsize, Ordering};
 use std::sync::{Arc, Weak};
 use std::time::Duration;
+use std::{future::Future, marker::PhantomData};
 
 use async_trait::async_trait;
 use tokio::sync::{Semaphore, TryAcquireError};
@@ -201,7 +201,10 @@ impl<T, E, W: From<Object<T, E>>> Pool<T, E, W> {
     /// Create new connection pool with a given `manager` and `max_size`.
     /// The `manager` is used to create and recycle objects and `max_size`
     /// is the maximum number of objects ever created.
-    pub fn new(manager: impl Manager<T, E> + Send + Sync + 'static, max_size: usize) -> Pool<T, E, W> {
+    pub fn new(
+        manager: impl Manager<T, E> + Send + Sync + 'static,
+        max_size: usize,
+    ) -> Pool<T, E, W> {
         Self::from_config(manager, PoolConfig::new(max_size))
     }
     /// Create new connection pool with a given `manager` and `config`.
@@ -295,7 +298,7 @@ impl<T, E, W: From<Object<T, E>>> Pool<T, E, W> {
                             self.inner.available.fetch_sub(1, Ordering::Relaxed);
                             self.inner.size.fetch_sub(1, Ordering::Relaxed);
                             continue;
-                        },
+                        }
                     }
                 }
                 None => {
@@ -359,7 +362,8 @@ impl<T, E> PoolInner<T, E> {
     fn clear(&self) {
         let mut queue = self.queue.lock().unwrap();
         self.size.fetch_sub(queue.len(), Ordering::Relaxed);
-        self.available.fetch_sub(queue.len() as isize, Ordering::Relaxed);
+        self.available
+            .fetch_sub(queue.len() as isize, Ordering::Relaxed);
         queue.clear();
     }
     /// Returns true if the pool has been closed
