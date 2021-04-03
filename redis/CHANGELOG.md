@@ -8,6 +8,7 @@
   `ConnectionWrapper` rather than an `Object<ConnectionWrapper>` which
   implements the `redis::aio::ConnectionLike` trait and therefore can
   be used with plain `Cmd` and `Pipe` objects from the `redis` crate.
+* Add support for new `redis::ConnectionInfo` structure.
 
 ## v0.7.1
 
