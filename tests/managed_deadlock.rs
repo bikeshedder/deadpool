@@ -10,7 +10,8 @@ mod tests {
     use tokio::task::yield_now;
     use tokio::time::timeout;
 
-    use deadpool::managed::{Pool, RecycleError, RecycleResult};
+    use deadpool::managed::{RecycleError, RecycleResult};
+    type Pool = deadpool::managed::Pool<(), ()>;
 
     struct Manager {
         create_rx: Arc<Mutex<Receiver<Result<(), ()>>>>,

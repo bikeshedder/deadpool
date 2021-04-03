@@ -7,6 +7,7 @@
 * Fix invalid `size` and `available` counts when recycling fails
 * Update `config` dependency to version `0.11`
 * Remove deprecated `from_env` methods
+* Add support for wrappers returned by the pool
 
 ## v0.7.0
 

@@ -6,7 +6,8 @@ mod tests {
     use async_trait::async_trait;
     use tokio::time::sleep;
 
-    use deadpool::managed::{Object, Pool, PoolError, RecycleResult};
+    use deadpool::managed::{Object, PoolError, RecycleResult};
+    type Pool = deadpool::managed::Pool<usize, ()>;
 
     struct Manager {}
 

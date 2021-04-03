@@ -45,7 +45,7 @@
 //! For a more complete example please see
 //! [`deadpool-postgres`](https://crates.io/crates/deadpool-postgres)
 
-use std::future::Future;
+use std::{future::Future, marker::PhantomData};
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicIsize, AtomicUsize, Ordering};
 use std::sync::{Arc, Weak};
@@ -183,23 +183,25 @@ struct PoolInner<T, E> {
 ///
 /// This struct can be cloned and transferred across thread boundaries
 /// and uses reference counting for its internal state.
-pub struct Pool<T, E> {
+pub struct Pool<T, E, W: From<Object<T, E>> = Object<T, E>> {
     inner: Arc<PoolInner<T, E>>,
+    _wrapper: PhantomData<W>,
 }
 
-impl<T, E> Clone for Pool<T, E> {
-    fn clone(&self) -> Pool<T, E> {
+impl<T, E, W: From<Object<T, E>>> Clone for Pool<T, E, W> {
+    fn clone(&self) -> Pool<T, E, W> {
         Pool {
             inner: self.inner.clone(),
+            _wrapper: PhantomData::default(),
         }
     }
 }
 
-impl<T, E> Pool<T, E> {
+impl<T, E, W: From<Object<T, E>>> Pool<T, E, W> {
     /// Create new connection pool with a given `manager` and `max_size`.
     /// The `manager` is used to create and recycle objects and `max_size`
     /// is the maximum number of objects ever created.
-    pub fn new(manager: impl Manager<T, E> + Send + Sync + 'static, max_size: usize) -> Pool<T, E> {
+    pub fn new(manager: impl Manager<T, E> + Send + Sync + 'static, max_size: usize) -> Pool<T, E, W> {
         Self::from_config(manager, PoolConfig::new(max_size))
     }
     /// Create new connection pool with a given `manager` and `config`.
@@ -208,7 +210,7 @@ impl<T, E> Pool<T, E> {
     pub fn from_config(
         manager: impl Manager<T, E> + Send + Sync + 'static,
         config: PoolConfig,
-    ) -> Pool<T, E> {
+    ) -> Pool<T, E, W> {
         Pool {
             inner: Arc::new(PoolInner {
                 manager: Box::new(manager),
@@ -218,22 +220,23 @@ impl<T, E> Pool<T, E> {
                 semaphore: Semaphore::new(config.max_size),
                 config,
             }),
+            _wrapper: PhantomData::default(),
         }
     }
     /// Retrieve object from pool or wait for one to become available.
-    pub async fn get(&self) -> Result<Object<T, E>, PoolError<E>> {
+    pub async fn get(&self) -> Result<W, PoolError<E>> {
         self.timeout_get(&self.inner.config.timeouts).await
     }
     /// Retrieve object from the pool and do not wait if there is currently
     /// no object available and the maximum pool size has been reached.
-    pub async fn try_get(&self) -> Result<Object<T, E>, PoolError<E>> {
+    pub async fn try_get(&self) -> Result<W, PoolError<E>> {
         let mut timeouts = self.inner.config.timeouts.clone();
         timeouts.wait = Some(Duration::from_secs(0));
         self.timeout_get(&timeouts).await
     }
     /// Retrieve object using a different timeout config than the one
     /// configured.
-    pub async fn timeout_get(&self, timeouts: &Timeouts) -> Result<Object<T, E>, PoolError<E>> {
+    pub async fn timeout_get(&self, timeouts: &Timeouts) -> Result<W, PoolError<E>> {
         self.inner.available.fetch_sub(1, Ordering::Relaxed);
 
         let mut obj = Object {
@@ -314,7 +317,7 @@ impl<T, E> Pool<T, E> {
         }
 
         obj.state = ObjectState::Ready;
-        Ok(obj)
+        Ok(obj.into())
     }
     /// Close the pool
     ///
