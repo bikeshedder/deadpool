@@ -4,6 +4,10 @@
 
 * Update `config` dependency to version `0.11`
 * Remove deprecated `from_env` methods
+* Remove wrappers for `Cdm` and `Pipe`. The pool now returns a
+  `ConnectionWrapper` rather than an `Object<ConnectionWrapper>` which
+  implements the `redis::aio::ConnectionLike` trait and therefore can
+  be used with plain `Cmd` and `Pipe` objects from the `redis` crate.
 
 ## v0.7.1
 

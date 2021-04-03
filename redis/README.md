@@ -15,8 +15,7 @@ manager for [`redis`](https://crates.io/crates/redis).
 ## Example
 
 ```rust,ignore
-use deadpool_redis::{cmd, Config};
-use deadpool_redis::redis::FromRedisValue;
+use deadpool_redis::redis::{cmd, Config, FromRedisValue};
 
 #[tokio::main]
 async fn main() {
@@ -27,7 +26,7 @@ async fn main() {
         let mut conn = pool.get().await.unwrap();
         cmd("SET")
             .arg(&["deadpool/test_key", "42"])
-            .execute_async(&mut conn)
+            .query_async::<_, ()>(&mut conn)
             .await.unwrap();
     }
     {
@@ -44,8 +43,7 @@ async fn main() {
 ## Example with `config` and `dotenv` crate
 
 ```rust
-use deadpool_redis::cmd;
-use deadpool_redis::redis::FromRedisValue;
+use deadpool_redis::redis::{cmd, FromRedisValue};
 use dotenv::dotenv;
 use serde::Deserialize;
 
@@ -72,7 +70,7 @@ async fn main() {
         let mut conn = pool.get().await.unwrap();
         cmd("SET")
             .arg(&["deadpool/test_key", "42"])
-            .execute_async(&mut conn)
+            .query_async::<_, ()>(&mut conn)
             .await.unwrap();
     }
     {

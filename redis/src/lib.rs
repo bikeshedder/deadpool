@@ -15,8 +15,7 @@
 //! ## Example
 //!
 //! ```rust,ignore
-//! use deadpool_redis::{cmd, Config};
-//! use deadpool_redis::redis::FromRedisValue;
+//! use deadpool_redis::redis::{cmd, Config, FromRedisValue};
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -27,7 +26,7 @@
 //!         let mut conn = pool.get().await.unwrap();
 //!         cmd("SET")
 //!             .arg(&["deadpool/test_key", "42"])
-//!             .execute_async(&mut conn)
+//!             .query_async::<_, ()>(&mut conn)
 //!             .await.unwrap();
 //!     }
 //!     {
@@ -44,8 +43,7 @@
 //! ## Example with `config` and `dotenv` crate
 //!
 //! ```rust
-//! use deadpool_redis::cmd;
-//! use deadpool_redis::redis::FromRedisValue;
+//! use deadpool_redis::redis::{cmd, FromRedisValue};
 //! use dotenv::dotenv;
 //! use serde::Deserialize;
 //!
@@ -72,7 +70,7 @@
 //!         let mut conn = pool.get().await.unwrap();
 //!         cmd("SET")
 //!             .arg(&["deadpool/test_key", "42"])
-//!             .execute_async(&mut conn)
+//!             .query_async::<_, ()>(&mut conn)
 //!             .await.unwrap();
 //!     }
 //!     {
@@ -115,18 +113,16 @@ use std::ops::{Deref, DerefMut};
 use async_trait::async_trait;
 /// Re-export deadpool::managed::PoolConfig
 pub use deadpool::managed::PoolConfig;
-use redis::{
-    aio::Connection as RedisConnection, Client, IntoConnectionInfo, RedisError, RedisResult,
-};
+use redis::{Client, IntoConnectionInfo, RedisError, RedisResult, aio::{Connection as RedisConnection, ConnectionLike}};
 
 /// A type alias for using `deadpool::Pool` with `redis`
-pub type Pool = deadpool::managed::Pool<ConnectionWrapper, RedisError>;
+pub type Pool = deadpool::managed::Pool<RedisConnection, RedisError, ConnectionWrapper>;
 
 /// A type alias for using `deadpool::PoolError` with `redis`
 pub type PoolError = deadpool::managed::PoolError<RedisError>;
 
 /// A type alias for using `deadpool::Object` with `redis`
-pub type Connection = deadpool::managed::Object<ConnectionWrapper, RedisError>;
+pub type Connection = deadpool::managed::Object<RedisConnection, RedisError>;
 
 type RecycleResult = deadpool::managed::RecycleResult<RedisError>;
 
@@ -135,17 +131,21 @@ pub use redis;
 
 mod config;
 pub use config::Config;
-mod cmd_wrapper;
-pub use cmd_wrapper::{cmd, Cmd};
-mod pipeline_wrapper;
-pub use pipeline_wrapper::{pipe, Pipeline};
 
 /// A wrapper for `redis::Connection`. The `query_async` and `execute_async`
 /// functions of `redis::Cmd` and `redis::Pipeline` consume the connection.
 /// This wrapper makes it possible to replace the internal connection after
 /// executing a query.
 pub struct ConnectionWrapper {
-    conn: RedisConnection,
+    conn: Connection,
+}
+
+impl From<Connection> for ConnectionWrapper {
+    fn from(conn: Connection) -> Self {
+        Self {
+            conn
+        }
+    }
 }
 
 impl Deref for ConnectionWrapper {
@@ -158,6 +158,35 @@ impl Deref for ConnectionWrapper {
 impl DerefMut for ConnectionWrapper {
     fn deref_mut(&mut self) -> &mut RedisConnection {
         &mut self.conn
+    }
+}
+
+impl AsRef<redis::aio::Connection> for ConnectionWrapper {
+    fn as_ref(&self) -> &redis::aio::Connection {
+        &self.conn
+    }
+}
+
+impl AsMut<redis::aio::Connection> for ConnectionWrapper {
+    fn as_mut(&mut self) -> &mut redis::aio::Connection {
+        &mut self.conn
+    }
+}
+
+impl ConnectionLike for ConnectionWrapper {
+    fn req_packed_command<'a>(&'a mut self, cmd: &'a redis::Cmd) -> redis::RedisFuture<'a, redis::Value> {
+        self.conn.req_packed_command(cmd)
+    }
+    fn req_packed_commands<'a>(
+        &'a mut self,
+        cmd: &'a redis::Pipeline,
+        offset: usize,
+        count: usize,
+    ) -> redis::RedisFuture<'a, Vec<redis::Value>> {
+        self.conn.req_packed_commands(cmd, offset, count)
+    }
+    fn get_db(&self) -> i64 {
+        self.conn.get_db()
     }
 }
 
@@ -176,14 +205,13 @@ impl Manager {
 }
 
 #[async_trait]
-impl deadpool::managed::Manager<ConnectionWrapper, RedisError> for Manager {
-    async fn create(&self) -> Result<ConnectionWrapper, RedisError> {
+impl deadpool::managed::Manager<RedisConnection, RedisError> for Manager {
+    async fn create(&self) -> Result<RedisConnection, RedisError> {
         let conn = self.client.get_async_connection().await?;
-        Ok(ConnectionWrapper { conn })
+        Ok(conn)
     }
-
-    async fn recycle(&self, conn: &mut ConnectionWrapper) -> RecycleResult {
-        match cmd("PING").execute_async(conn).await {
+    async fn recycle(&self, conn: &mut RedisConnection) -> RecycleResult {
+        match redis::cmd("PING").query_async::<_, redis::Value>(conn).await {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into()),
         }

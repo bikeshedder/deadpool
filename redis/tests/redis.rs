@@ -23,7 +23,7 @@ fn create_pool() -> deadpool_redis::Pool {
 #[tokio::main]
 #[test]
 async fn test_pipeline() {
-    use deadpool_redis::pipe;
+    use deadpool_redis::redis::pipe;
     let pool = create_pool();
     let mut conn = pool.get().await.unwrap();
     let (value,): (String,) = pipe()
