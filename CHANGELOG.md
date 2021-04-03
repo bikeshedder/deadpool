@@ -6,6 +6,7 @@
 * Replace `crossbeam-queue` by `Mutex<Vec<_>>`
 * Fix invalid `size` and `available` counts when recycling fails
 * Update `config` dependency to version `0.11`
+* Remove deprecated `from_env` methods
 
 ## v0.7.0
 

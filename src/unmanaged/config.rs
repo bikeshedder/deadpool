@@ -11,26 +11,6 @@ impl PoolConfig {
     pub fn new(max_size: usize) -> Self {
         Self { max_size }
     }
-    /// Create pool config by reading it from the environment.
-    /// ## Example environment
-    /// ```env
-    /// POOL_MAX_SIZE = 1s
-    /// ```
-    /// ## Example usage
-    /// ```rust,ignore
-    /// Config::from_env("POOL")
-    /// ```
-    ///
-    #[deprecated(
-        since = "0.5.2",
-        note = "Please embed this structure in your own config structure and use `config::Config` directly."
-    )]
-    #[cfg(feature = "config")]
-    pub fn from_env(prefix: &str) -> Result<PoolConfig, ::config_crate::ConfigError> {
-        let mut cfg = ::config_crate::Config::new();
-        cfg.merge(::config_crate::Environment::with_prefix(prefix))?;
-        cfg.try_into()
-    }
 }
 
 impl Default for PoolConfig {

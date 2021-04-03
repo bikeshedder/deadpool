@@ -3,6 +3,7 @@
 ## v0.8.0 (unreleased)
 
 * Update `config` dependency to version `0.11`
+* Remove deprecated `from_env` methods
 
 ## v0.7.1
 

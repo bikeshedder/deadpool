@@ -265,18 +265,6 @@ impl Config {
     pub fn new() -> Self {
         Self::default()
     }
-    /// Create configuration from environment variables.
-    #[deprecated(
-        since = "0.5.5",
-        note = "Please embed this structure in your own config structure and use `config::Config` directly."
-    )]
-    #[cfg(feature = "config")]
-    pub fn from_env(prefix: &str) -> Result<Self, ::config_crate::ConfigError> {
-        use ::config_crate::Environment;
-        let mut cfg = ::config_crate::Config::new();
-        cfg.merge(Environment::with_prefix(prefix))?;
-        cfg.try_into()
-    }
     /// Create pool using the current configuration
     pub fn create_pool<T>(&self, tls: T) -> Result<Pool, ConfigError>
     where

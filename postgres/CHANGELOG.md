@@ -4,6 +4,7 @@
 
 * Do not detect unix domain socket paths at config creation.
 * Update `config` dependency to version `0.11`
+* Remove deprecated `from_env` methods
 
 ## v0.7.0
 

@@ -1,6 +1,3 @@
-#[cfg(feature = "config")]
-use config_crate::{ConfigError, Environment};
-
 use crate::{Pool, PoolConfig};
 
 /// Configuration object. By enabling the `config` feature you can
@@ -40,17 +37,6 @@ pub struct Config {
 }
 
 impl Config {
-    /// Create configuration from environment variables.
-    #[cfg(feature = "config")]
-    #[deprecated(
-        since = "0.6.3",
-        note = "Please embed this structure in your own config structure and use `config::Config` directly."
-    )]
-    pub fn from_env(prefix: &str) -> Result<Self, ConfigError> {
-        let mut cfg = ::config_crate::Config::new();
-        cfg.merge(Environment::with_prefix(prefix))?;
-        cfg.try_into()
-    }
     /// Create pool using the current configuration
     pub fn create_pool(&self) -> Pool {
         let url = self.get_url().to_string();
