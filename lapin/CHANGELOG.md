@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.8.0 (unreleased)
+
+* Update `config` dependency to version `0.11`
+
 ## v0.7.0
 
 * Update `tokio` dependency to version `1`

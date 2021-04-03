@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.8.0 (unreleased)
+
+* Update `config` dependency to version `0.11`
+
 ## v0.7.1
 
 * Change `redis` dependency to version range `0.19` to `0.20`
