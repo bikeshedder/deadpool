@@ -9,6 +9,7 @@
   implements the `redis::aio::ConnectionLike` trait and therefore can
   be used with plain `Cmd` and `Pipe` objects from the `redis` crate.
 * Add support for new `redis::ConnectionInfo` structure.
+* Change `redis` dependency to version `0.20`
 
 ## v0.7.1
 
