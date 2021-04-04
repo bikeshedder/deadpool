@@ -211,11 +211,7 @@ pub struct Manager<T: MakeTlsConnect<Socket>> {
 impl<T: MakeTlsConnect<Socket>> Manager<T> {
     /// Create manager using a `tokio_postgres::Config` and a `TlsConnector`.
     pub fn new(pg_config: tokio_postgres::Config, tls: T) -> Manager<T> {
-        Manager {
-            config: ManagerConfig::default(),
-            pg_config,
-            tls,
-        }
+        Self::from_config(pg_config, tls, ManagerConfig::default())
     }
     /// Create manager using a `tokio_postgres::Config` and a `TlsConnector`
     /// and also
