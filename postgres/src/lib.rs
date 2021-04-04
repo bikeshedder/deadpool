@@ -168,12 +168,12 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::RwLock;
 
 use async_trait::async_trait;
 use futures::FutureExt;
 use log::{info, warn};
 use tokio::spawn;
-use tokio::sync::RwLock;
 use tokio_postgres::{
     tls::MakeTlsConnect, tls::TlsConnect, types::Type, Client as PgClient, Config as PgConfig,
     Error, IsolationLevel, Socket, Statement, Transaction as PgTransaction,
@@ -295,18 +295,18 @@ impl StatementCache {
         self.size.load(Ordering::Relaxed)
     }
     /// Clear cache
-    pub async fn clear(&self) {
-        let mut map = self.map.write().await;
+    pub fn clear(&self) {
+        let mut map = self.map.write().unwrap();
         map.clear();
         self.size.store(0, Ordering::Relaxed);
     }
     /// Remove statement from cache
-    pub async fn remove(&self, query: &str, types: &[Type]) -> Option<Statement> {
+    pub fn remove(&self, query: &str, types: &[Type]) -> Option<Statement> {
         let key = StatementCacheKey {
             query: Cow::Owned(query.to_owned()),
             types: Cow::Owned(types.to_owned()),
         };
-        let mut map = self.map.write().await;
+        let mut map = self.map.write().unwrap();
         let removed = map.remove(&key).map(|stmt| stmt.to_owned());
         if removed.is_some() {
             self.size.fetch_sub(1, Ordering::Relaxed);
@@ -314,20 +314,24 @@ impl StatementCache {
         removed
     }
     /// Get statement from cache
-    async fn get<'a>(&self, query: &str, types: &[Type]) -> Option<Statement> {
+    fn get<'a>(&self, query: &str, types: &[Type]) -> Option<Statement> {
         let key = StatementCacheKey {
             query: Cow::Borrowed(query),
             types: Cow::Borrowed(types),
         };
-        self.map.read().await.get(&key).map(|stmt| stmt.to_owned())
+        self.map
+            .read()
+            .unwrap()
+            .get(&key)
+            .map(|stmt| stmt.to_owned())
     }
     /// Insert statement into cache
-    async fn insert(&self, query: &str, types: &[Type], stmt: Statement) {
+    fn insert(&self, query: &str, types: &[Type], stmt: Statement) {
         let key = StatementCacheKey {
             query: Cow::Owned(query.to_owned()),
             types: Cow::Owned(types.to_owned()),
         };
-        let mut map = self.map.write().await;
+        let mut map = self.map.write().unwrap();
         if map.insert(key, stmt).is_none() {
             self.size.fetch_add(1, Ordering::Relaxed);
         }
@@ -359,13 +363,11 @@ impl ClientWrapper {
     ///
     /// See [`tokio_postgres::Client::prepare_typed`](#method.prepare_typed-1)
     pub async fn prepare_typed(&self, query: &str, types: &[Type]) -> Result<Statement, Error> {
-        match self.statement_cache.get(query, types).await {
+        match self.statement_cache.get(query, types) {
             Some(statement) => Ok(statement),
             None => {
                 let stmt = self.client.prepare_typed(query, types).await?;
-                self.statement_cache
-                    .insert(query, types, stmt.clone())
-                    .await;
+                self.statement_cache.insert(query, types, stmt.clone());
                 Ok(stmt)
             }
         }
@@ -425,13 +427,11 @@ impl<'a> Transaction<'a> {
     ///
     /// See [`tokio_postgres::Transaction::prepare_typed`](#method.prepare_typed-1)
     pub async fn prepare_typed(&self, query: &str, types: &[Type]) -> Result<Statement, Error> {
-        match self.statement_cache.get(query, types).await {
+        match self.statement_cache.get(query, types) {
             Some(statement) => Ok(statement),
             None => {
                 let stmt = self.txn.prepare_typed(query, types).await?;
-                self.statement_cache
-                    .insert(query, types, stmt.clone())
-                    .await;
+                self.statement_cache.insert(query, types, stmt.clone());
                 Ok(stmt)
             }
         }

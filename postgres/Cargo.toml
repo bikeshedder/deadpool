@@ -17,7 +17,7 @@ deadpool = { path = "../", version = "0.7", default-features = false, features =
 async-trait = "0.1.17"
 futures = "0.3.1"
 log = "0.4"
-tokio = { version = "1", features = ["sync", "rt"] }
+tokio = { version = "1", features = ["rt"] }
 tokio-postgres = "0.7"
 # only required when using the config feature
 config-crate = { package = "config", version = "0.11", default-features = false, optional = true }
