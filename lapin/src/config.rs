@@ -32,7 +32,7 @@ pub struct Config {
     /// Pool configuration
     pub pool: Option<PoolConfig>,
     /// Connection properties
-    #[serde(skip)]
+    #[cfg_attr(feature = "config", serde(skip))]
     pub connection_properties: lapin::ConnectionProperties,
 }
 
