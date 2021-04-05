@@ -106,7 +106,7 @@
 //! - MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 //!
 //! at your option.
-#![warn(missing_docs)]
+#![warn(missing_docs, unreachable_pub)]
 
 use std::ops::{Deref, DerefMut};
 
