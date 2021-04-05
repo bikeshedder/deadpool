@@ -8,6 +8,7 @@
 * Update `config` dependency to version `0.11`
 * Remove deprecated `from_env` methods
 * Add support for wrappers returned by the pool
+* Use associated types for traits
 
 ## v0.7.0
 

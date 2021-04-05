@@ -41,7 +41,7 @@
 //!
 //! struct Computer {}
 //! struct Manager {}
-//! type Pool = deadpool::managed::Pool<Computer, Error>;
+//! type Pool = deadpool::managed::Pool<Manager>;
 //!
 //! impl Computer {
 //!     async fn get_answer(&self) -> i32 {
@@ -50,7 +50,9 @@
 //! }
 //!
 //! #[async_trait]
-//! impl deadpool::managed::Manager<Computer, Error> for Manager {
+//! impl deadpool::managed::Manager for Manager {
+//!     type Type = Computer;
+//!     type Error = Error;
 //!     async fn create(&self) -> Result<Computer, Error> {
 //!         Ok(Computer {})
 //!     }

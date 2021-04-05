@@ -187,13 +187,13 @@ pub use crate::config::{Config, ManagerConfig, RecyclingMethod};
 use deadpool::managed::PoolConfig;
 
 /// A type alias for using `deadpool::Pool` with `tokio_postgres`
-pub type Pool = deadpool::managed::Pool<ClientWrapper, tokio_postgres::Error>;
+pub type Pool<T> = deadpool::managed::Pool<Manager<T>>;
 
 /// A type alias for using `deadpool::PoolError` with `tokio_postgres`
 pub type PoolError = deadpool::managed::PoolError<tokio_postgres::Error>;
 
 /// A type alias for using `deadpool::Object` with `tokio_postgres`
-pub type Client = deadpool::managed::Object<ClientWrapper, tokio_postgres::Error>;
+pub type Client<T> = deadpool::managed::Object<Manager<T>>;
 
 type RecycleResult = deadpool::managed::RecycleResult<Error>;
 type RecycleError = deadpool::managed::RecycleError<Error>;
@@ -229,13 +229,16 @@ impl<T: MakeTlsConnect<Socket>> Manager<T> {
 }
 
 #[async_trait]
-impl<T> deadpool::managed::Manager<ClientWrapper, Error> for Manager<T>
+impl<T> deadpool::managed::Manager for Manager<T>
 where
     T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
     T::Stream: Sync + Send,
     T::TlsConnect: Sync + Send,
     <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
 {
+    type Type = ClientWrapper;
+    type Error = Error;
+
     async fn create(&self) -> Result<ClientWrapper, Error> {
         let (client, connection) = self.pg_config.connect(self.tls.clone()).await?;
         let connection = connection.map(|r| {

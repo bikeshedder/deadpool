@@ -21,7 +21,9 @@
 //! struct Manager {}
 //!
 //! #[async_trait]
-//! impl deadpool::managed::Manager<Computer, Error> for Manager {
+//! impl deadpool::managed::Manager for Manager {
+//!     type Type = Computer;
+//!     type Error = Error;
 //!     async fn create(&self) -> Result<Computer, Error> {
 //!         Ok(Computer {})
 //!     }
@@ -30,7 +32,7 @@
 //!     }
 //! }
 //!
-//! type Pool = deadpool::managed::Pool<Computer, Error>;
+//! type Pool = deadpool::managed::Pool<Manager>;
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -67,12 +69,17 @@ pub type RecycleResult<E> = Result<(), RecycleError<E>>;
 
 /// This trait is used to `create` new objects or `recycle` existing ones.
 #[async_trait]
-pub trait Manager<T, E> {
-    /// Create a new instance of `T`
-    async fn create(&self) -> Result<T, E>;
-    /// Try to recycle an instance of `T` returning None` if the
+pub trait Manager {
+    /// Type that the manager creates and recycles.
+    type Type;
+    /// The error that the manager can return when creating and recycling
+    /// objects.
+    type Error;
+    /// Create a new instance of `Type`
+    async fn create(&self) -> Result<Self::Type, Self::Error>;
+    /// Try to recycle an instance of `Type` returning an `Error` if the
     /// object could not be recycled.
-    async fn recycle(&self, obj: &mut T) -> RecycleResult<E>;
+    async fn recycle(&self, obj: &mut Self::Type) -> RecycleResult<Self::Error>;
 }
 
 enum ObjectState {
@@ -89,22 +96,22 @@ enum ObjectState {
 /// `Deref`, `DerefMut` and `Drop`. Use this object just as if it was of type
 /// `T` and upon leaving scope the `drop` function will take care of
 /// returning it to the pool.
-pub struct Object<T, E> {
-    obj: Option<T>,
+pub struct Object<M: Manager> {
+    obj: Option<M::Type>,
     state: ObjectState,
-    pool: Weak<PoolInner<T, E>>,
+    pool: Weak<PoolInner<M>>,
 }
 
-impl<T, E> Object<T, E> {
+impl<M: Manager> Object<M> {
     /// Take this object from the pool permanently. This reduces the size of
     /// the pool.
-    pub fn take(mut this: Self) -> T {
+    pub fn take(mut this: Self) -> M::Type {
         this.state = ObjectState::Taken;
         this.obj.take().unwrap()
     }
 }
 
-impl<T, E> Drop for Object<T, E> {
+impl<M: Manager> Drop for Object<M> {
     fn drop(&mut self) {
         if let Some(pool) = self.pool.upgrade() {
             match self.state {
@@ -142,34 +149,34 @@ impl<T, E> Drop for Object<T, E> {
     }
 }
 
-impl<T, E> Deref for Object<T, E> {
-    type Target = T;
-    fn deref(&self) -> &T {
+impl<M: Manager> Deref for Object<M> {
+    type Target = M::Type;
+    fn deref(&self) -> &M::Type {
         self.obj.as_ref().unwrap()
     }
 }
 
-impl<T, E> DerefMut for Object<T, E> {
-    fn deref_mut(&mut self) -> &mut T {
+impl<M: Manager> DerefMut for Object<M> {
+    fn deref_mut(&mut self) -> &mut M::Type {
         self.obj.as_mut().unwrap()
     }
 }
 
-impl<T, E> AsRef<T> for Object<T, E> {
-    fn as_ref(&self) -> &T {
+impl<M: Manager> AsRef<M::Type> for Object<M> {
+    fn as_ref(&self) -> &M::Type {
         self
     }
 }
 
-impl<T, E> AsMut<T> for Object<T, E> {
-    fn as_mut(&mut self) -> &mut T {
+impl<M: Manager> AsMut<M::Type> for Object<M> {
+    fn as_mut(&mut self) -> &mut M::Type {
         self
     }
 }
 
-struct PoolInner<T, E> {
-    manager: Box<dyn Manager<T, E> + Sync + Send>,
-    queue: std::sync::Mutex<Vec<T>>,
+struct PoolInner<M: Manager> {
+    manager: Box<M>,
+    queue: std::sync::Mutex<Vec<M::Type>>,
     size: AtomicUsize,
     /// The number of available objects in the pool. If there are no
     /// objects in the pool this number can become negative and stores the
@@ -183,13 +190,13 @@ struct PoolInner<T, E> {
 ///
 /// This struct can be cloned and transferred across thread boundaries
 /// and uses reference counting for its internal state.
-pub struct Pool<T, E, W: From<Object<T, E>> = Object<T, E>> {
-    inner: Arc<PoolInner<T, E>>,
+pub struct Pool<M: Manager, W: From<Object<M>> = Object<M>> {
+    inner: Arc<PoolInner<M>>,
     _wrapper: PhantomData<W>,
 }
 
-impl<T, E, W: From<Object<T, E>>> Clone for Pool<T, E, W> {
-    fn clone(&self) -> Pool<T, E, W> {
+impl<M: Manager, W: From<Object<M>>> Clone for Pool<M, W> {
+    fn clone(&self) -> Pool<M, W> {
         Pool {
             inner: self.inner.clone(),
             _wrapper: PhantomData::default(),
@@ -197,23 +204,17 @@ impl<T, E, W: From<Object<T, E>>> Clone for Pool<T, E, W> {
     }
 }
 
-impl<T, E, W: From<Object<T, E>>> Pool<T, E, W> {
+impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     /// Create new connection pool with a given `manager` and `max_size`.
     /// The `manager` is used to create and recycle objects and `max_size`
     /// is the maximum number of objects ever created.
-    pub fn new(
-        manager: impl Manager<T, E> + Send + Sync + 'static,
-        max_size: usize,
-    ) -> Pool<T, E, W> {
+    pub fn new(manager: M, max_size: usize) -> Pool<M, W> {
         Self::from_config(manager, PoolConfig::new(max_size))
     }
     /// Create new connection pool with a given `manager` and `config`.
     /// The `manager` is used to create and recycle objects and `max_size`
     /// is the maximum number of objects ever created.
-    pub fn from_config(
-        manager: impl Manager<T, E> + Send + Sync + 'static,
-        config: PoolConfig,
-    ) -> Pool<T, E, W> {
+    pub fn from_config(manager: M, config: PoolConfig) -> Pool<M, W> {
         Pool {
             inner: Arc::new(PoolInner {
                 manager: Box::new(manager),
@@ -227,19 +228,19 @@ impl<T, E, W: From<Object<T, E>>> Pool<T, E, W> {
         }
     }
     /// Retrieve object from pool or wait for one to become available.
-    pub async fn get(&self) -> Result<W, PoolError<E>> {
+    pub async fn get(&self) -> Result<W, PoolError<M::Error>> {
         self.timeout_get(&self.inner.config.timeouts).await
     }
     /// Retrieve object from the pool and do not wait if there is currently
     /// no object available and the maximum pool size has been reached.
-    pub async fn try_get(&self) -> Result<W, PoolError<E>> {
+    pub async fn try_get(&self) -> Result<W, PoolError<M::Error>> {
         let mut timeouts = self.inner.config.timeouts.clone();
         timeouts.wait = Some(Duration::from_secs(0));
         self.timeout_get(&timeouts).await
     }
     /// Retrieve object using a different timeout config than the one
     /// configured.
-    pub async fn timeout_get(&self, timeouts: &Timeouts) -> Result<W, PoolError<E>> {
+    pub async fn timeout_get(&self, timeouts: &Timeouts) -> Result<W, PoolError<M::Error>> {
         self.inner.available.fetch_sub(1, Ordering::Relaxed);
 
         let mut obj = Object {
@@ -347,7 +348,7 @@ impl<T, E, W: From<Object<T, E>>> Pool<T, E, W> {
     }
 }
 
-impl<T, E> PoolInner<T, E> {
+impl<M: Manager> PoolInner<M> {
     /// Clean up internals of the pool.
     ///
     /// This method is called after closing the pool and whenever a

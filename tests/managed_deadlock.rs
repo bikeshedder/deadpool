@@ -11,7 +11,7 @@ mod tests {
     use tokio::time::timeout;
 
     use deadpool::managed::{RecycleError, RecycleResult};
-    type Pool = deadpool::managed::Pool<(), ()>;
+    type Pool = deadpool::managed::Pool<Manager>;
 
     struct Manager {
         create_rx: Arc<Mutex<Receiver<Result<(), ()>>>>,
@@ -58,7 +58,9 @@ mod tests {
     }
 
     #[async_trait]
-    impl deadpool::managed::Manager<(), ()> for Manager {
+    impl deadpool::managed::Manager for Manager {
+        type Type = ();
+        type Error = ();
         async fn create(&self) -> Result<(), ()> {
             self.create_rx.lock().await.recv().await.unwrap()
         }

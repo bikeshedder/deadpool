@@ -119,13 +119,13 @@ use redis::{
 };
 
 /// A type alias for using `deadpool::Pool` with `redis`
-pub type Pool = deadpool::managed::Pool<RedisConnection, RedisError, ConnectionWrapper>;
+pub type Pool = deadpool::managed::Pool<Manager, ConnectionWrapper>;
 
 /// A type alias for using `deadpool::PoolError` with `redis`
 pub type PoolError = deadpool::managed::PoolError<RedisError>;
 
 /// A type alias for using `deadpool::Object` with `redis`
-pub type Connection = deadpool::managed::Object<RedisConnection, RedisError>;
+pub type Connection = deadpool::managed::Object<Manager>;
 
 type RecycleResult = deadpool::managed::RecycleResult<RedisError>;
 
@@ -217,7 +217,9 @@ impl Manager {
 }
 
 #[async_trait]
-impl deadpool::managed::Manager<RedisConnection, RedisError> for Manager {
+impl deadpool::managed::Manager for Manager {
+    type Type = RedisConnection;
+    type Error = RedisError;
     async fn create(&self) -> Result<RedisConnection, RedisError> {
         let conn = self.client.get_async_connection().await?;
         Ok(conn)

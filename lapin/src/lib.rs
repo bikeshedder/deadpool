@@ -116,13 +116,13 @@ pub use crate::config::Config;
 use deadpool::managed::PoolConfig;
 
 /// A type alias for using `deadpool::Pool` with `lapin`
-pub type Pool = deadpool::managed::Pool<lapin::Connection, Error>;
+pub type Pool = deadpool::managed::Pool<Manager>;
 
 /// A type alias for using `deadpool::PoolError` with `lapin`
 pub type PoolError = deadpool::managed::PoolError<Error>;
 
 /// A type alias for using `deadpool::Object` with `lapin`
-pub type Connection = deadpool::managed::Object<lapin::Connection, Error>;
+pub type Connection = deadpool::managed::Object<Manager>;
 
 type RecycleResult = deadpool::managed::RecycleResult<Error>;
 type RecycleError = deadpool::managed::RecycleError<Error>;
@@ -147,7 +147,9 @@ impl Manager {
 }
 
 #[async_trait]
-impl deadpool::managed::Manager<lapin::Connection, Error> for Manager {
+impl deadpool::managed::Manager for Manager {
+    type Type = lapin::Connection;
+    type Error = Error;
     async fn create(&self) -> Result<lapin::Connection, Error> {
         let connection =
             lapin::Connection::connect(self.addr.as_str(), self.connection_properties.clone())

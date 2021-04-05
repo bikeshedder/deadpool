@@ -1,22 +1,24 @@
 #[cfg(feature = "managed")]
 mod tests {
 
-    use std::time::Duration;
+    use std::{convert::Infallible, time::Duration};
 
     use async_trait::async_trait;
     use tokio::time::sleep;
 
     use deadpool::managed::{Object, PoolError, RecycleResult};
-    type Pool = deadpool::managed::Pool<usize, ()>;
+    type Pool = deadpool::managed::Pool<Manager>;
 
     struct Manager {}
 
     #[async_trait]
-    impl deadpool::managed::Manager<usize, ()> for Manager {
-        async fn create(&self) -> Result<usize, ()> {
+    impl deadpool::managed::Manager for Manager {
+        type Type = usize;
+        type Error = Infallible;
+        async fn create(&self) -> Result<usize, Infallible> {
             Ok(0)
         }
-        async fn recycle(&self, _conn: &mut usize) -> RecycleResult<()> {
+        async fn recycle(&self, _conn: &mut usize) -> RecycleResult<Infallible> {
             Ok(())
         }
     }
