@@ -80,6 +80,12 @@ pub trait Manager {
     /// Try to recycle an instance of `Type` returning an `Error` if the
     /// object could not be recycled.
     async fn recycle(&self, obj: &mut Self::Type) -> RecycleResult<Self::Error>;
+    /// Detach an instance of `Type` from this manager. This method is
+    /// called when using the `Object::take` function for removing
+    /// an object from the pool. If the manager doesn't hold any
+    /// references to the handed out objects the default implementation
+    /// can be used which does nothing.
+    fn detach(&self, _obj: &mut Self::Type) {}
 }
 
 enum ObjectState {
@@ -107,6 +113,9 @@ impl<M: Manager> Object<M> {
     /// the pool.
     pub fn take(mut this: Self) -> M::Type {
         this.state = ObjectState::Taken;
+        if let Some(pool) = this.pool.upgrade() {
+            pool.manager.detach(&mut this);
+        }
         this.obj.take().unwrap()
     }
 }
