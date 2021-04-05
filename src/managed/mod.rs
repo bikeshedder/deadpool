@@ -346,6 +346,10 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             available,
         }
     }
+    /// Get manager of the pool
+    pub fn manager(&self) -> &M {
+        &*self.inner.manager
+    }
 }
 
 impl<M: Manager> PoolInner<M> {
