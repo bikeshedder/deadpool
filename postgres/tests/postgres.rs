@@ -175,6 +175,36 @@ fn _use_generic_client(_client: &impl tokio_postgres::GenericClient) {
     // nop
 }
 
+#[tokio::test]
+async fn test_statement_cache_clear() {
+    let pool = create_pool();
+    let client = pool.get().await.unwrap();
+    assert!(client.statement_cache.size() == 0);
+    client.prepare("SELECT 1;").await.unwrap();
+    assert!(client.statement_cache.size() == 1);
+    client.statement_cache.clear();
+    assert!(client.statement_cache.size() == 0);
+}
+
+#[tokio::test]
+async fn test_statement_caches_clear() {
+    let pool = create_pool();
+    // prepare 1st client
+    let client0 = pool.get().await.unwrap();
+    assert!(client0.statement_cache.size() == 0);
+    client0.prepare("SELECT 1;").await.unwrap();
+    assert!(client0.statement_cache.size() == 1);
+    // prepare 2nd client
+    let client1 = pool.get().await.unwrap();
+    assert!(client1.statement_cache.size() == 0);
+    client1.prepare("SELECT 1;").await.unwrap();
+    assert!(client1.statement_cache.size() == 1);
+    // clear statement cache using manager
+    pool.manager().statement_caches.clear();
+    assert!(client0.statement_cache.size() == 0);
+    assert!(client1.statement_cache.size() == 0);
+}
+
 struct Env {
     backup: HashMap<String, Option<String>>,
 }

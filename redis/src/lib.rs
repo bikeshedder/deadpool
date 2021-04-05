@@ -94,7 +94,7 @@
 //!
 //!   ```toml
 //!   [dependencies]
-//!   deadpool-redis = { version = "0.7.1", features = ["config"] }
+//!   deadpool-redis = { version = "0.8", features = ["config"] }
 //!   redis = { version = "0.20", default-features = false, features = ["tls"] }
 //!   ```
 //!

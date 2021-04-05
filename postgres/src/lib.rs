@@ -125,7 +125,7 @@
 //!
 //! - **Why are connections retrieved from the pool sometimes unuseable?**
 //!
-//!   In deadpool-postgres `0.5.5` a new recycling method was implemented which
+//!   In `deadpool-postgres 0.5.5` a new recycling method was implemented which
 //!   will become the default in `0.8`. With that recycling method the manager no
 //!   longer performs a test query prior returning the connection but relies
 //!   solely on `tokio_postgres::Client::is_closed` instead. Under some rare
@@ -153,6 +153,16 @@
 //!   that both crates have the same MAJOR and MINOR version number at the
 //!   time of this writing.
 //!
+//! - **How can I clear the statement cache?**
+//!
+//!   You can call `pool.manager().statement_cache.clear()` to clear all
+//!   statement caches or `pool.manager().statement_cache.clear()` to remove
+//!   a single statement from all caches.
+//!
+//!   **Important:** The `ClientWrapper` also provides a `statement_cache`
+//!   field which has `clear()` and `remove()` methods which only affect
+//!   a single client.
+//!
 //! ## License
 //!
 //! Licensed under either of
@@ -161,14 +171,13 @@
 //! - MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 //!
 //! at your option.
-
 #![warn(missing_docs, unreachable_pub)]
 
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::RwLock;
+use std::sync::{Arc, Mutex, RwLock, Weak};
 
 use async_trait::async_trait;
 use futures::FutureExt;
@@ -206,6 +215,9 @@ pub struct Manager<T: MakeTlsConnect<Socket>> {
     config: ManagerConfig,
     pg_config: PgConfig,
     tls: T,
+    /// This field provides access to the statement caches of clients
+    /// handed out by the pool.
+    pub statement_caches: StatementCaches,
 }
 
 impl<T: MakeTlsConnect<Socket>> Manager<T> {
@@ -224,6 +236,7 @@ impl<T: MakeTlsConnect<Socket>> Manager<T> {
             config,
             pg_config,
             tls,
+            statement_caches: StatementCaches::default(),
         }
     }
 }
@@ -247,7 +260,9 @@ where
             }
         });
         spawn(connection);
-        Ok(ClientWrapper::new(client))
+        let client_wrapper = ClientWrapper::new(client);
+        self.statement_caches.attach(&client_wrapper.statement_cache);
+        Ok(client_wrapper)
     }
     async fn recycle(&self, client: &mut ClientWrapper) -> RecycleResult {
         if client.is_closed() {
@@ -263,6 +278,47 @@ where
                 }
             },
             None => Ok(()),
+        }
+    }
+    fn detach(&self, object: &mut ClientWrapper) {
+        self.statement_caches.detach(&object.statement_cache);
+    }
+}
+
+/// This structure holds a reference to all statement caches and provides
+/// access for clearing all caches and removing single statements from them.
+#[derive(Default)]
+pub struct StatementCaches {
+    caches: Mutex<Vec<Weak<StatementCache>>>,
+}
+
+impl StatementCaches {
+    fn attach(&self, cache: &Arc<StatementCache>) {
+        let cache = Arc::downgrade(&cache);
+        self.caches.lock().unwrap().push(cache)
+    }
+    fn detach(&self, cache: &Arc<StatementCache>) {
+        let cache = Arc::downgrade(&cache);
+        self.caches.lock().unwrap().retain(|sc| !sc.ptr_eq(&cache));
+    }
+    /// Clear statement cache of all connections which were handed out by
+    /// the manager.
+    pub fn clear(&self) {
+        let caches = self.caches.lock().unwrap();
+        for cache in caches.iter() {
+            if let Some(cache) = cache.upgrade() {
+                cache.clear();
+            }
+        }
+    }
+    /// Remove statement from all caches which were handed out by the
+    /// manager.
+    pub fn remove(&self, query: &str, types: &[Type]) {
+        let caches = self.caches.lock().unwrap();
+        for cache in caches.iter() {
+            if let Some(cache) = cache.upgrade() {
+                cache.remove(query, types);
+            }
         }
     }
 }
@@ -294,12 +350,22 @@ impl StatementCache {
         self.size.load(Ordering::Relaxed)
     }
     /// Clear cache
+    ///
+    /// **Important:** This only clears the statement cache of one client
+    /// instance. If you want to clear the statement cache of all clients
+    /// you should be calling `pool.manager().statement_caches.clear()`
+    /// instead.
     pub fn clear(&self) {
         let mut map = self.map.write().unwrap();
         map.clear();
         self.size.store(0, Ordering::Relaxed);
     }
     /// Remove statement from cache
+    ///
+    /// **Important:** This only removes the statement from one client
+    /// cache. If you want to remove a statement from all statement caches
+    /// you should be calling `pool.manager().statement_caches.remove()`
+    /// instead.
     pub fn remove(&self, query: &str, types: &[Type]) -> Option<Statement> {
         let key = StatementCacheKey {
             query: Cow::Owned(query.to_owned()),
@@ -341,7 +407,7 @@ impl StatementCache {
 pub struct ClientWrapper {
     client: PgClient,
     /// The statement cache
-    pub statement_cache: StatementCache,
+    pub statement_cache: Arc<StatementCache>,
 }
 
 impl ClientWrapper {
@@ -349,7 +415,7 @@ impl ClientWrapper {
     pub fn new(client: PgClient) -> Self {
         Self {
             client,
-            statement_cache: StatementCache::new(),
+            statement_cache: Arc::new(StatementCache::new()),
         }
     }
     /// Creates a new prepared statement using the statement cache if possible.
@@ -377,7 +443,7 @@ impl ClientWrapper {
     pub async fn transaction(&mut self) -> Result<Transaction<'_>, Error> {
         Ok(Transaction {
             txn: PgClient::transaction(&mut self.client).await?,
-            statement_cache: &mut self.statement_cache,
+            statement_cache: &self.statement_cache,
         })
     }
     /// Returns a builder for a transaction with custom settings.
@@ -389,7 +455,7 @@ impl ClientWrapper {
     pub fn build_transaction(&mut self) -> TransactionBuilder {
         TransactionBuilder {
             builder: self.client.build_transaction(),
-            statement_cache: &mut self.statement_cache,
+            statement_cache: &self.statement_cache,
         }
     }
 }
@@ -412,7 +478,7 @@ impl DerefMut for ClientWrapper {
 pub struct Transaction<'a> {
     txn: PgTransaction<'a>,
     /// The statement cache
-    pub statement_cache: &'a mut StatementCache,
+    pub statement_cache: &'a StatementCache,
 }
 
 impl<'a> Transaction<'a> {
@@ -469,7 +535,7 @@ impl<'a> DerefMut for Transaction<'a> {
 /// statement cache from the client object it was created by.
 pub struct TransactionBuilder<'a> {
     builder: PgTransactionBuilder<'a>,
-    statement_cache: &'a mut StatementCache,
+    statement_cache: &'a StatementCache,
 }
 
 impl<'a> TransactionBuilder<'a> {

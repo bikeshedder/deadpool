@@ -125,7 +125,7 @@ async fn main() {
 
 - **Why are connections retrieved from the pool sometimes unuseable?**
 
-  In deadpool-postgres `0.5.5` a new recycling method was implemented which
+  In `deadpool-postgres 0.5.5` a new recycling method was implemented which
   will become the default in `0.8`. With that recycling method the manager no
   longer performs a test query prior returning the connection but relies
   solely on `tokio_postgres::Client::is_closed` instead. Under some rare
@@ -152,6 +152,16 @@ async fn main() {
   `tokio-postgres` do not necessarily match. It is just a coincidence
   that both crates have the same MAJOR and MINOR version number at the
   time of this writing.
+
+- **How can I clear the statement cache?**
+
+  You can call `pool.manager().statement_cache.clear()` to clear all
+  statement caches or `pool.manager().statement_cache.clear()` to remove
+  a single statement from all caches.
+
+  **Important:** The `ClientWrapper` also provides a `statement_cache`
+  field which has `clear()` and `remove()` methods which only affect
+  a single client.
 
 ## License
 
