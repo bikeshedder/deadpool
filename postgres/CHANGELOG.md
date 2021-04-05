@@ -5,6 +5,8 @@
 * Do not detect unix domain socket paths at config creation.
 * Update `config` dependency to version `0.11`
 * Remove deprecated `from_env` methods
+* Add `Manager::statement_caches` field which provides access
+  to managing the statement cache for all clients.
 
 ## v0.7.0
 
