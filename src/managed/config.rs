@@ -31,10 +31,7 @@ impl Default for PoolConfig {
     /// Create pool with default config. The `max_size` is set to
     /// `cpu_count * 4` ignoring any logical CPUs (Hyper-Threading).
     fn default() -> Self {
-        Self {
-            max_size: num_cpus::get_physical() * 4,
-            timeouts: Timeouts::default(),
-        }
+        Self::new(num_cpus::get_physical() * 4)
     }
 }
 
