@@ -37,9 +37,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      run: cargo build --workspace --verbose
+      run: cargo build --workspace --all-features --verbose
     - name: Run tests
-      run: cargo test --workspace --verbose
+      run: cargo test --workspace --all-features --verbose
       env:
         PG__HOST: postgres
         PG__PORT: 5432
