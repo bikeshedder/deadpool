@@ -24,6 +24,13 @@ This crate provides two implementations:
 | `managed` | Enable managed pool implementation | `async-trait` | yes |
 | `unmanaged` | Enable unmanaged pool implementation | - | yes |
 | `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
+| `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `tokio/sync` | no |
+| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `async-std` | no |
+
+The runtime features (`rt_*`) are only needed if you need support for
+timeouts. If you try to use timeouts without specifying a runtime at
+pool creation the pool get methods will return an
+`PoolError::NoRuntimeSpecified` error.
 
 ## Managed pool (aka. connection pool)
 
