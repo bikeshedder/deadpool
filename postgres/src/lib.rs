@@ -17,7 +17,7 @@
 //! ## Example
 //!
 //! ```rust,ignore
-//! use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod };
+//! use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod};
 //! use tokio_postgres::NoTls;
 //!
 //! #[tokio::main]
@@ -263,7 +263,8 @@ where
         });
         spawn(connection);
         let client_wrapper = ClientWrapper::new(client);
-        self.statement_caches.attach(&client_wrapper.statement_cache);
+        self.statement_caches
+            .attach(&client_wrapper.statement_cache);
         Ok(client_wrapper)
     }
     async fn recycle(&self, client: &mut ClientWrapper) -> RecycleResult {

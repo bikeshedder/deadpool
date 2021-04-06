@@ -17,7 +17,7 @@ and `tokio_postgres::Transaction`.
 ## Example
 
 ```rust,ignore
-use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod };
+use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod};
 use tokio_postgres::NoTls;
 
 #[tokio::main]
