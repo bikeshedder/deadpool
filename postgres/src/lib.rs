@@ -193,7 +193,9 @@ pub mod config;
 pub use crate::config::{Config, ManagerConfig, RecyclingMethod};
 
 /// Re-export deadpool::managed::PoolConfig
-use deadpool::managed::PoolConfig;
+pub use deadpool::managed::PoolConfig;
+/// Re-export deadpool::Runtime;
+pub use deadpool::Runtime;
 
 /// A type alias for using `deadpool::Pool` with `tokio_postgres`
 pub type Pool<T> = deadpool::managed::Pool<Manager<T>>;

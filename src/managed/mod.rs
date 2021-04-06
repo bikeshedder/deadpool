@@ -55,13 +55,13 @@ use std::{future::Future, marker::PhantomData};
 
 use async_trait::async_trait;
 use tokio::sync::{Semaphore, TryAcquireError};
-use tokio::time::timeout;
 
 mod config;
 pub use self::config::{PoolConfig, Timeouts};
 mod errors;
 pub use errors::{PoolError, RecycleError, TimeoutType};
 
+use crate::runtime::{Runtime, TimeoutError};
 pub use crate::Status;
 
 /// Result type for the recycle function
@@ -270,6 +270,9 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             })?
         } else {
             apply_timeout(
+                &self.inner.config.runtime,
+                TimeoutType::Wait,
+                self.inner.config.timeouts.wait,
                 async {
                     self.inner
                         .semaphore
@@ -277,8 +280,6 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                         .await
                         .map_err(|_| PoolError::Closed)
                 },
-                TimeoutType::Wait,
-                self.inner.config.timeouts.wait,
             )
             .await?
         };
@@ -297,9 +298,10 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     obj.state = ObjectState::Recycling;
                     obj.obj = Some(inner_obj);
                     match apply_timeout(
-                        self.inner.manager.recycle(&mut obj),
+                        &self.inner.config.runtime,
                         TimeoutType::Recycle,
                         self.inner.config.timeouts.recycle,
+                        self.inner.manager.recycle(&mut obj),
                     )
                     .await
                     {
@@ -318,9 +320,10 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     self.inner.size.fetch_add(1, Ordering::Relaxed);
                     obj.obj = Some(
                         apply_timeout(
-                            self.inner.manager.create(),
+                            &self.inner.config.runtime,
                             TimeoutType::Create,
                             self.inner.config.timeouts.create,
+                            self.inner.manager.create(),
                         )
                         .await?,
                     );
@@ -390,14 +393,18 @@ impl<M: Manager> PoolInner<M> {
 }
 
 async fn apply_timeout<O, E>(
-    future: impl Future<Output = Result<O, impl Into<PoolError<E>>>>,
+    runtime: &Runtime,
     timeout_type: TimeoutType,
     duration: Option<Duration>,
+    future: impl Future<Output = Result<O, impl Into<PoolError<E>>>>,
 ) -> Result<O, PoolError<E>> {
     match duration {
-        Some(duration) => match timeout(duration, future).await {
+        Some(duration) => match runtime.timeout(duration, future).await {
             Ok(result) => result.map_err(Into::into),
-            Err(_) => Err(PoolError::Timeout(timeout_type)),
+            Err(e) => Err(match e {
+                TimeoutError::NoRuntime => PoolError::NoRuntimeSpecified,
+                TimeoutError::Timeout => PoolError::Timeout(timeout_type),
+            }),
         },
         None => future.await.map_err(Into::into),
     }

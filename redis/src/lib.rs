@@ -113,6 +113,8 @@ use std::ops::{Deref, DerefMut};
 use async_trait::async_trait;
 /// Re-export deadpool::managed::PoolConfig
 pub use deadpool::managed::PoolConfig;
+/// Re-export deadpool::Runtime;
+pub use deadpool::Runtime;
 use redis::{
     aio::{Connection as RedisConnection, ConnectionLike},
     Client, IntoConnectionInfo, RedisError, RedisResult,

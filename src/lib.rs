@@ -177,6 +177,9 @@ pub mod managed;
 #[cfg(feature = "unmanaged")]
 pub mod unmanaged;
 
+mod runtime;
+pub use runtime::Runtime;
+
 #[derive(Debug)]
 /// The current pool status.
 pub struct Status {

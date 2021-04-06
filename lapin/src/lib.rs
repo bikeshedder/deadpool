@@ -113,7 +113,9 @@ mod config;
 pub use crate::config::Config;
 
 /// Re-export deadpool::managed::PoolConfig
-use deadpool::managed::PoolConfig;
+pub use deadpool::managed::PoolConfig;
+/// Re-export deadpool::Runtime;
+pub use deadpool::Runtime;
 
 /// A type alias for using `deadpool::Pool` with `lapin`
 pub type Pool = deadpool::managed::Pool<Manager>;

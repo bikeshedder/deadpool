@@ -50,6 +50,8 @@ pub enum PoolError<E> {
     Backend(E),
     /// The pool has been closed
     Closed,
+    /// No runtime specified
+    NoRuntimeSpecified,
 }
 
 impl<E> From<E> for PoolError<E> {
@@ -74,6 +76,7 @@ where
             },
             Self::Backend(e) => write!(f, "An error occured while creating a new object: {}", e),
             Self::Closed => write!(f, "The pool has been closed."),
+            Self::NoRuntimeSpecified => write!(f, "No runtime specified."),
         }
     }
 }
