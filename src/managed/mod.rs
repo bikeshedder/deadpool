@@ -221,8 +221,9 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         Self::from_config(manager, PoolConfig::new(max_size))
     }
     /// Create new connection pool with a given `manager` and `config`.
-    /// The `manager` is used to create and recycle objects and `max_size`
-    /// is the maximum number of objects ever created.
+    /// The `manager` is used to create and recycle objects. The config
+    /// specifies the maximum numbers of objects to be created and
+    /// timeouts.
     pub fn from_config(manager: M, config: PoolConfig) -> Pool<M, W> {
         Pool {
             inner: Arc::new(PoolInner {
