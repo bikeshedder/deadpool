@@ -33,6 +33,7 @@ impl Runtime {
     // If the future completes before the duration has elapsed, then the
     /// completed value is returned. Otherwise, an error is returned and
     /// the future is canceled.
+    #[allow(unused_variables)]
     pub async fn timeout<F>(&self, duration: Duration, future: F) -> Result<F::Output, TimeoutError>
     where
         F: Future,
