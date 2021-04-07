@@ -27,13 +27,14 @@
 //! }
 //! ```
 
-use std::convert::TryInto;
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicIsize, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, Weak};
+use std::{convert::TryInto, time::Duration};
 
 use tokio::sync::{Semaphore, TryAcquireError};
 
+use crate::runtime::TimeoutError;
 pub use crate::Status;
 
 mod config;
@@ -105,8 +106,8 @@ impl<T> AsMut<T> for Object<T> {
 }
 
 struct PoolInner<T> {
+    config: PoolConfig,
     queue: Mutex<Vec<T>>,
-    max_size: usize,
     size: AtomicUsize,
     /// This semaphore has as many permits as `max_size - size`. Every time
     /// an object is added to the pool a permit is removed from the semaphore
@@ -144,15 +145,25 @@ impl<T> Clone for Pool<T> {
     }
 }
 
+impl<T> Default for Pool<T> {
+    fn default() -> Self {
+        Self::from_config(&PoolConfig::default())
+    }
+}
+
 impl<T> Pool<T> {
     /// Create a new empty pool with the given max_size.
     pub fn new(max_size: usize) -> Self {
+        Self::from_config(&PoolConfig::new(max_size))
+    }
+    /// Create a new empty pool using the given configuration
+    pub fn from_config(config: &PoolConfig) -> Self {
         Self {
             inner: Arc::new(PoolInner {
-                queue: Mutex::new(Vec::with_capacity(max_size)),
-                max_size,
+                config: config.clone(),
+                queue: Mutex::new(Vec::with_capacity(config.max_size)),
                 size: AtomicUsize::new(0),
-                size_semaphore: Semaphore::new(max_size),
+                size_semaphore: Semaphore::new(config.max_size),
                 available: AtomicIsize::new(0),
                 semaphore: Semaphore::new(0),
             }),
@@ -160,36 +171,62 @@ impl<T> Pool<T> {
     }
     /// Retrieve object from pool or wait for one to become available.
     pub async fn get(&self) -> Result<Object<T>, PoolError> {
-        let permit = self
-            .inner
-            .semaphore
-            .acquire()
-            .await
-            .map_err(|_| PoolError::Closed)?;
+        self.timeout_get(self.inner.config.timeout).await
+    }
+    /// Retrieve object from the pool and do not wait if there is currently
+    /// no object available and the maximum pool size has been reached.
+    pub fn try_get(&self) -> Result<Object<T>, PoolError> {
+        let inner = self.inner.as_ref();
+        let permit = inner.semaphore.try_acquire().map_err(|e| match e {
+            TryAcquireError::NoPermits => PoolError::Timeout,
+            TryAcquireError::Closed => PoolError::Closed,
+        })?;
         let obj = {
-            let mut queue = self.inner.queue.lock().unwrap();
+            let mut queue = inner.queue.lock().unwrap();
             queue.pop().unwrap()
         };
         permit.forget();
-        self.inner.available.fetch_sub(1, Ordering::Relaxed);
+        inner.available.fetch_sub(1, Ordering::Relaxed);
         Ok(Object {
             pool: Arc::downgrade(&self.inner),
             obj: Some(obj),
         })
     }
-    /// Retrieve object from the pool and do not wait if there is currently
-    /// no object available and the maximum pool size has been reached.
-    pub fn try_get(&self) -> Result<Object<T>, PoolError> {
-        let permit = self.inner.semaphore.try_acquire().map_err(|e| match e {
-            TryAcquireError::NoPermits => PoolError::Timeout,
-            TryAcquireError::Closed => PoolError::Closed,
-        })?;
+    /// Retrieve object using a different timeout config than the one
+    /// configured.
+    pub async fn timeout_get(&self, timeout: Option<Duration>) -> Result<Object<T>, PoolError> {
+        let inner = self.inner.as_ref();
+        let permit = match timeout {
+            Some(timeout) if timeout.as_nanos() == 0 => {
+                inner.semaphore.try_acquire().map_err(|e| match e {
+                    TryAcquireError::NoPermits => PoolError::Timeout,
+                    TryAcquireError::Closed => PoolError::Closed,
+                })
+            }
+            Some(timeout) => match inner
+                .config
+                .runtime
+                .timeout(timeout, inner.semaphore.acquire())
+                .await
+            {
+                Ok(result) => result.map_err(|_| PoolError::Closed),
+                Err(e) => Err(match e {
+                    TimeoutError::NoRuntime => PoolError::NoRuntimeSpecified,
+                    TimeoutError::Timeout => PoolError::Timeout,
+                }),
+            },
+            None => inner
+                .semaphore
+                .acquire()
+                .await
+                .map_err(|_| PoolError::Closed),
+        }?;
         let obj = {
-            let mut queue = self.inner.queue.lock().unwrap();
+            let mut queue = inner.queue.lock().unwrap();
             queue.pop().unwrap()
         };
         permit.forget();
-        self.inner.available.fetch_sub(1, Ordering::Relaxed);
+        inner.available.fetch_sub(1, Ordering::Relaxed);
         Ok(Object {
             pool: Arc::downgrade(&self.inner),
             obj: Some(obj),
@@ -219,10 +256,10 @@ impl<T> Pool<T> {
                 self._add(obj);
                 Ok(())
             }
-            Err(e) => match e {
-                TryAcquireError::NoPermits => Err((obj, PoolError::Timeout)),
-                TryAcquireError::Closed => Err((obj, PoolError::Closed)),
-            },
+            Err(e) => Err(match e {
+                TryAcquireError::NoPermits => (obj, PoolError::Timeout),
+                TryAcquireError::Closed => (obj, PoolError::Closed),
+            }),
         }
     }
     /// Internal function which adds an object to the pool. Prior calling
@@ -240,7 +277,7 @@ impl<T> Pool<T> {
     }
     /// Remove an object from the pool. This is a shortcut for
     /// ```rust,ignore
-    /// Object::take(pool.get().await)
+    /// Object::take(pool.get()?.await)
     /// ```
     pub async fn remove(&self) -> Result<T, PoolError> {
         self.get().await.map(Object::take)
@@ -255,6 +292,14 @@ impl<T> Pool<T> {
     /// ```
     pub fn try_remove(&self) -> Result<T, PoolError> {
         self.try_get().map(Object::take)
+    }
+    /// Remove object using a different timeout config than the one
+    /// configured. This is a shortcut for
+    /// ```rust,ignore
+    /// Object::take(pool.timeout_get()?.await)
+    /// ```
+    pub async fn tiemout_remove(&self, timeout: Option<Duration>) -> Result<T, PoolError> {
+        self.timeout_get(timeout).await.map(Object::take)
     }
     /// Close the pool
     ///
@@ -271,7 +316,7 @@ impl<T> Pool<T> {
     }
     /// Retrieve status of the pool
     pub fn status(&self) -> Status {
-        let max_size = self.inner.max_size;
+        let max_size = self.inner.config.max_size;
         let size = self.inner.size.load(Ordering::Relaxed);
         let available = self.inner.available.load(Ordering::Relaxed);
         Status {
@@ -321,7 +366,7 @@ where
         Pool {
             inner: Arc::new(PoolInner {
                 queue: Mutex::new(queue),
-                max_size: len,
+                config: PoolConfig::new(len),
                 size: AtomicUsize::new(len),
                 size_semaphore: Semaphore::new(0),
                 available: AtomicIsize::new(len.try_into().unwrap()),

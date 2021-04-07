@@ -7,6 +7,8 @@ pub enum PoolError {
     Timeout,
     /// The pool has been closed
     Closed,
+    /// No runtime specified
+    NoRuntimeSpecified,
 }
 
 impl fmt::Display for PoolError {
@@ -17,6 +19,7 @@ impl fmt::Display for PoolError {
                 "A timeout occured while waiting for an object to become available"
             ),
             Self::Closed => write!(f, "The pool has been closed."),
+            Self::NoRuntimeSpecified => write!(f, "No runtime specified."),
         }
     }
 }
