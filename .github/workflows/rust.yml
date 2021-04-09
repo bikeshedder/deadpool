@@ -39,7 +39,14 @@ jobs:
     - name: Build
       run: cargo build --workspace --all-features --verbose
     - name: Run tests
-      run: cargo test --workspace --all-features --verbose
+      run: |
+        cargo test --workspace --verbose --all-features
+        cargo test --verbose --no-default-features --features managed
+        cargo test --verbose --no-default-features --features managed,config
+        cargo test --verbose --no-default-features --features unmanaged
+        cargo test --verbose --no-default-features --features unmanaged,config
+        cargo test --verbose --features rt_tokio_1
+        cargo test --verbose --features rt_async-std_1
       env:
         PG__HOST: postgres
         PG__PORT: 5432
