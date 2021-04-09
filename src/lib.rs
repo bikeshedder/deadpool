@@ -40,7 +40,7 @@
 //!
 //! ### Example
 //!
-//! ```rust
+//! ```rust,ignore
 //! use async_trait::async_trait;
 //!
 //! #[derive(Debug)]
@@ -146,7 +146,7 @@
 //!
 //! ### Unmanaged pool example
 //!
-//! ```rust
+//! ```rust,ignore
 //! use deadpool::unmanaged::Pool;
 //!
 //! struct Computer {}

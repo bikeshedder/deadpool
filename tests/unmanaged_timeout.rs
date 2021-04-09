@@ -1,4 +1,4 @@
-#[cfg(feature = "managed")]
+#[cfg(feature = "unmanaged")]
 mod tests {
 
     use std::time::Duration;

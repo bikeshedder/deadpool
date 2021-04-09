@@ -40,7 +40,7 @@ which work out of the box.
 
 ### Example
 
-```rust
+```rust,ignore
 use async_trait::async_trait;
 
 #[derive(Debug)]
@@ -146,7 +146,7 @@ faster than the managed pool because it does not use a `Manager` trait to
 
 ### Unmanaged pool example
 
-```rust
+```rust,ignore
 use deadpool::unmanaged::Pool;
 
 struct Computer {}

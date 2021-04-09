@@ -7,6 +7,7 @@ mod tests {
 
     use deadpool::managed::{PoolConfig, PoolError, RecycleResult, Timeouts};
     use deadpool::Runtime;
+    #[allow(dead_code)]
     type Pool = deadpool::managed::Pool<Manager>;
 
     struct Manager {}

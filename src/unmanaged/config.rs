@@ -11,7 +11,7 @@ pub struct PoolConfig {
     /// Timeout for `Pool::get`
     pub timeout: Option<Duration>,
     /// Runtime
-    #[serde(skip)]
+    #[cfg_attr(feature = "config", serde(skip))]
     pub runtime: Runtime,
 }
 

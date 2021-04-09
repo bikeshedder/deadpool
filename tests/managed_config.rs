@@ -1,3 +1,4 @@
+#[cfg(feature = "managed")]
 #[cfg(feature = "config")]
 mod tests {
 

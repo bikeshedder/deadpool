@@ -12,7 +12,7 @@ pub struct PoolConfig {
     #[cfg_attr(feature = "config", serde(default))]
     pub timeouts: Timeouts,
     /// Runtime
-    #[serde(skip)]
+    #[cfg_attr(feature = "config", serde(skip))]
     pub runtime: Runtime,
 }
 
