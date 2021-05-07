@@ -168,6 +168,19 @@
 //! }
 //! ```
 //!
+//! ## FAQ
+//!
+//! ### Why does deadpool depend on `tokio`? I thought it was runtime agnostic...
+//!
+//! Deadpool depends on `tokio::sync::Semaphore`. This does **not** mean that
+//! the tokio runtime or anything else of tokio is being used or will be part
+//! of your build. You can easily check this by running the following command
+//! in your own code base:
+//!
+//! ```shell
+//! cargo tree --format "{p} {f}"
+//! ```
+//!
 //! ## License
 //!
 //! Licensed under either of
