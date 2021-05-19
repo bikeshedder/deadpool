@@ -47,6 +47,7 @@
 //! For a more complete example please see
 //! [`deadpool-postgres`](https://crates.io/crates/deadpool-postgres)
 
+use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::{AtomicIsize, AtomicUsize, Ordering};
 use std::sync::{Arc, Weak};
@@ -140,7 +141,7 @@ impl<M: Manager> Drop for Object<M> {
                     let obj = self.obj.take().unwrap();
                     {
                         let mut queue = pool.queue.lock().unwrap();
-                        queue.push(obj);
+                        queue.push_back(obj);
                     }
                     pool.semaphore.add_permits(1);
                     // The pool might have been closed in the mean time.
@@ -185,7 +186,7 @@ impl<M: Manager> AsMut<M::Type> for Object<M> {
 
 struct PoolInner<M: Manager> {
     manager: Box<M>,
-    queue: std::sync::Mutex<Vec<M::Type>>,
+    queue: std::sync::Mutex<VecDeque<M::Type>>,
     size: AtomicUsize,
     /// The number of available objects in the pool. If there are no
     /// objects in the pool this number can become negative and stores the
@@ -228,7 +229,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         Pool {
             inner: Arc::new(PoolInner {
                 manager: Box::new(manager),
-                queue: std::sync::Mutex::new(Vec::with_capacity(config.max_size)),
+                queue: std::sync::Mutex::new(VecDeque::with_capacity(config.max_size)),
                 size: AtomicUsize::new(0),
                 available: AtomicIsize::new(0),
                 semaphore: Semaphore::new(config.max_size),
@@ -291,7 +292,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             obj.state = ObjectState::Receiving;
             let inner_obj = {
                 let mut queue = self.inner.queue.lock().unwrap();
-                queue.pop()
+                queue.pop_front()
             };
             match inner_obj {
                 Some(inner_obj) => {

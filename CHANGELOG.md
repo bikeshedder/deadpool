@@ -3,7 +3,7 @@
 ## v0.8.0 (unreleased)
 
 * Add support for closing pools
-* Replace `crossbeam-queue` by `Mutex<Vec<_>>`
+* Replace `crossbeam-queue` by `Mutex<VecDeque<_>>`
 * Fix invalid `size` and `available` counts when recycling fails
 * Update `config` dependency to version `0.11`
 * Remove deprecated `from_env` methods
