@@ -13,6 +13,7 @@
 * Make connection recycling more robust by checking the PING
   response. This works around `Cmd::query_async` not being drop
   safe in `redis` version `0.10` and earlier.
+* Add `rt_tokio_1` and `rt_async-std_1` features
 
 ## v0.7.1
 

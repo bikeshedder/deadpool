@@ -11,6 +11,8 @@ manager for [`lapin`](https://crates.io/crates/lapin).
 | Feature | Description | Extra dependencies | Default |
 | ------- | ----------- | ------------------ | ------- |
 | `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
+| `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
+| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
 
 ## Example with `tokio-amqp` crate
 
@@ -29,8 +31,7 @@ use tokio_amqp::LapinTokioExt;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cfg = Config::default();
     cfg.url = Some("amqp://127.0.0.1:5672/%2f".to_string());
-    cfg.connection_properties = lapin::ConnectionProperties::default()
-            .with_tokio();
+    cfg.pool.get_or_insert_with(Default::default).runtime = deadpool::Runtime::Tokio1;
     let pool = cfg.create_pool();
     for i in 1..10usize {
         let mut connection = pool.get().await?;
@@ -58,7 +59,6 @@ use deadpool_lapin::lapin::{
 };
 use dotenv::dotenv;
 use serde::Deserialize;
-use tokio_amqp::LapinTokioExt;
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -78,8 +78,7 @@ impl Config {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
     let mut cfg = Config::from_env().unwrap();
-    cfg.amqp.connection_properties = lapin::ConnectionProperties::default()
-            .with_tokio();
+    cfg.amqp.pool.get_or_insert_with(Default::default).runtime = deadpool::Runtime::Tokio1;
     let pool = cfg.amqp.create_pool();
     for i in 1..10usize {
         let mut connection = pool.get().await?;

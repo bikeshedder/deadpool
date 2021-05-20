@@ -4,6 +4,7 @@
 
 * Update `config` dependency to version `0.11`
 * Remove deprecated `from_env` methods
+* Add `rt_tokio_1` and `rt_async-std_1` features
 
 ## v0.7.0
 

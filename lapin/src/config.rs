@@ -1,3 +1,9 @@
+#[cfg(feature = "rt_tokio_1")]
+use tokio_amqp::LapinTokioExt;
+
+#[cfg(feature = "rt_async-std_1")]
+use async_amqp::LapinAsyncStdExt;
+
 use crate::{Pool, PoolConfig};
 
 /// Configuration object. By enabling the `config` feature you can
@@ -40,8 +46,16 @@ impl Config {
     /// Create pool using the current configuration
     pub fn create_pool(&self) -> Pool {
         let url = self.get_url().to_string();
-        let manager = crate::Manager::new(url, self.connection_properties.clone());
         let pool_config = self.get_pool_config();
+        let connection_properties = self.connection_properties.clone();
+        let connection_properties = match pool_config.runtime {
+            deadpool::Runtime::None => connection_properties,
+            #[cfg(feature = "rt_tokio_1")]
+            deadpool::Runtime::Tokio1 => connection_properties.with_tokio(),
+            #[cfg(feature = "rt_async-std_1")]
+            deadpool::Runtime::AsyncStd1 => connection_properties.with_async_std(),
+        };
+        let manager = crate::Manager::new(url, connection_properties);
         Pool::from_config(manager, pool_config)
     }
     /// Get `URL` which can be used to connect to

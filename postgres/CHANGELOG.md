@@ -11,6 +11,7 @@
   `prepare_typed_cached`. This makes the non-caching prepare
   methods available without having to dereference `ClientWrapper`
   or `Transaction` objects first.
+* Add `rt_tokio_1` and `rt_async-std_1` features
 
 ## v0.7.0
 
