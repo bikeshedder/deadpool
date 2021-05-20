@@ -7,6 +7,10 @@
 * Remove deprecated `from_env` methods
 * Add `Manager::statement_caches` field which provides access
   to managing the statement cache for all clients.
+* Rename `prepare` to `prepare_cached` and `prepare_typed` to
+  `prepare_typed_cached`. This makes the non-caching prepare
+  methods available without having to dereference `ClientWrapper`
+  or `Transaction` objects first.
 
 ## v0.7.0
 

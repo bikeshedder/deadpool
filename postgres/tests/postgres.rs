@@ -42,7 +42,7 @@ fn create_pool() -> Pool<tokio_postgres::NoTls> {
 async fn test_basic() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
-    let stmt = client.prepare("SELECT 1 + 2").await.unwrap();
+    let stmt = client.prepare_cached("SELECT 1 + 2").await.unwrap();
     let rows = client.query(&stmt, &[]).await.unwrap();
     let value: i32 = rows[0].get(0);
     assert_eq!(value, 3);
@@ -50,11 +50,11 @@ async fn test_basic() {
 }
 
 #[tokio::test]
-async fn test_prepare_typed() {
+async fn test_prepare_typed_cached() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
     let stmt = client
-        .prepare_typed("SELECT 1 + $1", &[Type::INT2])
+        .prepare_typed_cached("SELECT 1 + $1", &[Type::INT2])
         .await
         .unwrap();
     let rows = client.query(&stmt, &[&42i16]).await.unwrap();
@@ -67,7 +67,7 @@ async fn test_prepare_typed_error() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
     let stmt = client
-        .prepare_typed("SELECT 1 + $1", &[Type::INT2])
+        .prepare_typed_cached("SELECT 1 + $1", &[Type::INT2])
         .await
         .unwrap();
     assert!(client.query(&stmt, &[&42i32]).await.is_err());
@@ -79,7 +79,7 @@ async fn test_transaction_1() {
     let mut client = pool.get().await.unwrap();
     {
         let txn = client.transaction().await.unwrap();
-        let stmt = txn.prepare("SELECT 1 + 2").await.unwrap();
+        let stmt = txn.prepare_cached("SELECT 1 + 2").await.unwrap();
         let rows = txn.query(&stmt, &[]).await.unwrap();
         let value: i32 = rows[0].get(0);
         txn.commit().await.unwrap();
@@ -92,7 +92,7 @@ async fn test_transaction_1() {
 async fn test_transaction_2() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
-    let stmt = client.prepare("SELECT 1 + 2").await.unwrap();
+    let stmt = client.prepare_cached("SELECT 1 + 2").await.unwrap();
     {
         let txn = client.transaction().await.unwrap();
         let rows = txn.query(&stmt, &[]).await.unwrap();
@@ -107,7 +107,7 @@ async fn test_transaction_2() {
 async fn test_transaction_pipeline() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
-    let stmt = client.prepare("SELECT 1 + $1").await.unwrap();
+    let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
     let txn = client.transaction().await.unwrap();
     let mut futures = vec![];
     for i in 0..100 {
@@ -180,7 +180,7 @@ async fn test_statement_cache_clear() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
     assert!(client.statement_cache.size() == 0);
-    client.prepare("SELECT 1;").await.unwrap();
+    client.prepare_cached("SELECT 1;").await.unwrap();
     assert!(client.statement_cache.size() == 1);
     client.statement_cache.clear();
     assert!(client.statement_cache.size() == 0);
@@ -192,12 +192,12 @@ async fn test_statement_caches_clear() {
     // prepare 1st client
     let client0 = pool.get().await.unwrap();
     assert!(client0.statement_cache.size() == 0);
-    client0.prepare("SELECT 1;").await.unwrap();
+    client0.prepare_cached("SELECT 1;").await.unwrap();
     assert!(client0.statement_cache.size() == 1);
     // prepare 2nd client
     let client1 = pool.get().await.unwrap();
     assert!(client1.statement_cache.size() == 0);
-    client1.prepare("SELECT 1;").await.unwrap();
+    client1.prepare_cached("SELECT 1;").await.unwrap();
     assert!(client1.statement_cache.size() == 1);
     // clear statement cache using manager
     pool.manager().statement_caches.clear();

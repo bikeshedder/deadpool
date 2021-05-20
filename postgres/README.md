@@ -28,7 +28,7 @@ async fn main() {
     let pool = cfg.create_pool(NoTls).unwrap();
     for i in 1..10 {
         let mut client = pool.get().await.unwrap();
-        let stmt = client.prepare("SELECT 1 + $1").await.unwrap();
+        let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
         let rows = client.query(&stmt, &[&i]).await.unwrap();
         let value: i32 = rows[0].get(0);
         assert_eq!(value, i + 1);
@@ -70,7 +70,7 @@ async fn main() {
     let pool = cfg.pg.create_pool(NoTls).unwrap();
     for i in 1..10 {
         let mut client = pool.get().await.unwrap();
-        let stmt = client.prepare("SELECT 1 + $1").await.unwrap();
+        let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
         let rows = client.query(&stmt, &[&i]).await.unwrap();
         let value: i32 = rows[0].get(0);
         assert_eq!(value, i + 1);
@@ -104,7 +104,7 @@ async fn main() {
     let pool = Pool::new(mgr, 16);
     for i in 1..10 {
         let mut client = pool.get().await.unwrap();
-        let stmt = client.prepare("SELECT 1 + $1").await.unwrap();
+        let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
         let rows = client.query(&stmt, &[&i]).await.unwrap();
         let value: i32 = rows[0].get(0);
         assert_eq!(value, i + 1);
