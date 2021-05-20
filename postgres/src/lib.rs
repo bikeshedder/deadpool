@@ -16,6 +16,11 @@
 //! | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
 //! | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
 //!
+//! **Important:** `async-std` support is currently limited to the
+//! `async-std` specific timeout function. You still need to enable
+//! the `tokio1` feature of `async-std` in order to use this crate
+//! with `async-std`.
+//!
 //! ## Example
 //!
 //! ```rust,ignore
