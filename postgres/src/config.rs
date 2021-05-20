@@ -170,7 +170,7 @@ impl RecyclingMethod {
 
 impl Default for RecyclingMethod {
     fn default() -> Self {
-        Self::Verified
+        Self::Fast
     }
 }
 

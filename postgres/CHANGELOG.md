@@ -12,6 +12,7 @@
   methods available without having to dereference `ClientWrapper`
   or `Transaction` objects first.
 * Add `rt_tokio_1` and `rt_async-std_1` features
+* Enable `RecyclingMethod::Fast` by default
 
 ## v0.7.0
 
