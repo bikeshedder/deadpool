@@ -1,3 +1,6 @@
+use futures::FutureExt;
+
+use redis::cmd;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Default)]
@@ -48,4 +51,31 @@ async fn test_high_level_commands() {
     let _: () = conn.set("deadpool/hlc_test_key", 42).await.unwrap();
     let value: isize = conn.get("deadpool/hlc_test_key").await.unwrap();
     assert_eq!(value, 42);
+}
+
+#[tokio::test]
+async fn test_aborted_command() {
+    let pool = create_pool();
+    {
+        let mut conn = pool.get().await.unwrap();
+        // Poll the future once. This does execute the query but does not
+        // wait for the response. The connection now has a request queued
+        // and the response to it will be returned when using the connection
+        // the next time:
+        // https://github.com/bikeshedder/deadpool/issues/97
+        // https://github.com/mitsuhiko/redis-rs/issues/489
+        cmd("PING")
+            .arg("wrong")
+            .query_async::<_, String>(&mut conn)
+            .now_or_never();
+    }
+    {
+        let mut conn = pool.get().await.unwrap();
+        let value: String = cmd("PING")
+            .arg("right")
+            .query_async(&mut conn)
+            .await
+            .unwrap();
+        assert_eq!(value, "right");
+    }
 }

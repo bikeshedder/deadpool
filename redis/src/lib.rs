@@ -108,13 +108,14 @@
 //! at your option.
 #![warn(missing_docs, unreachable_pub)]
 
-use std::ops::{Deref, DerefMut};
+use std::{ops::{Deref, DerefMut}, sync::atomic::{AtomicUsize, Ordering}};
 
 use async_trait::async_trait;
 /// Re-export deadpool::managed::PoolConfig
 pub use deadpool::managed::PoolConfig;
 /// Re-export deadpool::Runtime;
 pub use deadpool::Runtime;
+use deadpool::managed::RecycleError;
 use redis::{
     aio::{Connection as RedisConnection, ConnectionLike},
     Client, IntoConnectionInfo, RedisError, RedisResult,
@@ -207,6 +208,7 @@ impl ConnectionLike for ConnectionWrapper {
 /// The manager for creating and recyling lapin connections
 pub struct Manager {
     client: Client,
+    ping_number: AtomicUsize,
 }
 
 impl Manager {
@@ -214,6 +216,7 @@ impl Manager {
     pub fn new<T: IntoConnectionInfo>(params: T) -> RedisResult<Self> {
         Ok(Self {
             client: Client::open(params)?,
+            ping_number: AtomicUsize::new(0),
         })
     }
 }
@@ -227,11 +230,16 @@ impl deadpool::managed::Manager for Manager {
         Ok(conn)
     }
     async fn recycle(&self, conn: &mut RedisConnection) -> RecycleResult {
-        match redis::cmd("PING")
-            .query_async::<_, redis::Value>(conn)
+        let ping_number = self.ping_number.fetch_add(1, Ordering::Relaxed).to_string();
+        match redis::cmd(&format!("PING {}", ping_number))
+            .query_async::<_, String>(conn)
             .await
         {
-            Ok(_) => Ok(()),
+            Ok(n) => if n == ping_number {
+                Ok(())
+            } else {
+                Err(RecycleError::Message(String::from("Invalid PING response")))
+            }
             Err(e) => Err(e.into()),
         }
     }

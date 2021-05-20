@@ -10,6 +10,9 @@
   be used with plain `Cmd` and `Pipe` objects from the `redis` crate.
 * Add support for new `redis::ConnectionInfo` structure.
 * Change `redis` dependency to version `0.20`
+* Make connection recycling more robust by checking the PING
+  response. This works around `Cmd::query_async` not being drop
+  safe in `redis` version `0.10` and earlier.
 
 ## v0.7.1
 
