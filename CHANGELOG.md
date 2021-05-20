@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.8.0 (unreleased)
+## v0.8.0
 
 * Add support for closing pools
 * Replace `crossbeam-queue` by `Mutex<VecDeque<_>>`

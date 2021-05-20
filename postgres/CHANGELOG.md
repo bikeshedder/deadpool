@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.8.0 (unreleased)
+## v0.8.0
 
 * Do not detect unix domain socket paths at config creation.
 * Update `config` dependency to version `0.11`

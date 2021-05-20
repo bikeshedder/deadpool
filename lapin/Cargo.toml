@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-lapin"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for lapin"
 keywords = ["async", "lapin", "pool", "amqp", "rabbitmq"]
@@ -14,7 +14,7 @@ resolver = "2"
 all-features = true
 
 [dependencies]
-deadpool = { path = "../", version = "0.7", default-features = false, features = ["managed"] }
+deadpool = { path = "../", version = "0.8", default-features = false, features = ["managed"] }
 async-trait = "0.1.17"
 futures = "0.3.1"
 log = "0.4"

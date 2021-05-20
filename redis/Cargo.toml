@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-redis"
-version = "0.7.1"
+version = "0.8.0"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for redis"
 keywords = ["async", "redis", "pool"]
@@ -14,7 +14,7 @@ resolver = "2"
 all-features = true
 
 [dependencies]
-deadpool = { path = "../", version = "0.7", default-features = false, features = ["managed"] }
+deadpool = { path = "../", version = "0.8", default-features = false, features = ["managed"] }
 async-trait = "0.1.17"
 log = "0.4"
 redis = { version = "0.20", default-features = false, features = ["aio"] }

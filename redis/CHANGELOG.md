@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.8.0 (unreleased)
+## v0.8.0
 
 * Update `config` dependency to version `0.11`
 * Remove deprecated `from_env` methods
