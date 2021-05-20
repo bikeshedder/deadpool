@@ -108,14 +108,17 @@
 //! at your option.
 #![warn(missing_docs, unreachable_pub)]
 
-use std::{ops::{Deref, DerefMut}, sync::atomic::{AtomicUsize, Ordering}};
+use std::{
+    ops::{Deref, DerefMut},
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use async_trait::async_trait;
 /// Re-export deadpool::managed::PoolConfig
 pub use deadpool::managed::PoolConfig;
+use deadpool::managed::RecycleError;
 /// Re-export deadpool::Runtime;
 pub use deadpool::Runtime;
-use deadpool::managed::RecycleError;
 use redis::{
     aio::{Connection as RedisConnection, ConnectionLike},
     Client, IntoConnectionInfo, RedisError, RedisResult,
@@ -235,10 +238,12 @@ impl deadpool::managed::Manager for Manager {
             .query_async::<_, String>(conn)
             .await
         {
-            Ok(n) => if n == ping_number {
-                Ok(())
-            } else {
-                Err(RecycleError::Message(String::from("Invalid PING response")))
+            Ok(n) => {
+                if n == ping_number {
+                    Ok(())
+                } else {
+                    Err(RecycleError::Message(String::from("Invalid PING response")))
+                }
             }
             Err(e) => Err(e.into()),
         }
