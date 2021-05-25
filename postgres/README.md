@@ -163,7 +163,7 @@ async fn main() {
 - **How can I clear the statement cache?**
 
   You can call `pool.manager().statement_cache.clear()` to clear all
-  statement caches or `pool.manager().statement_cache.clear()` to remove
+  statement caches or `pool.manager().statement_cache.remove()` to remove
   a single statement from all caches.
 
   **Important:** The `ClientWrapper` also provides a `statement_cache`
