@@ -235,7 +235,7 @@ impl<T: MakeTlsConnect<Socket>> Manager<T> {
         Self::from_config(pg_config, tls, ManagerConfig::default())
     }
     /// Create manager using a `tokio_postgres::Config` and a `TlsConnector`
-    /// and also
+    /// and `deadpool_postgres::ManagerConfig`.
     pub fn from_config(
         pg_config: tokio_postgres::Config,
         tls: T,
