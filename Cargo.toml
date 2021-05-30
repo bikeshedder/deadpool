@@ -36,6 +36,7 @@ members = [
     "postgres",
     "lapin",
     "redis",
+    "sqlite",
 ]
 exclude = [
     "examples",
