@@ -96,7 +96,7 @@
 //! at your option.
 #![warn(missing_docs)]
 
-use std::ops::{Deref, DerefMut};
+use std::{ops::{Deref, DerefMut}, sync::atomic::{AtomicUsize,Ordering}};
 
 use async_trait::async_trait;
 use redis::{
@@ -148,6 +148,7 @@ impl DerefMut for ConnectionWrapper {
 /// The manager for creating and recyling lapin connections
 pub struct Manager {
     client: Client,
+    ping_number: AtomicUsize,
 }
 
 impl Manager {
@@ -155,6 +156,7 @@ impl Manager {
     pub fn new<T: IntoConnectionInfo>(params: T) -> RedisResult<Self> {
         Ok(Self {
             client: Client::open(params)?,
+            ping_number: AtomicUsize::new(0),
         })
     }
 }
@@ -167,8 +169,18 @@ impl deadpool::managed::Manager<ConnectionWrapper, RedisError> for Manager {
     }
 
     async fn recycle(&self, conn: &mut ConnectionWrapper) -> RecycleResult {
-        match cmd("PING").execute_async(conn).await {
-            Ok(_) => Ok(()),
+        let ping_number = self.ping_number.fetch_add(1, Ordering::Relaxed).to_string();
+        match redis::cmd(&format!("PING {}", ping_number))
+            .query_async::<_, String>(conn.deref_mut())
+            .await
+        {
+            Ok(n) => {
+                if n == ping_number {
+                    Ok(())
+                } else {
+                    Err(deadpool::managed::RecycleError::Message(String::from("Invalid PING response")))
+                }
+            }
             Err(e) => Err(e.into()),
         }
     }
