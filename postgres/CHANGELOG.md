@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.9.0 (unreleased)
+
+* Remove generic `<T>` parameter from `Manager`, `Pool` and `Client`
+  types. This parameter was added by accident when deadpool switched
+  to using associated types.
+
 ## v0.8.1
 
 * Update `tokio-postgres` dependency to version `0.7.2`

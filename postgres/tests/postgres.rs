@@ -33,7 +33,7 @@ impl Config {
     }
 }
 
-fn create_pool() -> Pool<tokio_postgres::NoTls> {
+fn create_pool() -> Pool {
     let cfg = Config::from_env();
     cfg.pg.create_pool(tokio_postgres::NoTls).unwrap()
 }

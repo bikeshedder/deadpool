@@ -266,7 +266,7 @@ impl Config {
         Self::default()
     }
     /// Create pool using the current configuration
-    pub fn create_pool<T>(&self, tls: T) -> Result<Pool<T>, ConfigError>
+    pub fn create_pool<T: MakeTlsConnect<Socket>>(&self, tls: T) -> Result<Pool, ConfigError>
     where
         T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
         T::Stream: Sync + Send,

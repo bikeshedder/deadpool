@@ -151,14 +151,14 @@
 //!
 //!   ```toml
 //!   [dependencies]
-//!   deadpool-postgres = { version = "0.8" }
+//!   deadpool-postgres = { version = "0.7" }
 //!   tokio-postgres = { version = "0.7", features = ["with-uuid-0_8"] }
 //!   ```
 //!
 //!   **Important:** The version numbers of `deadpool-postgres` and
-//!   `tokio-postgres` do not necessarily match. If they do it is just a
-//!   coincidence that both crates have the same MAJOR and MINOR version
-//!   number.
+//!   `tokio-postgres` do not necessarily match. It is just a coincidence
+//!   that both crates have the same MAJOR and MINOR version number at the
+//!   time of this writing.
 //!
 //! - **How can I clear the statement cache?**
 //!
@@ -205,13 +205,13 @@ pub use deadpool::managed::PoolConfig;
 pub use deadpool::Runtime;
 
 /// A type alias for using `deadpool::Pool` with `tokio_postgres`
-pub type Pool<T> = deadpool::managed::Pool<Manager<T>>;
+pub type Pool = deadpool::managed::Pool<Manager>;
 
 /// A type alias for using `deadpool::PoolError` with `tokio_postgres`
 pub type PoolError = deadpool::managed::PoolError<tokio_postgres::Error>;
 
 /// A type alias for using `deadpool::Object` with `tokio_postgres`
-pub type Client<T> = deadpool::managed::Object<Manager<T>>;
+pub type Client = deadpool::managed::Object<Manager>;
 
 type RecycleResult = deadpool::managed::RecycleResult<Error>;
 type RecycleError = deadpool::managed::RecycleError<Error>;
@@ -220,55 +220,55 @@ type RecycleError = deadpool::managed::RecycleError<Error>;
 pub use tokio_postgres;
 
 /// The manager for creating and recyling postgresql connections
-pub struct Manager<T: MakeTlsConnect<Socket>> {
+pub struct Manager {
     config: ManagerConfig,
     pg_config: PgConfig,
-    tls: T,
+    connect: Box<dyn Connect>,
     /// This field provides access to the statement caches of clients
     /// handed out by the pool.
     pub statement_caches: StatementCaches,
 }
 
-impl<T: MakeTlsConnect<Socket>> Manager<T> {
+impl Manager {
     /// Create manager using a `tokio_postgres::Config` and a `TlsConnector`.
-    pub fn new(pg_config: tokio_postgres::Config, tls: T) -> Manager<T> {
+    pub fn new<T>(pg_config: tokio_postgres::Config, tls: T) -> Manager
+    where
+        T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
+        T::Stream: Sync + Send,
+        T::TlsConnect: Sync + Send,
+        <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
+    {
         Self::from_config(pg_config, tls, ManagerConfig::default())
     }
     /// Create manager using a `tokio_postgres::Config` and a `TlsConnector`
     /// and `deadpool_postgres::ManagerConfig`.
-    pub fn from_config(
+    pub fn from_config<T>(
         pg_config: tokio_postgres::Config,
         tls: T,
         config: ManagerConfig,
-    ) -> Manager<T> {
+    ) -> Manager
+    where
+        T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
+        T::Stream: Sync + Send,
+        T::TlsConnect: Sync + Send,
+        <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
+    {
         Manager {
             config,
             pg_config,
-            tls,
+            connect: Box::new(ConnectImpl { tls }),
             statement_caches: StatementCaches::default(),
         }
     }
 }
 
 #[async_trait]
-impl<T> deadpool::managed::Manager for Manager<T>
-where
-    T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
-    T::Stream: Sync + Send,
-    T::TlsConnect: Sync + Send,
-    <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
-{
+impl deadpool::managed::Manager for Manager {
     type Type = ClientWrapper;
     type Error = Error;
 
     async fn create(&self) -> Result<ClientWrapper, Error> {
-        let (client, connection) = self.pg_config.connect(self.tls.clone()).await?;
-        let connection = connection.map(|r| {
-            if let Err(e) = r {
-                warn!(target: "deadpool.postgres", "Connection error: {}", e);
-            }
-        });
-        spawn(connection);
+        let client = self.connect.connect(&self.pg_config).await?;
         let client_wrapper = ClientWrapper::new(client);
         self.statement_caches
             .attach(&client_wrapper.statement_cache);
@@ -292,6 +292,41 @@ where
     }
     fn detach(&self, object: &mut ClientWrapper) {
         self.statement_caches.detach(&object.statement_cache);
+    }
+}
+
+#[async_trait::async_trait]
+trait Connect: Sync + Send {
+    async fn connect(&self, pg_config: &PgConfig) -> Result<PgClient, Error>;
+}
+
+struct ConnectImpl<T>
+where
+    T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
+    T::Stream: Sync + Send,
+    T::TlsConnect: Sync + Send,
+    <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
+{
+    tls: T,
+}
+
+#[async_trait::async_trait]
+impl<T> Connect for ConnectImpl<T>
+where
+    T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
+    T::Stream: Sync + Send,
+    T::TlsConnect: Sync + Send,
+    <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
+{
+    async fn connect(&self, pg_config: &PgConfig) -> Result<PgClient, Error> {
+        let (client, connection) = pg_config.connect(self.tls.clone()).await?;
+        let connection = connection.map(|r| {
+            if let Err(e) = r {
+                warn!(target: "deadpool.postgres", "Connection error: {}", e);
+            }
+        });
+        spawn(connection);
+        Ok(client)
     }
 }
 
