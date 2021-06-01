@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.8.1 (unreleased)
+
+* Export `PoolCreateError`
+
 ## v0.8.0
 
 * Update `config` dependency to version `0.11`
