@@ -141,8 +141,8 @@ impl Manager {
     /// Create manager using AMQP address and `lapin::ConnectionProperties`
     pub fn new(addr: String, connection_properties: ConnectionProperties) -> Self {
         Self {
-            addr: addr,
-            connection_properties: connection_properties,
+            addr,
+            connection_properties,
         }
     }
 }

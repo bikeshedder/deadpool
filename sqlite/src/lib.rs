@@ -93,7 +93,7 @@ impl deadpool::managed::Manager for Manager {
         let n: usize = conn
             .interact(move |conn| conn.query_row("SELECT $1", [recycle_count], |row| row.get(0)))
             .await
-            .map_err(|e| RecycleError::Backend(e))?;
+            .map_err(RecycleError::Backend)?;
         if n == recycle_count {
             Ok(())
         } else {

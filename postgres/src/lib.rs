@@ -399,14 +399,14 @@ impl StatementCache {
             types: Cow::Owned(types.to_owned()),
         };
         let mut map = self.map.write().unwrap();
-        let removed = map.remove(&key).map(|stmt| stmt.to_owned());
+        let removed = map.remove(&key);
         if removed.is_some() {
             self.size.fetch_sub(1, Ordering::Relaxed);
         }
         removed
     }
     /// Get statement from cache
-    fn get<'a>(&self, query: &str, types: &[Type]) -> Option<Statement> {
+    fn get(&self, query: &str, types: &[Type]) -> Option<Statement> {
         let key = StatementCacheKey {
             query: Cow::Borrowed(query),
             types: Cow::Borrowed(types),
