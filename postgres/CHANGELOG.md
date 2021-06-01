@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.8.1 (unreleased)
+
+* Update `tokio-postgres` dependency to version `0.7.2`
+  This crate depends on the `GenericClient::client` method
+  which was added in `tokio-postgres` version `0.7.2`.
+
 ## v0.8.0
 
 * Do not detect unix domain socket paths at config creation.
