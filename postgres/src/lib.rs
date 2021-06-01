@@ -151,7 +151,7 @@
 //!
 //!   ```toml
 //!   [dependencies]
-//!   deadpool-postgres = { version = "0.8" }
+//!   deadpool-postgres = { version = "0.9" }
 //!   tokio-postgres = { version = "0.7", features = ["with-uuid-0_8"] }
 //!   ```
 //!
