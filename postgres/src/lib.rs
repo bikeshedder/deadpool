@@ -390,11 +390,11 @@ struct StatementCacheKey<'a> {
 ///     .await;
 /// let rows = client.query(stmt, &[]).await?;
 /// ...
+/// ```
 ///
 /// Normally you probably want to use the `prepare_cached`
 /// and `prepare_typed_cached` methods from the `ClientWrapper`
 /// and `Transaction` structs instead.
-/// ```
 pub struct StatementCache {
     map: RwLock<HashMap<StatementCacheKey<'static>, Statement>>,
     size: AtomicUsize,
