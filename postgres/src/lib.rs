@@ -151,14 +151,14 @@
 //!
 //!   ```toml
 //!   [dependencies]
-//!   deadpool-postgres = { version = "0.7" }
+//!   deadpool-postgres = { version = "0.8" }
 //!   tokio-postgres = { version = "0.7", features = ["with-uuid-0_8"] }
 //!   ```
 //!
 //!   **Important:** The version numbers of `deadpool-postgres` and
-//!   `tokio-postgres` do not necessarily match. It is just a coincidence
-//!   that both crates have the same MAJOR and MINOR version number at the
-//!   time of this writing.
+//!   `tokio-postgres` do not necessarily match. If they do it is just a
+//!   coincidence that both crates have the same MAJOR and MINOR version
+//!   number.
 //!
 //! - **How can I clear the statement cache?**
 //!
