@@ -141,7 +141,7 @@ type RecycleResult = deadpool::managed::RecycleResult<RedisError>;
 pub use redis;
 
 mod config;
-pub use config::Config;
+pub use config::{Config, CreatePoolError};
 
 /// A wrapper for `redis::Connection`. The `query_async` and `execute_async`
 /// functions of `redis::Cmd` and `redis::Pipeline` consume the connection.
