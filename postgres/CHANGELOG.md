@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.8.1 (unreleased)
+## v0.8.1
 
 * Update `tokio-postgres` dependency to version `0.7.2`
   This crate depends on the `GenericClient::client` method

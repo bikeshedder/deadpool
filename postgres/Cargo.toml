@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-postgres"
-version = "0.8.0"
+version = "0.8.1"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for tokio-postgres"
 keywords = ["async", "database", "pool", "postgres"]
