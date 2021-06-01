@@ -1,5 +1,11 @@
 # Change Log
 
+## v0.6.2
+
+* Make connection recycling more robust by checking the PING
+  response. This works around `Cmd::query_async` not being drop
+  safe in `redis` version `0.10` and earlier.
+
 ## v0.6.1
 
 * Change `redis` dependency to version range `0.15` to `0.17`
