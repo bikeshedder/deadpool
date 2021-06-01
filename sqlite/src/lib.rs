@@ -1,12 +1,12 @@
-//! # Deadpool for PostgreSQL [![Latest Version](https://img.shields.io/crates/v/deadpool-postgres.svg)](https://crates.io/crates/deadpool-postgres)
+//! # Deadpool for SQLite [![Latest Version](https://img.shields.io/crates/v/deadpool-sqlite.svg)](https://crates.io/crates/deadpool-sqlite)
 //!
 //! Deadpool is a dead simple async pool for connections and objects
 //! of any type.
 //!
 //! This crate implements a [`deadpool`](https://crates.io/crates/deadpool)
-//! manager for [`tokio-postgres`](https://crates.io/crates/tokio-postgres)
-//! and also provides a `statement` cache by wrapping `tokio_postgres::Client`
-//! and `tokio_postgres::Transaction`.
+//! manager for [`rusqlite`](https://crates.io/crates/rusqlite)
+//! and provides a wrapper that ensures correct use of the connection
+//! inside a separate thread.
 //!
 //! ## Features
 //!
@@ -33,6 +33,15 @@
 //!     }
 //! }
 //! ```
+//!
+//! ## License
+//!
+//! Licensed under either of
+//!
+//! - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+//! - MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+//!
+//! at your option.
 #![warn(missing_docs, unreachable_pub)]
 
 use std::sync::atomic::AtomicUsize;
