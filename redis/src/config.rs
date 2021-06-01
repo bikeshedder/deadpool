@@ -125,9 +125,12 @@ impl redis::IntoConnectionInfo for ConnectionInfo {
     }
 }
 
+/// An error returned when pool creation fails.
 #[derive(Debug)]
 pub enum CreatePoolError {
+    /// The pool configuration contained invalid options.
     Config(String),
+    /// Redis returned an error while creating the pool.
     Redis(redis::RedisError),
 }
 
