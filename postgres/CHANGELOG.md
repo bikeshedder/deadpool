@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.9.0 (unreleased)
+## v0.9.0
 
 * Remove generic `<T>` parameter from `Manager`, `Pool` and `Client`
   types. This parameter was added by accident when deadpool switched
