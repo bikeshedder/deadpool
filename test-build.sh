@@ -34,3 +34,8 @@ cargo build --no-default-features --features managed,unmanaged
 	cargo build --no-default-features --features rt_async-std_1
 )
 
+(
+	cd sqlite
+	cargo build
+	cargo build --no-default-features
+)
