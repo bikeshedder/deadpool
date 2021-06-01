@@ -48,28 +48,28 @@ impl Default for ConnectionAddr {
     }
 }
 
-impl Into<redis::ConnectionAddr> for ConnectionAddr {
-    fn into(self) -> redis::ConnectionAddr {
-        match self {
-            Self::Tcp(host, port) => redis::ConnectionAddr::Tcp(host, port),
-            Self::TcpTls {
+impl From<ConnectionAddr> for redis::ConnectionAddr {
+    fn from(addr: ConnectionAddr) -> Self {
+        match addr {
+            ConnectionAddr::Tcp(host, port) => Self::Tcp(host, port),
+            ConnectionAddr::TcpTls {
                 host,
                 port,
                 insecure,
-            } => redis::ConnectionAddr::TcpTls {
+            } => Self::TcpTls {
                 host,
                 port,
                 insecure,
             },
-            Self::Unix(path) => redis::ConnectionAddr::Unix(path),
+            ConnectionAddr::Unix(path) => Self::Unix(path),
         }
     }
 }
 
-impl Into<ConnectionAddr> for redis::ConnectionAddr {
-    fn into(self) -> ConnectionAddr {
-        match self {
-            redis::ConnectionAddr::Tcp(host, port) => ConnectionAddr::Tcp(host, port),
+impl From<redis::ConnectionAddr> for ConnectionAddr {
+    fn from(addr: redis::ConnectionAddr) -> Self {
+        match addr {
+            redis::ConnectionAddr::Tcp(host, port) => Self::Tcp(host, port),
             redis::ConnectionAddr::TcpTls {
                 host,
                 port,
@@ -79,7 +79,7 @@ impl Into<ConnectionAddr> for redis::ConnectionAddr {
                 port,
                 insecure,
             },
-            redis::ConnectionAddr::Unix(path) => ConnectionAddr::Unix(path),
+            redis::ConnectionAddr::Unix(path) => Self::Unix(path),
         }
     }
 }
@@ -97,24 +97,24 @@ pub struct ConnectionInfo {
     passwd: Option<String>,
 }
 
-impl Into<redis::ConnectionInfo> for ConnectionInfo {
-    fn into(self) -> redis::ConnectionInfo {
-        redis::ConnectionInfo {
-            addr: Box::new((*self.addr).into()),
-            db: self.db,
-            username: self.username,
-            passwd: self.passwd,
+impl From<ConnectionInfo> for redis::ConnectionInfo {
+    fn from(info: ConnectionInfo) -> Self {
+        Self {
+            addr: Box::new((*info.addr).into()),
+            db: info.db,
+            username: info.username,
+            passwd: info.passwd,
         }
     }
 }
 
-impl Into<ConnectionInfo> for redis::ConnectionInfo {
-    fn into(self) -> ConnectionInfo {
-        ConnectionInfo {
-            addr: Box::new((*self.addr).into()),
-            db: self.db,
-            username: self.username,
-            passwd: self.passwd,
+impl From<redis::ConnectionInfo> for ConnectionInfo {
+    fn from(info: redis::ConnectionInfo) -> Self {
+        Self {
+            addr: Box::new((*info.addr).into()),
+            db: info.db,
+            username: info.username,
+            passwd: info.passwd,
         }
     }
 }

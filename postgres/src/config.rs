@@ -30,10 +30,10 @@ impl fmt::Display for ConfigError {
 }
 
 #[cfg(feature = "config")]
-impl Into<::config_crate::ConfigError> for ConfigError {
-    fn into(self) -> ::config_crate::ConfigError {
-        match self {
-            Self::Message(message) => ::config_crate::ConfigError::Message(message),
+impl From<ConfigError> for ::config_crate::ConfigError {
+    fn from(e: ConfigError) -> Self {
+        match e {
+            ConfigError::Message(message) => Self::Message(message),
         }
     }
 }
@@ -51,11 +51,11 @@ pub enum TargetSessionAttrs {
     ReadWrite,
 }
 
-impl Into<PgTargetSessionAttrs> for TargetSessionAttrs {
-    fn into(self) -> PgTargetSessionAttrs {
-        match self {
-            Self::Any => PgTargetSessionAttrs::Any,
-            Self::ReadWrite => PgTargetSessionAttrs::ReadWrite,
+impl From<TargetSessionAttrs> for PgTargetSessionAttrs {
+    fn from(attrs: TargetSessionAttrs) -> Self {
+        match attrs {
+            TargetSessionAttrs::Any => Self::Any,
+            TargetSessionAttrs::ReadWrite => Self::ReadWrite,
         }
     }
 }
@@ -73,12 +73,12 @@ pub enum SslMode {
     Require,
 }
 
-impl Into<PgSslMode> for SslMode {
-    fn into(self) -> PgSslMode {
-        match self {
-            Self::Disable => PgSslMode::Disable,
-            Self::Prefer => PgSslMode::Prefer,
-            Self::Require => PgSslMode::Require,
+impl From<SslMode> for PgSslMode {
+    fn from(mode: SslMode) -> Self {
+        match mode {
+            SslMode::Disable => Self::Disable,
+            SslMode::Prefer => Self::Prefer,
+            SslMode::Require => Self::Require,
         }
     }
 }
@@ -96,12 +96,12 @@ pub enum ChannelBinding {
     Require,
 }
 
-impl Into<PgChannelBinding> for ChannelBinding {
-    fn into(self) -> PgChannelBinding {
-        match self {
-            Self::Disable => PgChannelBinding::Disable,
-            Self::Prefer => PgChannelBinding::Prefer,
-            Self::Require => PgChannelBinding::Require,
+impl From<ChannelBinding> for PgChannelBinding {
+    fn from(cb: ChannelBinding) -> Self {
+        match cb {
+            ChannelBinding::Disable => Self::Disable,
+            ChannelBinding::Prefer => Self::Prefer,
+            ChannelBinding::Require => Self::Require,
         }
     }
 }
