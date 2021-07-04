@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.8.1 (unreleased)
+
+* Add `Object::pool` method
+
 ## v0.8.0
 
 * Add support for closing pools
