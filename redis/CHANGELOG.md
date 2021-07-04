@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.9.0 (unreleased)
+
+* Remove `deadpool_redis::Connection` type alias
+* Rename `deadpool_redis::ConnectionWrapper` to `Connection`
+
 ## v0.8.1
 
 * Export `PoolCreateError`

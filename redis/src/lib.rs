@@ -127,13 +127,13 @@ use redis::{
 };
 
 /// A type alias for using `deadpool::Pool` with `redis`
-pub type Pool = deadpool::managed::Pool<Manager, ConnectionWrapper>;
+pub type Pool = deadpool::managed::Pool<Manager, Connection>;
 
 /// A type alias for using `deadpool::PoolError` with `redis`
 pub type PoolError = deadpool::managed::PoolError<RedisError>;
 
 /// A type alias for using `deadpool::Object` with `redis`
-pub type Connection = deadpool::managed::Object<Manager>;
+type Object = deadpool::managed::Object<Manager>;
 
 type RecycleResult = deadpool::managed::RecycleResult<RedisError>;
 
@@ -147,50 +147,50 @@ pub use config::{Config, CreatePoolError};
 /// functions of `redis::Cmd` and `redis::Pipeline` consume the connection.
 /// This wrapper makes it possible to replace the internal connection after
 /// executing a query.
-pub struct ConnectionWrapper {
-    conn: Connection,
+pub struct Connection {
+    conn: Object,
 }
 
-impl ConnectionWrapper {
+impl Connection {
     /// Take this object from the pool permanently. This reduces the size of
     /// the pool.
     pub fn take(this: Self) -> RedisConnection {
-        Connection::take(this.conn)
+        Object::take(this.conn)
     }
 }
 
-impl From<Connection> for ConnectionWrapper {
-    fn from(conn: Connection) -> Self {
+impl From<Object> for Connection {
+    fn from(conn: Object) -> Self {
         Self { conn }
     }
 }
 
-impl Deref for ConnectionWrapper {
+impl Deref for Connection {
     type Target = RedisConnection;
     fn deref(&self) -> &RedisConnection {
         &self.conn
     }
 }
 
-impl DerefMut for ConnectionWrapper {
+impl DerefMut for Connection {
     fn deref_mut(&mut self) -> &mut RedisConnection {
         &mut self.conn
     }
 }
 
-impl AsRef<redis::aio::Connection> for ConnectionWrapper {
+impl AsRef<redis::aio::Connection> for Connection {
     fn as_ref(&self) -> &redis::aio::Connection {
         &self.conn
     }
 }
 
-impl AsMut<redis::aio::Connection> for ConnectionWrapper {
+impl AsMut<redis::aio::Connection> for Connection {
     fn as_mut(&mut self) -> &mut redis::aio::Connection {
         &mut self.conn
     }
 }
 
-impl ConnectionLike for ConnectionWrapper {
+impl ConnectionLike for Connection {
     fn req_packed_command<'a>(
         &'a mut self,
         cmd: &'a redis::Cmd,
