@@ -119,6 +119,15 @@ impl<M: Manager> Object<M> {
         }
         this.obj.take().unwrap()
     }
+    /// Get the pool this object belongs to. Since objects only hold a
+    /// weak reference to the pool they come from this can fail and
+    /// return `None` instead.
+    pub fn pool(this: &Self) -> Option<Pool<M>> {
+        this.pool.upgrade().map(|inner| Pool {
+            inner,
+            _wrapper: PhantomData::default(),
+        })
+    }
 }
 
 impl<M: Manager> Drop for Object<M> {
