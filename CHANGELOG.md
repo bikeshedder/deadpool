@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.8.1 (unreleased)
+## v0.8.1
 
 * Add `Object::pool` method
 
