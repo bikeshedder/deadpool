@@ -37,6 +37,7 @@ members = [
     "lapin",
     "redis",
     "sqlite",
+    "diesel",
 ]
 exclude = [
     "examples",

@@ -1,0 +1,29 @@
+[package]
+name = "deadpool-diesel"
+version = "0.1.0"
+authors = ["Michael P. Jung <michael.jung@terreon.de>"]
+description = "Dead simple async pool for diesel"
+keywords = ["async", "database", "pool", "diesel"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/bikeshedder/deadpool"
+readme = "README.md"
+edition = "2018"
+resolver = "2"
+
+[dependencies]
+async-trait = { version = "0.1.17" }
+deadpool = { path = "../", version = "0.8", default-features = false, features = ["managed"] }
+diesel = { version = "1.4.3", default-features = false }
+tokio = { version = "1", features = ["rt"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+diesel = { version = "1.4.3", features = ["sqlite"] }
+
+[features]
+mysql = ["diesel/mysql"]
+postgres = ["diesel/postgres"]
+sqlite = ["diesel/sqlite"]
+
+[package.metadata.docs.rs]
+all-features = true
