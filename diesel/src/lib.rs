@@ -80,9 +80,7 @@ impl<C: diesel::Connection> Deref for Connection<C> {
 
 impl<C: diesel::Connection> From<Object<Manager<C>>> for Connection<C> {
     fn from(obj: Object<Manager<C>>) -> Self {
-        Self {
-            obj
-        }
+        Self { obj }
     }
 }
 
@@ -100,7 +98,9 @@ impl<C: diesel::Connection> diesel::connection::SimpleConnection for Connection<
 
 impl<C> diesel::Connection for Connection<C>
 where
-    C: diesel::Connection<TransactionManager = diesel::connection::AnsiTransactionManager> + Send + 'static,
+    C: diesel::Connection<TransactionManager = diesel::connection::AnsiTransactionManager>
+        + Send
+        + 'static,
     C::Backend: diesel::backend::UsesAnsiSavepointSyntax,
 {
     type Backend = C::Backend;
@@ -109,7 +109,8 @@ where
     fn establish(_: &str) -> diesel::ConnectionResult<Self> {
         Err(diesel::ConnectionError::BadConnection(String::from(
             "Cannot directly establish a pooled connection",
-        )))    }
+        )))
+    }
 
     fn execute(&self, query: &str) -> diesel::QueryResult<usize> {
         (**self).execute(query)
@@ -118,22 +119,26 @@ where
     fn query_by_index<T, U>(&self, source: T) -> diesel::QueryResult<Vec<U>>
     where
         T: diesel::query_builder::AsQuery,
-        T::Query: diesel::query_builder::QueryFragment<Self::Backend> + diesel::query_builder::QueryId,
+        T::Query:
+            diesel::query_builder::QueryFragment<Self::Backend> + diesel::query_builder::QueryId,
         Self::Backend: diesel::types::HasSqlType<T::SqlType>,
-        U: diesel::Queryable<T::SqlType, Self::Backend> {
+        U: diesel::Queryable<T::SqlType, Self::Backend>,
+    {
         (**self).query_by_index(source)
     }
 
     fn query_by_name<T, U>(&self, source: &T) -> diesel::QueryResult<Vec<U>>
     where
         T: diesel::query_builder::QueryFragment<Self::Backend> + diesel::query_builder::QueryId,
-        U: diesel::deserialize::QueryableByName<Self::Backend> {
+        U: diesel::deserialize::QueryableByName<Self::Backend>,
+    {
         (**self).query_by_name(source)
     }
 
     fn execute_returning_count<T>(&self, source: &T) -> diesel::QueryResult<usize>
     where
-        T: diesel::query_builder::QueryFragment<Self::Backend> + diesel::query_builder::QueryId {
+        T: diesel::query_builder::QueryFragment<Self::Backend> + diesel::query_builder::QueryId,
+    {
         (**self).execute_returning_count(source)
     }
 
