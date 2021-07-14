@@ -11,7 +11,7 @@ pub struct ConnectionWrapper<C: diesel::Connection> {
 unsafe impl<C: diesel::Connection + Send + 'static> Sync for ConnectionWrapper<C> {}
 
 /// Connection which is returned by the pool. It implements
-/// [diesel::Connection]() and can be used just like a normal
+/// [diesel::Connection] and can be used just like a normal
 /// connection from diesel.
 pub struct Connection<C: diesel::Connection + 'static> {
     obj: deadpool::managed::Object<Manager<C>>,
