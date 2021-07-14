@@ -67,7 +67,7 @@ where
         T: diesel::query_builder::AsQuery,
         T::Query:
             diesel::query_builder::QueryFragment<Self::Backend> + diesel::query_builder::QueryId,
-        Self::Backend: diesel::types::HasSqlType<T::SqlType>,
+        Self::Backend: diesel::sql_types::HasSqlType<T::SqlType>,
         U: diesel::Queryable<T::SqlType, Self::Backend>,
     {
         (**self).query_by_index(source)

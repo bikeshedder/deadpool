@@ -13,7 +13,7 @@ resolver = "2"
 [dependencies]
 async-trait = { version = "0.1.17" }
 deadpool = { path = "../", version = "0.8", default-features = false, features = ["managed"] }
-diesel = { version = "1.4.3", default-features = false }
+diesel = { version = "1.4.7", default-features = false }
 tokio = { version = "1", features = ["rt"] }
 
 [dev-dependencies]
