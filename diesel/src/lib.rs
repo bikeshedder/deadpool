@@ -9,9 +9,7 @@ use std::{convert::Into, ops::Deref};
 
 pub use deadpool::managed::{Pool, PoolError};
 
-use deadpool::managed::{RecycleError, RecycleResult};
-
-pub type Connection<C> = deadpool::managed::Object<ConnectionWrapper<C>>;
+use deadpool::managed::{Object, RecycleError, RecycleResult};
 
 #[cfg(feature = "sqlite")]
 pub type SqliteConnection = Connection<diesel::SqliteConnection>;
@@ -28,11 +26,11 @@ pub type PgManager = Manager<diesel::PgConnection>;
 pub type MysqlManager = Manager<diesel::MysqlConnection>;
 
 #[cfg(feature = "sqlite")]
-pub type SqlitePool = Pool<SqliteManager>;
+pub type SqlitePool = Pool<SqliteManager, SqliteConnection>;
 #[cfg(feature = "postgres")]
-pub type PgPool = Pool<PgManager>;
+pub type PgPool = Pool<PgManager, PgConnection>;
 #[cfg(feature = "mysql")]
-pub type MysqlPool = Pool<MysqlManager>;
+pub type MysqlPool = Pool<MysqlManager, MysqlConnection>;
 
 pub struct ConnectionWrapper<C: diesel::Connection> {
     conn: Option<C>,
@@ -40,16 +38,78 @@ pub struct ConnectionWrapper<C: diesel::Connection> {
 
 unsafe impl<C: diesel::Connection + Send + 'static> Sync for ConnectionWrapper<C> {}
 
-impl<C: diesel::Connection> Deref for ConnectionWrapper<C> {
+pub struct Connection<C: diesel::Connection + 'static> {
+    obj: deadpool::managed::Object<Manager<C>>,
+}
+
+impl<C: diesel::Connection> Deref for Connection<C> {
     type Target = C;
     fn deref(&self) -> &Self::Target {
-        self.conn.as_ref().unwrap()
+        self.obj.conn.as_ref().unwrap()
     }
 }
 
-impl<C: diesel::Connection> DerefMut for ConnectionWrapper<C> {
+impl<C: diesel::Connection> From<Object<Manager<C>>> for Connection<C> {
+    fn from(obj: Object<Manager<C>>) -> Self {
+        Self {
+            obj
+        }
+    }
+}
+
+impl<C: diesel::Connection> DerefMut for Connection<C> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.conn.as_mut().unwrap()
+        self.obj.conn.as_mut().unwrap()
+    }
+}
+
+impl<C: diesel::Connection> diesel::connection::SimpleConnection for Connection<C> {
+    fn batch_execute(&self, query: &str) -> diesel::QueryResult<()> {
+        (**self).batch_execute(query)
+    }
+}
+
+impl<C> diesel::Connection for Connection<C>
+where
+    C: diesel::Connection<TransactionManager = diesel::connection::AnsiTransactionManager> + Send + 'static,
+    C::Backend: diesel::backend::UsesAnsiSavepointSyntax,
+{
+    type Backend = C::Backend;
+    type TransactionManager = C::TransactionManager;
+
+    fn establish(_: &str) -> diesel::ConnectionResult<Self> {
+        Err(diesel::ConnectionError::BadConnection(String::from(
+            "Cannot directly establish a pooled connection",
+        )))    }
+
+    fn execute(&self, query: &str) -> diesel::QueryResult<usize> {
+        (**self).execute(query)
+    }
+
+    fn query_by_index<T, U>(&self, source: T) -> diesel::QueryResult<Vec<U>>
+    where
+        T: diesel::query_builder::AsQuery,
+        T::Query: diesel::query_builder::QueryFragment<Self::Backend> + diesel::query_builder::QueryId,
+        Self::Backend: diesel::types::HasSqlType<T::SqlType>,
+        U: diesel::Queryable<T::SqlType, Self::Backend> {
+        (**self).query_by_index(source)
+    }
+
+    fn query_by_name<T, U>(&self, source: &T) -> diesel::QueryResult<Vec<U>>
+    where
+        T: diesel::query_builder::QueryFragment<Self::Backend> + diesel::query_builder::QueryId,
+        U: diesel::deserialize::QueryableByName<Self::Backend> {
+        (**self).query_by_name(source)
+    }
+
+    fn execute_returning_count<T>(&self, source: &T) -> diesel::QueryResult<usize>
+    where
+        T: diesel::query_builder::QueryFragment<Self::Backend> + diesel::query_builder::QueryId {
+        (**self).execute_returning_count(source)
+    }
+
+    fn transaction_manager(&self) -> &Self::TransactionManager {
+        (**self).transaction_manager()
     }
 }
 
@@ -80,14 +140,14 @@ impl ::std::error::Error for Error {}
 ///
 /// [deadpool documentation]: deadpool
 
-pub struct Manager<C> {
+pub struct Manager<C: diesel::Connection> {
     database_url: String,
     _marker: PhantomData<C>,
 }
 
-unsafe impl<T: Send + 'static> Sync for Manager<T> {}
+unsafe impl<C: diesel::Connection> Sync for Manager<C> {}
 
-impl<C> Manager<C> {
+impl<C: diesel::Connection> Manager<C> {
     pub fn new<S: Into<String>>(database_url: S) -> Self {
         Manager {
             database_url: database_url.into(),
@@ -134,15 +194,11 @@ mod tests {
 
     use deadpool::managed::Pool;
 
-    pub type SqliteManager = Manager<diesel::SqliteConnection>;
-    pub type SqlitePool = Pool<SqliteManager>;
-
     use super::*;
 
     #[tokio::test]
     async fn establish_basic_connection() {
         let manager = SqliteManager::new(":memory:");
-
         let pool = Pool::<SqliteManager>::new(manager, 2);
 
         let (s1, mut r1) = mpsc::channel(1);
@@ -181,6 +237,6 @@ mod tests {
         let mut conn = pool.get().await.unwrap();
 
         let query = select("foo".into_sql::<Text>());
-        assert_eq!("foo", query.get_result::<String>(&mut **conn).unwrap());
+        assert_eq!("foo", query.get_result::<String>(&mut conn).unwrap());
     }
 }
