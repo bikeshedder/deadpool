@@ -31,7 +31,7 @@ async fn without_pool(config: &Config) -> Duration {
             for _ in 0..ITERATIONS {
                 let (client, connection) = pg_config.connect(tokio_postgres::NoTls).await.unwrap();
                 tokio::spawn(connection);
-                let stmt = client.prepare("SELECT 1 + 2").await.unwrap();
+                let stmt = client.prepare_cached("SELECT 1 + 2").await.unwrap();
                 let rows = client.query(&stmt, &[]).await.unwrap();
                 let value: i32 = rows[0].get(0);
                 assert_eq!(value, 3);
@@ -55,7 +55,7 @@ async fn with_deadpool(config: &Config) -> Duration {
         tokio::spawn(async move {
             for _ in 0..ITERATIONS {
                 let client = pool.get().await.unwrap();
-                let stmt = client.prepare("SELECT 1 + 2").await.unwrap();
+                let stmt = client.prepare_cached("SELECT 1 + 2").await.unwrap();
                 let rows = client.query(&stmt, &[]).await.unwrap();
                 let value: i32 = rows[0].get(0);
                 assert_eq!(value, 3);

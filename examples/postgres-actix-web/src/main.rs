@@ -41,7 +41,7 @@ impl error::ResponseError for Error {}
 
 async fn event_list(pool: &Pool) -> Result<Vec<Event>, PoolError> {
     let client: Client = pool.get().await?;
-    let stmt = client.prepare("SELECT id, title FROM event").await?;
+    let stmt = client.prepare_cached("SELECT id, title FROM event").await?;
     let rows = client.query(&stmt, &[]).await?;
     Ok(rows
         .into_iter()
