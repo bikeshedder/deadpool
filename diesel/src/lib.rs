@@ -227,6 +227,10 @@ mod tests {
 
     use super::*;
 
+    pub type SqliteConnection = Connection<diesel::SqliteConnection>;
+    pub type SqliteManager = Manager<diesel::SqliteConnection>;
+    pub type SqlitePool = Pool<SqliteManager, SqliteConnection>;
+
     #[tokio::test]
     async fn establish_basic_connection() {
         let manager = SqliteManager::new(":memory:");
