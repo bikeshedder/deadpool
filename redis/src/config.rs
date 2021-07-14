@@ -182,8 +182,8 @@ impl std::error::Error for CreatePoolError {}
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 pub struct Config {
-    /// Redis URL
-    /// See https://docs.rs/redis/0.20.0/redis/index.html#connection-parameters
+    /// Redis URL<br>
+    /// See [Connection Parameters](redis#connection-parameters)
     pub url: Option<String>,
     /// Redis ConnectionInfo structure
     pub connection: Option<ConnectionInfo>,
