@@ -10,7 +10,6 @@
 //!
 //! | Feature | Description | Extra dependencies | Default |
 //! | ------- | ----------- | ------------------ | ------- |
-//! | `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
 //! | `sqlite` | Enable `sqlite` feature in `diesel` crate | `diesel/sqlite` | no |
 //! | `postgres` | Enable `postgres` feature in `diesel` crate | `diesel/postgres` | no |
 //! | `mysql` | Enable `mysql` feature in `diesel` crate | `diesel/mysql` | no |
