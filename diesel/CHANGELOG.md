@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.1.1 (unreleased)
+## v0.1.1
 
 * Fix title and crates.io badge in README
 
