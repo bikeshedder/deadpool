@@ -39,8 +39,6 @@
 //! at your option.
 #![warn(missing_docs, unreachable_pub)]
 
-pub use deadpool::managed::{Pool, PoolError};
-
 mod connection;
 mod error;
 mod manager;
@@ -55,3 +53,9 @@ pub mod mysql;
 pub mod postgres;
 #[cfg(feature = "sqlite")]
 pub mod sqlite;
+
+pub use deadpool::managed::{Pool, PoolConfig, Timeouts};
+pub use deadpool::Runtime;
+
+/// A type alias for using `deadpool::PoolError` with `diesel`
+pub type PoolError = deadpool::managed::PoolError<Error>;

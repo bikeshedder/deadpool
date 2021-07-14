@@ -200,7 +200,7 @@ pub mod config;
 pub use crate::config::{Config, ManagerConfig, RecyclingMethod};
 
 /// Re-export deadpool::managed::PoolConfig
-pub use deadpool::managed::PoolConfig;
+pub use deadpool::managed::{PoolConfig, Timeouts};
 /// Re-export deadpool::Runtime;
 pub use deadpool::Runtime;
 
