@@ -21,6 +21,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 diesel = { version = "1.4.3", features = ["sqlite"] }
 
 [features]
+default = ["rt_tokio_1"]
 mysql = ["diesel/mysql"]
 postgres = ["diesel/postgres"]
 sqlite = ["diesel/sqlite"]
