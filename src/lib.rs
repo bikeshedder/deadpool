@@ -91,6 +91,7 @@
 //! [redis](https://crates.io/crates/redis) | [deadpool-redis](https://crates.io/crates/deadpool-redis) | [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis) |
 //! [async-memcached](https://crates.io/crates/async-memcached) | [deadpool-memcached](https://crates.io/crates/deadpool-memcached) | [![Latest Version](https://img.shields.io/crates/v/deadpool-memcached.svg)](https://crates.io/crates/deadpool-memcached) |
 //! [rusqlite](https://crates.io/crates/rusqlite) | [deadpool-sqlite](https://crates.io/crates/deadpool-sqlite) | [![Latest Version](https://img.shields.io/crates/v/deadpool-sqlite.svg)](https://crates.io/crates/deadpool-sqlite) |
+//! [diesel](https://crates.io/crates/diesel) | [deadpool-diesel](https://crates.io/crates/deadpool-diesel) | [![Latest Version](https://img.shields.io/crates/v/deadpool-diesel.svg)](https://crates.io/crates/deadpool-diesel) |
 //!
 //! ### Reasons for yet another connection pool
 //!

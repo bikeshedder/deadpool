@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.8.2 (unreleased)
+
+* Add `deadpool-diesel` to README
+
 ## v0.8.1
 
 * Add `Object::pool` method
