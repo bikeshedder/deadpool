@@ -143,10 +143,9 @@ pub use redis;
 mod config;
 pub use config::{Config, CreatePoolError};
 
-/// A wrapper for `redis::Connection`. The `query_async` and `execute_async`
-/// functions of `redis::Cmd` and `redis::Pipeline` consume the connection.
-/// This wrapper makes it possible to replace the internal connection after
-/// executing a query.
+/// A wrapper for `redis::Connection`. This structure implements
+/// `redis::aio::ConnectionLike` and can therefore be used just
+/// like a regular `redis::aio::Connection`
 pub struct Connection {
     conn: Object,
 }
