@@ -1,6 +1,35 @@
-//! Connection pooling via r2d2.
+//! # Deadpool for PostgreSQL [![Latest Version](https://img.shields.io/crates/v/deadpool-postgres.svg)](https://crates.io/crates/deadpool-postgres)
 //!
-//! Note: This module requires enabling the `r2d2` feature
+//! Deadpool is a dead simple async pool for connections and objects
+//! of any type.
+//!
+//! This crate implements a [`deadpool`](https://crates.io/crates/deadpool)
+//! manager for [`diesel`](https://crates.io/crates/diesel) connections.
+//!
+//! ## Features
+//!
+//! | Feature | Description | Extra dependencies | Default |
+//! | ------- | ----------- | ------------------ | ------- |
+//! | `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
+//! | `sqlite` | Enable `sqlite` feature in `diesel` crate | `diesel/sqlite` | no |
+//! | `postgres` | Enable `postgres` feature in `diesel` crate | `diesel/postgres` | no |
+//! | `mysql` | Enable `mysql` feature in `diesel` crate | `diesel/mysql` | no |
+//! | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
+//! | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
+//!
+//! ## Example
+//!
+//! TODO
+//!
+//! ## License
+//!
+//! Licensed under either of
+//!
+//! - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+//! - MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+//!
+//! at your option.
+#![warn(missing_docs, unreachable_pub)]
 
 use std::fmt;
 use std::marker::PhantomData;
@@ -113,7 +142,7 @@ where
     }
 }
 
-/// The error used when managing connections with `r2d2`.
+/// The error used when managing connections with `deadpool`.
 #[derive(Debug)]
 pub enum Error {
     /// An error occurred establishing the connection
@@ -148,6 +177,8 @@ pub struct Manager<C: diesel::Connection> {
 unsafe impl<C: diesel::Connection> Sync for Manager<C> {}
 
 impl<C: diesel::Connection> Manager<C> {
+    /// Create manager which establishes connections to the
+    /// given database URL.
     pub fn new<S: Into<String>>(database_url: S) -> Self {
         Manager {
             database_url: database_url.into(),
