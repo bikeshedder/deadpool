@@ -18,7 +18,16 @@ manager for [`diesel`](https://crates.io/crates/diesel) connections.
 
 ## Example
 
-TODO
+```rust
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let manager = deadpool_diesel::sqlite::Manager::new(":memory:");
+    let pool = deadpool_diesel::sqlite::Pool::new(manager, 8);
+    let conn = pool.get().await?;
+    // TODO use the connection with diesel
+    Ok(())
+}
+```
 
 ## License
 
