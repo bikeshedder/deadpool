@@ -24,6 +24,8 @@ diesel = { version = "1.4.3", features = ["sqlite"] }
 mysql = ["diesel/mysql"]
 postgres = ["diesel/postgres"]
 sqlite = ["diesel/sqlite"]
+rt_tokio_1 = ["deadpool/rt_tokio_1"]
+rt_async-std_1 = ["deadpool/rt_async-std_1"]
 
 [package.metadata.docs.rs]
 all-features = true
