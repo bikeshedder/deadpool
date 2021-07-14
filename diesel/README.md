@@ -1,4 +1,4 @@
-# Deadpool for PostgreSQL [![Latest Version](https://img.shields.io/crates/v/deadpool-postgres.svg)](https://crates.io/crates/deadpool-postgres)
+# Deadpool for Diesel [![Latest Version](https://img.shields.io/crates/v/deadpool-diesel.svg)](https://crates.io/crates/deadpool-diesel)
 
 Deadpool is a dead simple async pool for connections and objects
 of any type.
