@@ -11,6 +11,7 @@ CRATES = [
     'redis',
     'lapin',
     'sqlite',
+    'diesel',
 ]
 
 if __name__ == '__main__':
