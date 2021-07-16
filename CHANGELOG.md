@@ -3,6 +3,7 @@
 ## v0.8.2 (unreleased)
 
 * Add `deadpool-diesel` to README
+* Add `Sync + Send` as supertrait to `Manager`
 
 ## v0.8.1
 

@@ -70,7 +70,7 @@ pub type RecycleResult<E> = Result<(), RecycleError<E>>;
 
 /// This trait is used to `create` new objects or `recycle` existing ones.
 #[async_trait]
-pub trait Manager {
+pub trait Manager: Sync + Send {
     /// Type that the manager creates and recycles.
     type Type;
     /// The error that the manager can return when creating and recycling
