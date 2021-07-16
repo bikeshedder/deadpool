@@ -12,10 +12,8 @@ use crate::{connection::ConnectionWrapper, Error};
 
 pub struct Manager<C: diesel::Connection> {
     database_url: String,
-    _marker: PhantomData<C>,
+    _marker: PhantomData<fn() -> C>,
 }
-
-unsafe impl<C: diesel::Connection> Sync for Manager<C> {}
 
 impl<C: diesel::Connection> Manager<C> {
     /// Create manager which establishes connections to the

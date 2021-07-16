@@ -8,8 +8,6 @@ pub struct ConnectionWrapper<C: diesel::Connection> {
     pub(crate) conn: Option<C>,
 }
 
-unsafe impl<C: diesel::Connection + Send + 'static> Sync for ConnectionWrapper<C> {}
-
 /// Connection which is returned by the pool. It implements
 /// [diesel::Connection] and can be used just like a normal
 /// connection from diesel.

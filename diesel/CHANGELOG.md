@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.1.2 (unreleased)
+
+* Remove `unsafe impl` by better usage of `PhantomData`
+
 ## v0.1.1
 
 * Fix title and crates.io badge in README

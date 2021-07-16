@@ -4,6 +4,7 @@
 
 * Add `deadpool-diesel` to README
 * Add `Sync + Send` as supertrait to `Manager`
+* Fix usage of `PhantomData` in `Pool` struct: `Pool is now `Sync` regardless of the wrapper.
 
 ## v0.8.1
 

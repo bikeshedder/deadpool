@@ -211,7 +211,7 @@ struct PoolInner<M: Manager> {
 /// and uses reference counting for its internal state.
 pub struct Pool<M: Manager, W: From<Object<M>> = Object<M>> {
     inner: Arc<PoolInner<M>>,
-    _wrapper: PhantomData<W>,
+    _wrapper: PhantomData<fn() -> W>,
 }
 
 impl<M: Manager, W: From<Object<M>>> Clone for Pool<M, W> {
