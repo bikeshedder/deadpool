@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.1.2 (unreleased)
+## v0.1.2
 
 * Remove `unsafe impl` by better usage of `PhantomData`
 

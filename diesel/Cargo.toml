@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-diesel"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for diesel"
 keywords = ["async", "database", "pool", "diesel"]
@@ -12,7 +12,7 @@ resolver = "2"
 
 [dependencies]
 async-trait = { version = "0.1.17" }
-deadpool = { path = "../", version = "0.8", default-features = false, features = ["managed"] }
+deadpool = { path = "../", version = "0.8.2", default-features = false, features = ["managed"] }
 diesel = { version = "1.4.7", default-features = false }
 tokio = { version = "1", features = ["rt"] }
 
