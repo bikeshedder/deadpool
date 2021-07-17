@@ -61,6 +61,8 @@ mod config;
 pub use self::config::{PoolConfig, Timeouts};
 mod errors;
 pub use errors::{PoolError, RecycleError, TimeoutType};
+mod customizer;
+pub use customizer::ObjectCustomizer;
 
 use crate::runtime::{Runtime, TimeoutError};
 pub use crate::Status;
@@ -72,7 +74,7 @@ pub type RecycleResult<E> = Result<(), RecycleError<E>>;
 #[async_trait]
 pub trait Manager: Sync + Send {
     /// Type that the manager creates and recycles.
-    type Type;
+    type Type: Send;
     /// The error that the manager can return when creating and recycling
     /// objects.
     type Error;
