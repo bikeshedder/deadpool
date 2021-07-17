@@ -31,6 +31,10 @@ impl<T, W> ObjectCustomizer<T, W> {
     }
 }
 
+/// This struct wraps an existing [Manager] and runs the given
+/// [ObjectCustomizer] every time a new object is created.
+/// This struct can be created using the [ObjectCustomizer::wrap_manager]
+/// method.
 pub struct WrappedManager<M, W>
 where
     M: Manager,

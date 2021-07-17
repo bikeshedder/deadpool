@@ -62,7 +62,7 @@ pub use self::config::{PoolConfig, Timeouts};
 mod errors;
 pub use errors::{PoolError, RecycleError, TimeoutType};
 mod customizer;
-pub use customizer::ObjectCustomizer;
+pub use customizer::{ObjectCustomizer, WrappedManager};
 
 use crate::runtime::{Runtime, TimeoutError};
 pub use crate::Status;
