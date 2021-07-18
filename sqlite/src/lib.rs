@@ -144,14 +144,16 @@ impl ConnectionWrapper {
             let conn = guard.as_ref().unwrap();
             f(&conn)
         })
-            .await
-            .unwrap()
+        .await
+        .unwrap()
     }
 }
 
 impl Drop for ConnectionWrapper {
     fn drop(&mut self) {
         let arc = self.conn.clone();
+        // Drop the `rusqlite::Connection` inside a `spawn_blocking`
+        // as the `drop` function of it can block.
         tokio::task::spawn_blocking(move || {
             arc.lock().unwrap().take();
         });
