@@ -6,7 +6,10 @@ use std::{
 
 use crate::Runtime;
 
-use super::{Manager, Object, Pool, PoolConfig, Timeouts};
+use super::{
+    hooks::{self, Hooks},
+    Manager, Object, Pool, PoolConfig, Timeouts,
+};
 
 /// This error is returned when [`Pool::build()`] fails
 /// to build the pool.
@@ -65,6 +68,7 @@ where
     pub(crate) manager: M,
     pub(crate) config: PoolConfig,
     pub(crate) runtime: Option<Runtime>,
+    pub(crate) hooks: Hooks<M>,
     _wrapper: PhantomData<fn() -> W>,
 }
 
@@ -78,6 +82,7 @@ where
             manager,
             config: PoolConfig::default(),
             runtime: None,
+            hooks: Hooks::default(),
             _wrapper: PhantomData::default(),
         }
     }
@@ -85,8 +90,7 @@ where
     pub fn build(self) -> Result<Pool<M, W>, BuildError<M::Error>> {
         // Return an error if a timeout is configured without a runtime
         let t = &self.config.timeouts;
-        if (t.wait.is_some() || t.create.is_some() || t.recycle.is_some())
-            && self.runtime.is_none()
+        if (t.wait.is_some() || t.create.is_some() || t.recycle.is_some()) && self.runtime.is_none()
         {
             return Err(BuildError::NoRuntimeSpecified(
                 "Timeouts require a runtime".to_string(),
@@ -122,6 +126,18 @@ where
     /// Set the [Timeouts::recycle] value of the [PoolConfig::timeouts]
     pub fn recycle_timeout(mut self, value: Option<Duration>) -> Self {
         self.config.timeouts.recycle = value;
+        self
+    }
+    /// Attach a post_create hook. The given function will be called right
+    /// after a object has been created.
+    pub fn post_create(mut self, hook: impl hooks::PostCreate<M> + 'static) -> Self {
+        self.hooks.post_create.push(Box::new(hook));
+        self
+    }
+    /// Attach a post_recycle hook. The given function will be called right
+    /// after a object has been recycled.
+    pub fn post_recycle(mut self, hook: impl hooks::PostRecycle<M> + 'static) -> Self {
+        self.hooks.post_recycle.push(Box::new(hook));
         self
     }
     /// Set the [Runtime]
