@@ -155,7 +155,10 @@ impl Drop for ConnectionWrapper {
         // Drop the `rusqlite::Connection` inside a `spawn_blocking`
         // as the `drop` function of it can block.
         tokio::task::spawn_blocking(move || {
-            arc.lock().unwrap().take();
+            match arc.lock() {
+                Ok(mut guard) => guard.take(),
+                Err(e) => e.into_inner().take()
+            }
         });
     }
 }
