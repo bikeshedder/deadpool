@@ -1,5 +1,7 @@
 use std::fmt;
 
+use super::hooks::HookError;
+
 /// This error is returned by the `Manager::recycle` function
 #[derive(Debug)]
 pub enum RecycleError<E> {
@@ -52,6 +54,10 @@ pub enum PoolError<E> {
     Closed,
     /// No runtime specified
     NoRuntimeSpecified,
+    /// A post_create hook reported an error
+    PostCreateHook(HookError<E>),
+    /// A post_recycle hook reported an error
+    PostRecycleHook(HookError<E>),
 }
 
 impl<E> From<E> for PoolError<E> {
@@ -77,6 +83,8 @@ where
             Self::Backend(e) => write!(f, "An error occured while creating a new object: {}", e),
             Self::Closed => write!(f, "The pool has been closed."),
             Self::NoRuntimeSpecified => write!(f, "No runtime specified."),
+            Self::PostCreateHook(msg) => writeln!(f, "post_create hook failed: {}", msg),
+            Self::PostRecycleHook(msg) => writeln!(f, "post_recycle hook failed: {}", msg),
         }
     }
 }

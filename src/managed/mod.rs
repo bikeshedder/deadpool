@@ -63,6 +63,7 @@ mod config;
 pub use self::config::{PoolConfig, Timeouts};
 mod errors;
 pub use errors::{PoolError, RecycleError, TimeoutType};
+pub mod hooks;
 pub mod sync;
 
 use crate::runtime::Runtime;
@@ -207,6 +208,7 @@ struct PoolInner<M: Manager> {
     semaphore: Semaphore,
     config: PoolConfig,
     runtime: Option<Runtime>,
+    hooks: hooks::Hooks<M>,
 }
 
 /// A generic object and connection pool.
@@ -242,6 +244,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                 available: AtomicIsize::new(0),
                 semaphore: Semaphore::new(builder.config.max_size),
                 config: builder.config,
+                hooks: builder.hooks,
                 runtime: builder.runtime,
             }),
             _wrapper: PhantomData::default(),
@@ -316,7 +319,15 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     )
                     .await
                     {
-                        Ok(_) => break,
+                        Ok(_) => {
+                            // Apply post_recycle hooks
+                            for hook in self.inner.hooks.post_recycle.iter() {
+                                hook.post_recycle(&mut obj.obj.as_mut().unwrap())
+                                    .await
+                                    .map_err(PoolError::PostRecycleHook)?;
+                            }
+                            break;
+                        }
                         Err(_) => {
                             self.inner.available.fetch_sub(1, Ordering::Relaxed);
                             self.inner.size.fetch_sub(1, Ordering::Relaxed);
@@ -338,6 +349,12 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                         )
                         .await?,
                     );
+                    // Apply post_create hooks
+                    for hook in self.inner.hooks.post_create.iter() {
+                        hook.post_create(&mut obj.obj.as_mut().unwrap())
+                            .await
+                            .map_err(PoolError::PostCreateHook)?;
+                    }
                     break;
                 }
             }
