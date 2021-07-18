@@ -116,7 +116,7 @@ impl deadpool::managed::Manager for Manager {
 /// A wrapper for `rusqlite::Connection` which provides indirect
 /// access to it via the `interact` function.
 pub struct ConnectionWrapper {
-    conn: Arc<Mutex<rusqlite::Connection>>,
+    conn: Arc<Mutex<Option<rusqlite::Connection>>>,
 }
 
 impl ConnectionWrapper {
@@ -126,7 +126,7 @@ impl ConnectionWrapper {
             .await
             .unwrap()?;
         Ok(ConnectionWrapper {
-            conn: Arc::new(Mutex::new(conn)),
+            conn: Arc::new(Mutex::new(Some(conn))),
         })
     }
     /// Interact with the underlying SQLite connection. This function
@@ -138,9 +138,22 @@ impl ConnectionWrapper {
         F: FnOnce(&rusqlite::Connection) -> R + Send + 'static,
         R: Send + 'static,
     {
-        let conn = self.conn.clone();
-        tokio::task::spawn_blocking(move || f(&*conn.lock().unwrap()))
+        let arc = self.conn.clone();
+        tokio::task::spawn_blocking(move || {
+            let guard = arc.lock().unwrap();
+            let conn = guard.as_ref().unwrap();
+            f(&conn)
+        })
             .await
             .unwrap()
+    }
+}
+
+impl Drop for ConnectionWrapper {
+    fn drop(&mut self) {
+        let arc = self.conn.clone();
+        tokio::task::spawn_blocking(move || {
+            arc.lock().unwrap().take();
+        });
     }
 }
