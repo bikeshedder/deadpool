@@ -23,14 +23,17 @@ use deadpool_sqlite::Config;
 async fn main() {
     let mut cfg = Config::new("db.sqlite3");
     let pool = cfg.create_pool();
-    for i in 1..10 {
-        let mut conn = pool.get().await.unwrap();
-        let value: i32 = conn.interact(move |conn| {
-            let mut stmt = conn.prepare_cached("SELECT 1 + $1").unwrap();
-            stmt.query_row([&i], |row| row.get(0)).unwrap()
-        }).await;
-        assert_eq!(value, i + 1);
-    }
+    let conn = pool.get().await.unwrap();
+    let result: i64 = conn
+        .interact(|conn| {
+            let mut stmt = conn.prepare("SELECT 1")?;
+            let mut rows = stmt.query([])?;
+            let row = rows.next()?.unwrap();
+            row.get(0)
+        })
+        .await
+        .unwrap();
+    assert_eq!(result, 1);
 }
 ```
 
