@@ -23,14 +23,17 @@
 //! async fn main() {
 //!     let mut cfg = Config::new("db.sqlite3");
 //!     let pool = cfg.create_pool();
-//!     for i in 1..10 {
-//!         let mut conn = pool.get().await.unwrap();
-//!         let value: i32 = conn.interact(move |conn| {
-//!             let mut stmt = conn.prepare_cached("SELECT 1 + $1").unwrap();
-//!             stmt.query_row([&i], |row| row.get(0)).unwrap()
-//!         }).await;
-//!         assert_eq!(value, i + 1);
-//!     }
+//!     let conn = pool.get().await.unwrap();
+//!     let result: i64 = conn
+//!         .interact(|conn| {
+//!             let mut stmt = conn.prepare("SELECT 1")?;
+//!             let mut rows = stmt.query([])?;
+//!             let row = rows.next()?.unwrap();
+//!             row.get(0)
+//!         })
+//!         .await
+//!         .unwrap();
+//!     assert_eq!(result, 1);
 //! }
 //! ```
 //!
@@ -44,6 +47,8 @@
 //! at your option.
 #![warn(missing_docs, unreachable_pub)]
 
+use std::any::Any;
+use std::fmt;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -98,11 +103,16 @@ impl deadpool::managed::Manager for Manager {
         &self,
         conn: &mut Self::Type,
     ) -> deadpool::managed::RecycleResult<Self::Error> {
+        if conn.conn.is_poisoned() {
+            return Err(RecycleError::Message(
+                "Mutex is poisoned. Connection is considered unusable.".to_string(),
+            ));
+        }
         let recycle_count = self.recycle_count.fetch_add(1, Ordering::Relaxed);
         let n: usize = conn
             .interact(move |conn| conn.query_row("SELECT $1", [recycle_count], |row| row.get(0)))
             .await
-            .map_err(RecycleError::Backend)?;
+            .map_err(|e| RecycleError::Message(format!("{}", e)))?;
         if n == recycle_count {
             Ok(())
         } else {
@@ -112,6 +122,30 @@ impl deadpool::managed::Manager for Manager {
         }
     }
 }
+
+/// This error is returned when the call to [`Connection::interact`]
+/// fails.
+#[derive(Debug)]
+pub enum InteractError {
+    /// The provided callback panicked
+    Panic(Box<dyn Any + Send + 'static>),
+    /// The callback was aborted
+    Aborted,
+    /// rusqlite returned an error
+    Rusqlite(rusqlite::Error),
+}
+
+impl fmt::Display for InteractError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Panic(_) => write!(f, "Panic"),
+            Self::Aborted => write!(f, "Aborted"),
+            Self::Rusqlite(e) => write!(f, "Rusqlite error: {}", e),
+        }
+    }
+}
+
+impl std::error::Error for InteractError {}
 
 /// A wrapper for `rusqlite::Connection` which provides indirect
 /// access to it via the `interact` function.
@@ -133,9 +167,9 @@ impl ConnectionWrapper {
     /// expects a closure that takes the connection as parameter. The
     /// closure is executed in a separate thread so that the async runtime
     /// is not blocked.
-    pub async fn interact<F, R>(&self, f: F) -> R
+    pub async fn interact<F, R>(&self, f: F) -> Result<R, InteractError>
     where
-        F: FnOnce(&rusqlite::Connection) -> R + Send + 'static,
+        F: FnOnce(&rusqlite::Connection) -> Result<R, rusqlite::Error> + Send + 'static,
         R: Send + 'static,
     {
         let arc = self.conn.clone();
@@ -145,7 +179,16 @@ impl ConnectionWrapper {
             f(&conn)
         })
         .await
-        .unwrap()
+        .map_err(|e| {
+            if e.is_panic() {
+                InteractError::Panic(e.into_panic())
+            } else if e.is_cancelled() {
+                InteractError::Aborted
+            } else {
+                unreachable!();
+            }
+        })?
+        .map_err(InteractError::Rusqlite)
     }
 }
 
@@ -154,11 +197,9 @@ impl Drop for ConnectionWrapper {
         let arc = self.conn.clone();
         // Drop the `rusqlite::Connection` inside a `spawn_blocking`
         // as the `drop` function of it can block.
-        tokio::task::spawn_blocking(move || {
-            match arc.lock() {
-                Ok(mut guard) => guard.take(),
-                Err(e) => e.into_inner().take()
-            }
+        tokio::task::spawn_blocking(move || match arc.lock() {
+            Ok(mut guard) => guard.take(),
+            Err(e) => e.into_inner().take(),
         });
     }
 }
