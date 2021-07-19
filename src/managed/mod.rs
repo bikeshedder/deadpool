@@ -61,6 +61,7 @@ mod config;
 pub use self::config::{PoolConfig, Timeouts};
 mod errors;
 pub use errors::{PoolError, RecycleError, TimeoutType};
+pub mod sync;
 
 use crate::runtime::{Runtime, TimeoutError};
 pub use crate::Status;

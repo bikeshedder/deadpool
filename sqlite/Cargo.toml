@@ -29,5 +29,7 @@ dotenv = "0.15.0"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [features]
-default = ["config"]
+default = ["config", "rt_tokio_1"]
 config = ["config-crate", "serde", "deadpool/config"]
+rt_tokio_1 = ["deadpool/rt_tokio_1"]
+rt_async-std_1 = ["deadpool/rt_async-std_1"]

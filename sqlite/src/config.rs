@@ -1,4 +1,4 @@
-use deadpool::managed::PoolConfig;
+use deadpool::{managed::PoolConfig, Runtime};
 
 use crate::{Manager, Pool};
 
@@ -45,8 +45,8 @@ impl Config {
         }
     }
     /// Create pool using the current configuration
-    pub fn create_pool(&self) -> Pool {
-        let manager = Manager::from_config(&self);
+    pub fn create_pool(&self, runtime: Runtime) -> Pool {
+        let manager = Manager::from_config(&self, runtime);
         Pool::from_config(manager, self.get_pool_config())
     }
     /// Get `deadpool::PoolConfig` which can be used to construct a

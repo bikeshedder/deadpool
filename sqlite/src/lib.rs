@@ -13,16 +13,18 @@
 //! | Feature | Description | Extra dependencies | Default |
 //! | ------- | ----------- | ------------------ | ------- |
 //! | `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
+//! | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
+//! | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
 //!
 //! ## Example
 //!
 //! ```rust
-//! use deadpool_sqlite::Config;
+//! use deadpool_sqlite::{Config, Runtime};
 //!
 //! #[tokio::main]
 //! async fn main() {
 //!     let mut cfg = Config::new("db.sqlite3");
-//!     let pool = cfg.create_pool();
+//!     let pool = cfg.create_pool(Runtime::Tokio1);
 //!     let conn = pool.get().await.unwrap();
 //!     let result: i64 = conn
 //!         .interact(|conn| {
@@ -47,22 +49,18 @@
 //! at your option.
 #![warn(missing_docs, unreachable_pub)]
 
-use std::any::Any;
-use std::fmt;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::sync::Mutex;
 
+use deadpool::managed::sync::SyncWrapper;
 use deadpool::managed::RecycleError;
 use rusqlite::Error;
 
 mod config;
 pub use config::Config;
 
-/// Re-export deadpool::managed::PoolConfig
+pub use deadpool::managed::sync::InteractError;
 pub use deadpool::managed::PoolConfig;
-/// Re-export deadpool::Runtime;
 pub use deadpool::Runtime;
 
 /// A type alias for using `deadpool::Pool` with `rusqlite`
@@ -78,32 +76,39 @@ pub type Connection = deadpool::managed::Object<Manager>;
 pub struct Manager {
     config: Config,
     recycle_count: AtomicUsize,
+    runtime: Runtime,
 }
 
 impl Manager {
     /// Create manager using a `deadpool_sqlite::Config`
-    pub fn from_config(config: &Config) -> Self {
+    pub fn from_config(config: &Config, runtime: Runtime) -> Self {
         Self {
             config: config.clone(),
             recycle_count: AtomicUsize::new(0),
+            runtime,
         }
     }
 }
 
 #[async_trait::async_trait]
 impl deadpool::managed::Manager for Manager {
-    type Type = ConnectionWrapper;
+    type Type = SyncWrapper<rusqlite::Connection, rusqlite::Error>;
     type Error = Error;
 
     async fn create(&self) -> Result<Self::Type, Self::Error> {
-        ConnectionWrapper::open(&self.config).await
+        let path = self.config.path.clone();
+        SyncWrapper::new(self.runtime.clone(), move || {
+            rusqlite::Connection::open(path)
+        })
+        .await
+        .unwrap()
     }
 
     async fn recycle(
         &self,
         conn: &mut Self::Type,
     ) -> deadpool::managed::RecycleResult<Self::Error> {
-        if conn.conn.is_poisoned() {
+        if conn.is_mutex_poisoned() {
             return Err(RecycleError::Message(
                 "Mutex is poisoned. Connection is considered unusable.".to_string(),
             ));
@@ -120,86 +125,5 @@ impl deadpool::managed::Manager for Manager {
                 "Recycle count mismatch",
             )))
         }
-    }
-}
-
-/// This error is returned when the call to [`Connection::interact`]
-/// fails.
-#[derive(Debug)]
-pub enum InteractError {
-    /// The provided callback panicked
-    Panic(Box<dyn Any + Send + 'static>),
-    /// The callback was aborted
-    Aborted,
-    /// rusqlite returned an error
-    Rusqlite(rusqlite::Error),
-}
-
-impl fmt::Display for InteractError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Panic(_) => write!(f, "Panic"),
-            Self::Aborted => write!(f, "Aborted"),
-            Self::Rusqlite(e) => write!(f, "Rusqlite error: {}", e),
-        }
-    }
-}
-
-impl std::error::Error for InteractError {}
-
-/// A wrapper for `rusqlite::Connection` which provides indirect
-/// access to it via the `interact` function.
-pub struct ConnectionWrapper {
-    conn: Arc<Mutex<Option<rusqlite::Connection>>>,
-}
-
-impl ConnectionWrapper {
-    async fn open(config: &Config) -> Result<Self, Error> {
-        let config = config.clone();
-        let conn = tokio::task::spawn_blocking(move || rusqlite::Connection::open(config.path))
-            .await
-            .unwrap()?;
-        Ok(ConnectionWrapper {
-            conn: Arc::new(Mutex::new(Some(conn))),
-        })
-    }
-    /// Interact with the underlying SQLite connection. This function
-    /// expects a closure that takes the connection as parameter. The
-    /// closure is executed in a separate thread so that the async runtime
-    /// is not blocked.
-    pub async fn interact<F, R>(&self, f: F) -> Result<R, InteractError>
-    where
-        F: FnOnce(&rusqlite::Connection) -> Result<R, rusqlite::Error> + Send + 'static,
-        R: Send + 'static,
-    {
-        let arc = self.conn.clone();
-        tokio::task::spawn_blocking(move || {
-            let guard = arc.lock().unwrap();
-            let conn = guard.as_ref().unwrap();
-            f(&conn)
-        })
-        .await
-        .map_err(|e| {
-            if e.is_panic() {
-                InteractError::Panic(e.into_panic())
-            } else if e.is_cancelled() {
-                InteractError::Aborted
-            } else {
-                unreachable!();
-            }
-        })?
-        .map_err(InteractError::Rusqlite)
-    }
-}
-
-impl Drop for ConnectionWrapper {
-    fn drop(&mut self) {
-        let arc = self.conn.clone();
-        // Drop the `rusqlite::Connection` inside a `spawn_blocking`
-        // as the `drop` function of it can block.
-        tokio::task::spawn_blocking(move || match arc.lock() {
-            Ok(mut guard) => guard.take(),
-            Err(e) => e.into_inner().take(),
-        });
     }
 }

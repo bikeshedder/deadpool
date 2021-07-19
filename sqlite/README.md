@@ -13,16 +13,18 @@ inside a separate thread.
 | Feature | Description | Extra dependencies | Default |
 | ------- | ----------- | ------------------ | ------- |
 | `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
+| `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
+| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
 
 ## Example
 
 ```rust
-use deadpool_sqlite::Config;
+use deadpool_sqlite::{Config, Runtime};
 
 #[tokio::main]
 async fn main() {
     let mut cfg = Config::new("db.sqlite3");
-    let pool = cfg.create_pool();
+    let pool = cfg.create_pool(Runtime::Tokio1);
     let conn = pool.get().await.unwrap();
     let result: i64 = conn
         .interact(|conn| {

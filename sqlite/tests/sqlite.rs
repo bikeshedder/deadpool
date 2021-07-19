@@ -1,11 +1,11 @@
-use deadpool_sqlite::{Config, InteractError, Pool};
+use deadpool_sqlite::{Config, InteractError, Pool, Runtime};
 
 fn create_pool() -> Pool {
     let cfg = Config {
         path: String::from("db.sqlite3"),
         pool: None,
     };
-    cfg.create_pool()
+    cfg.create_pool(Runtime::Tokio1)
 }
 
 #[tokio::test]
@@ -29,10 +29,11 @@ async fn test_panic() {
     let pool = create_pool();
     {
         let conn = pool.get().await.unwrap();
-        let result = conn.interact::<_, ()>(|_| {
-            panic!("Whopsies!");
-        })
-        .await;
+        let result = conn
+            .interact::<_, ()>(|_| {
+                panic!("Whopsies!");
+            })
+            .await;
         assert!(matches!(result, Err(InteractError::Panic(_))))
     }
     // The previous callback panicked. The pool should
