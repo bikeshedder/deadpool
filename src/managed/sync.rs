@@ -65,7 +65,6 @@ where
         F: FnOnce() -> Result<T, E> + Send + 'static,
     {
         let result = match runtime.spawn_blocking(move || f()).await {
-            Err(SpawnBlockingError::NoRuntime) => return None,
             // FIXME panicking when the creation panics is not nice
             // In order to handle this properly the Manager::create
             // methods needs to support a custom error enum which
@@ -96,7 +95,6 @@ where
             })
             .await
             .map_err(|e| match e {
-                SpawnBlockingError::NoRuntime => unreachable!(),
                 SpawnBlockingError::Panic(p) => InteractError::Panic(p),
             })?
             .map_err(InteractError::Backend)
