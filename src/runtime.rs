@@ -17,14 +17,12 @@ pub enum Runtime {
 
 #[derive(Debug)]
 pub enum SpawnBlockingError {
-    NoRuntime,
     Panic(Box<dyn Any + Send + 'static>),
 }
 
 impl fmt::Display for SpawnBlockingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::NoRuntime => write!(f, "SpawnBlockingError: No runtime"),
             Self::Panic(p) => write!(f, "SpawnBlockingError: Panic: {:?}", p),
         }
     }
