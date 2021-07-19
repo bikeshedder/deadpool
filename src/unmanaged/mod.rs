@@ -34,7 +34,6 @@ use std::{convert::TryInto, time::Duration};
 
 use tokio::sync::{Semaphore, TryAcquireError};
 
-use crate::runtime::TimeoutError;
 pub use crate::Status;
 
 mod config;
@@ -196,30 +195,24 @@ impl<T> Pool<T> {
     /// configured.
     pub async fn timeout_get(&self, timeout: Option<Duration>) -> Result<Object<T>, PoolError> {
         let inner = self.inner.as_ref();
-        let permit = match timeout {
-            Some(timeout) if timeout.as_nanos() == 0 => {
+        let permit = match (timeout, inner.config.runtime.clone()) {
+            (None, _) => inner
+                .semaphore
+                .acquire()
+                .await
+                .map_err(|_| PoolError::Closed),
+            (Some(timeout), _) if timeout.as_nanos() == 0 => {
                 inner.semaphore.try_acquire().map_err(|e| match e {
                     TryAcquireError::NoPermits => PoolError::Timeout,
                     TryAcquireError::Closed => PoolError::Closed,
                 })
             }
-            Some(timeout) => match inner
-                .config
-                .runtime
+            (Some(timeout), Some(runtime)) => runtime
                 .timeout(timeout, inner.semaphore.acquire())
                 .await
-            {
-                Ok(result) => result.map_err(|_| PoolError::Closed),
-                Err(e) => Err(match e {
-                    TimeoutError::NoRuntime => PoolError::NoRuntimeSpecified,
-                    TimeoutError::Timeout => PoolError::Timeout,
-                }),
-            },
-            None => inner
-                .semaphore
-                .acquire()
-                .await
+                .ok_or(PoolError::Timeout)?
                 .map_err(|_| PoolError::Closed),
+            (Some(_), None) => Err(PoolError::NoRuntimeSpecified),
         }?;
         let obj = {
             let mut queue = inner.queue.lock().unwrap();

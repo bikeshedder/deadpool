@@ -25,7 +25,7 @@ mod tests {
         let cfg = PoolConfig {
             max_size: 16,
             timeout: None,
-            runtime,
+            runtime: Some(runtime),
         };
         let pool = Pool::from_config(&cfg);
         assert!(matches!(
@@ -38,7 +38,7 @@ mod tests {
         let cfg = PoolConfig {
             max_size: 16,
             timeout: Some(Duration::from_millis(1)),
-            runtime,
+            runtime: Some(runtime),
         };
         let pool = Pool::from_config(&cfg);
         assert!(matches!(pool.get().await, Err(PoolError::Timeout)));

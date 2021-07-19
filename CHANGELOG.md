@@ -4,6 +4,7 @@
 
 * Add `Runtime::spawn_blocking` method
 * Add `Runtime::spawn_blocking_background` method
+* Remove `Runtime::None` in favor of `Option<Runtime>`
 
 ## v0.8.2
 

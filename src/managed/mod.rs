@@ -63,7 +63,7 @@ mod errors;
 pub use errors::{PoolError, RecycleError, TimeoutType};
 pub mod sync;
 
-use crate::runtime::{Runtime, TimeoutError};
+use crate::runtime::Runtime;
 pub use crate::Status;
 
 /// Result type for the recycle function
@@ -405,19 +405,18 @@ impl<M: Manager> PoolInner<M> {
 }
 
 async fn apply_timeout<O, E>(
-    runtime: &Runtime,
+    runtime: &Option<Runtime>,
     timeout_type: TimeoutType,
     duration: Option<Duration>,
     future: impl Future<Output = Result<O, impl Into<PoolError<E>>>>,
 ) -> Result<O, PoolError<E>> {
-    match duration {
-        Some(duration) => match runtime.timeout(duration, future).await {
-            Ok(result) => result.map_err(Into::into),
-            Err(e) => Err(match e {
-                TimeoutError::NoRuntime => PoolError::NoRuntimeSpecified,
-                TimeoutError::Timeout => PoolError::Timeout(timeout_type),
-            }),
-        },
-        None => future.await.map_err(Into::into),
+    match (runtime, duration) {
+        (_, None) => future.await.map_err(Into::into),
+        (Some(runtime), Some(duration)) => runtime
+            .timeout(duration, future)
+            .await
+            .ok_or_else(|| PoolError::Timeout(timeout_type))?
+            .map_err(Into::into),
+        (None, Some(_)) => Err(PoolError::NoRuntimeSpecified),
     }
 }

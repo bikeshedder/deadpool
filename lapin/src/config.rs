@@ -1,3 +1,4 @@
+use deadpool::Runtime;
 #[cfg(feature = "rt_tokio_1")]
 use tokio_amqp::LapinTokioExt;
 
@@ -49,11 +50,11 @@ impl Config {
         let pool_config = self.get_pool_config();
         let connection_properties = self.connection_properties.clone();
         let connection_properties = match pool_config.runtime {
-            deadpool::Runtime::None => connection_properties,
+            None => connection_properties,
             #[cfg(feature = "rt_tokio_1")]
-            deadpool::Runtime::Tokio1 => connection_properties.with_tokio(),
+            Some(Runtime::Tokio1) => connection_properties.with_tokio(),
             #[cfg(feature = "rt_async-std_1")]
-            deadpool::Runtime::AsyncStd1 => connection_properties.with_async_std(),
+            Some(Runtime::AsyncStd1) => connection_properties.with_async_std(),
         };
         let manager = crate::Manager::new(url, connection_properties);
         Pool::from_config(manager, pool_config)

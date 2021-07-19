@@ -7,26 +7,12 @@ use std::time::Duration;
 #[derive(Clone, Debug, PartialEq, Eq)]
 /// Enumeration for picking a runtime implementation
 pub enum Runtime {
-    /// Disable runtime specific features
-    /// This disables timeouts and the possibility to spawn async tasks.
-    None,
     /// tokio 1.0 runtime
     #[cfg(feature = "rt_tokio_1")]
     Tokio1,
     /// async-std 1.0 runtime
     #[cfg(feature = "rt_async-std_1")]
     AsyncStd1,
-}
-
-impl Default for Runtime {
-    fn default() -> Self {
-        Runtime::None
-    }
-}
-
-pub enum TimeoutError {
-    Timeout,
-    NoRuntime,
 }
 
 #[derive(Debug)]
@@ -53,20 +39,15 @@ impl Runtime {
     /// completed value is returned. Otherwise, an error is returned and
     /// the future is canceled.
     #[allow(unused_variables)]
-    pub async fn timeout<F>(&self, duration: Duration, future: F) -> Result<F::Output, TimeoutError>
+    pub async fn timeout<F>(&self, duration: Duration, future: F) -> Option<F::Output>
     where
         F: Future,
     {
         match self {
-            Self::None => Err(TimeoutError::NoRuntime),
             #[cfg(feature = "rt_tokio_1")]
-            Self::Tokio1 => tokio::time::timeout(duration, future)
-                .await
-                .map_err(|_| TimeoutError::Timeout),
+            Self::Tokio1 => tokio::time::timeout(duration, future).await.ok(),
             #[cfg(feature = "rt_async-std_1")]
-            Self::AsyncStd1 => async_std::future::timeout(duration, future)
-                .await
-                .map_err(|_| TimeoutError::Timeout),
+            Self::AsyncStd1 => async_std::future::timeout(duration, future).await.ok(),
         }
     }
 
@@ -78,7 +59,6 @@ impl Runtime {
         R: Send + 'static,
     {
         match self {
-            Self::None => Err(SpawnBlockingError::NoRuntime),
             #[cfg(feature = "rt_tokio_1")]
             Self::Tokio1 => tokio::task::spawn_blocking(f)
                 .await
@@ -97,7 +77,6 @@ impl Runtime {
         F: FnOnce() + Send + 'static,
     {
         match self {
-            Self::None => Err(SpawnBlockingError::NoRuntime),
             #[cfg(feature = "rt_tokio_1")]
             Self::Tokio1 => {
                 tokio::task::spawn_blocking(f);

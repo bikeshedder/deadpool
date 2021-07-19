@@ -46,7 +46,7 @@ mod tests {
                 wait: Some(Duration::from_millis(0)),
                 recycle: Some(Duration::from_millis(0)),
             },
-            runtime,
+            runtime: Some(runtime),
         };
         let pool = Pool::from_config(mgr, cfg);
         assert!(matches!(pool.get().await, Err(PoolError::Timeout(_))));

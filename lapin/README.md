@@ -19,7 +19,7 @@ manager for [`lapin`](https://crates.io/crates/lapin).
 ```rust,ignore
 use std::sync::Arc;
 
-use deadpool_lapin::{Config, Manager, Pool };
+use deadpool_lapin::{Config, Manager, Pool, Runtime };
 use deadpool_lapin::lapin::{
     options::BasicPublishOptions,
     BasicProperties
@@ -31,7 +31,7 @@ use tokio_amqp::LapinTokioExt;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cfg = Config::default();
     cfg.url = Some("amqp://127.0.0.1:5672/%2f".to_string());
-    cfg.pool.get_or_insert_with(Default::default).runtime = deadpool::Runtime::Tokio1;
+    cfg.pool.get_or_insert_with(Default::default).runtime = Some(Runtime::Tokio1);
     let pool = cfg.create_pool();
     for i in 1..10usize {
         let mut connection = pool.get().await?;
@@ -53,6 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```rust
 use std::sync::Arc;
 
+use deadpool_lapin::Runtime;
 use deadpool_lapin::lapin::{
     options::BasicPublishOptions,
     BasicProperties
@@ -78,7 +79,7 @@ impl Config {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
     let mut cfg = Config::from_env().unwrap();
-    cfg.amqp.pool.get_or_insert_with(Default::default).runtime = deadpool::Runtime::Tokio1;
+    cfg.amqp.pool.get_or_insert_with(Default::default).runtime = Some(Runtime::Tokio1);
     let pool = cfg.amqp.create_pool();
     for i in 1..10usize {
         let mut connection = pool.get().await?;

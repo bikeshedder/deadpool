@@ -12,7 +12,7 @@ pub struct PoolConfig {
     pub timeout: Option<Duration>,
     /// Runtime
     #[cfg_attr(feature = "config", serde(skip))]
-    pub runtime: Runtime,
+    pub runtime: Option<Runtime>,
 }
 
 impl PoolConfig {
@@ -21,7 +21,7 @@ impl PoolConfig {
         Self {
             max_size,
             timeout: None,
-            runtime: Runtime::default(),
+            runtime: None,
         }
     }
 }
