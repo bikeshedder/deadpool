@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.8.3 (unreleased)
+
+* Add `Runtime::spawn_blocking` method
+
 ## v0.8.2
 
 * Add `deadpool-diesel` to README

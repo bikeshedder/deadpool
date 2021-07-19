@@ -1,4 +1,5 @@
 //! Runtime specific feature
+use std::any::Any;
 use std::future::Future;
 use std::time::Duration;
 
@@ -27,10 +28,15 @@ pub enum TimeoutError {
     NoRuntime,
 }
 
+pub enum SpawnBlockingError {
+    NoRuntime,
+    Panic(Box<dyn Any + Send + 'static>),
+}
+
 impl Runtime {
     /// Require a Future to complete before the specified duration has elapsed.
     ///
-    // If the future completes before the duration has elapsed, then the
+    /// If the future completes before the duration has elapsed, then the
     /// completed value is returned. Otherwise, an error is returned and
     /// the future is canceled.
     #[allow(unused_variables)]
@@ -48,6 +54,22 @@ impl Runtime {
             Self::AsyncStd1 => async_std::future::timeout(duration, future)
                 .await
                 .map_err(|_| TimeoutError::Timeout),
+        }
+    }
+
+    /// Run the closure on a thread where blocking is acceptable.
+    pub async fn spawn_blocking<F>(&self, f: F) -> Result<(), SpawnBlockingError>
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        match self {
+            Self::None => Err(SpawnBlockingError::NoRuntime),
+            #[cfg(feature = "rt_tokio_1")]
+            Self::Tokio1 => tokio::task::spawn_blocking(f)
+                .await
+                .map_err(|e| SpawnBlockingError::Panic(e.into_panic())),
+            #[cfg(feature = "rt_async-std_1")]
+            Self::AsyncStd1 => Ok(async_std::task::spawn_blocking(f).await),
         }
     }
 }
