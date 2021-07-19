@@ -96,8 +96,8 @@ where
             })
             .await
             .map_err(|e| match e {
-                crate::runtime::SpawnBlockingError::NoRuntime => unreachable!(),
-                crate::runtime::SpawnBlockingError::Panic(p) => InteractError::Panic(p),
+                SpawnBlockingError::NoRuntime => unreachable!(),
+                SpawnBlockingError::Panic(p) => InteractError::Panic(p),
             })?
             .map_err(InteractError::Backend)
     }
