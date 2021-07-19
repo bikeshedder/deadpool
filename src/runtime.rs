@@ -46,6 +46,8 @@ impl Runtime {
             Self::Tokio1 => tokio::time::timeout(duration, future).await.ok(),
             #[cfg(feature = "rt_async-std_1")]
             Self::AsyncStd1 => async_std::future::timeout(duration, future).await.ok(),
+            #[allow(unreachable_patterns)]
+            _ => unreachable!()
         }
     }
 
@@ -63,6 +65,8 @@ impl Runtime {
                 .map_err(|e| SpawnBlockingError::Panic(e.into_panic())),
             #[cfg(feature = "rt_async-std_1")]
             Self::AsyncStd1 => Ok(async_std::task::spawn_blocking(f).await),
+            #[allow(unreachable_patterns)]
+            _ => unreachable!()
         }
     }
 
@@ -85,6 +89,8 @@ impl Runtime {
                 async_std::task::spawn_blocking(f);
                 Ok(())
             }
+            #[allow(unreachable_patterns)]
+            _ => unreachable!()
         }
     }
 }
