@@ -1,9 +1,10 @@
 //! Runtime specific feature
 use std::any::Any;
+use std::fmt;
 use std::future::Future;
 use std::time::Duration;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 /// Enumeration for picking a runtime implementation
 pub enum Runtime {
     /// Disable runtime specific features
@@ -28,10 +29,22 @@ pub enum TimeoutError {
     NoRuntime,
 }
 
+#[derive(Debug)]
 pub enum SpawnBlockingError {
     NoRuntime,
     Panic(Box<dyn Any + Send + 'static>),
 }
+
+impl fmt::Display for SpawnBlockingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NoRuntime => write!(f, "SpawnBlockingError: No runtime"),
+            Self::Panic(p) => write!(f, "SpawnBlockingError: Panic: {:?}", p),
+        }
+    }
+}
+
+impl std::error::Error for SpawnBlockingError {}
 
 impl Runtime {
     /// Require a Future to complete before the specified duration has elapsed.
