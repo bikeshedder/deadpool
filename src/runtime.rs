@@ -58,9 +58,11 @@ impl Runtime {
     }
 
     /// Run the closure on a thread where blocking is acceptable.
-    pub async fn spawn_blocking<F>(&self, f: F) -> Result<(), SpawnBlockingError>
+    #[allow(unused_variables)]
+    pub async fn spawn_blocking<F, R>(&self, f: F) -> Result<R, SpawnBlockingError>
     where
-        F: FnOnce() + Send + 'static,
+        F: FnOnce() -> R + Send + 'static,
+        R: Send + 'static,
     {
         match self {
             Self::None => Err(SpawnBlockingError::NoRuntime),
