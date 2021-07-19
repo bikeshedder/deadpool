@@ -71,7 +71,7 @@ impl deadpool::managed::Manager for Manager {
 #[tokio::main]
 async fn main() {
     let mgr = Manager {};
-    let pool = Pool::new(mgr, 16);
+    let pool = Pool::builder(mgr).create().unwrap();
     let mut conn = pool.get().await.unwrap();
     let answer = conn.get_answer().await;
     assert_eq!(answer, 42);

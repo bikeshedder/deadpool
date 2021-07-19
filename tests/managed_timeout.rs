@@ -5,10 +5,10 @@ mod tests {
 
     use async_trait::async_trait;
 
-    use deadpool::managed::{PoolConfig, PoolError, RecycleResult, Timeouts};
+    use deadpool::managed::{Object, PoolConfig, PoolError, RecycleResult, Timeouts};
     use deadpool::Runtime;
     #[allow(dead_code)]
-    type Pool = deadpool::managed::Pool<Manager>;
+    type Pool = deadpool::managed::Pool<Manager, Object<Manager>>;
 
     struct Manager {}
 
@@ -46,9 +46,12 @@ mod tests {
                 wait: Some(Duration::from_millis(0)),
                 recycle: Some(Duration::from_millis(0)),
             },
-            runtime: Some(runtime),
         };
-        let pool = Pool::from_config(mgr, cfg);
+        let pool = Pool::builder(mgr)
+            .config(cfg)
+            .runtime(runtime)
+            .build()
+            .unwrap();
         assert!(matches!(pool.get().await, Err(PoolError::Timeout(_))));
     }
 

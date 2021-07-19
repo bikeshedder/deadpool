@@ -17,13 +17,14 @@
 //! ## Example
 //!
 //! ```rust,ignore
-//! use deadpool_redis::redis::{cmd, Config, FromRedisValue};
+//! use deadpool_redis::Runtime;
+//! use deadpool_redis::{cmd, Config, FromRedisValue};
 //!
 //! #[tokio::main]
 //! async fn main() {
 //!     let mut cfg = Config::default();
 //!     cfg.url = Some("redis://127.0.0.1/".to_string());
-//!     let pool = cfg.create_pool().unwrap();
+//!     let pool = cfg.create_pool(Runtime::NoRuntime).unwrap();
 //!     {
 //!         let mut conn = pool.get().await.unwrap();
 //!         cmd("SET")
@@ -45,6 +46,7 @@
 //! ## Example with `config` and `dotenv` crate
 //!
 //! ```rust
+//! use deadpool_redis::Runtime;
 //! use deadpool_redis::redis::{cmd, FromRedisValue};
 //! use dotenv::dotenv;
 //! use serde::Deserialize;
@@ -67,7 +69,7 @@
 //! async fn main() {
 //!     dotenv().ok();
 //!     let cfg = Config::from_env().unwrap();
-//!     let pool = cfg.redis.create_pool().unwrap();
+//!     let pool = cfg.redis.create_pool(Runtime::Tokio1).unwrap();
 //!     {
 //!         let mut conn = pool.get().await.unwrap();
 //!         cmd("SET")

@@ -5,7 +5,7 @@ fn create_pool() -> Pool {
         path: String::from("db.sqlite3"),
         pool: None,
     };
-    cfg.create_pool(Runtime::Tokio1)
+    cfg.create_pool(Runtime::Tokio1).unwrap()
 }
 
 #[tokio::test]

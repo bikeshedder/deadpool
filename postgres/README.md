@@ -24,7 +24,7 @@ with `async-std`.
 ## Example
 
 ```rust,ignore
-use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod};
+use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod, Runtime};
 use tokio_postgres::NoTls;
 
 #[tokio::main]
@@ -32,7 +32,7 @@ async fn main() {
     let mut cfg = Config::new();
     cfg.dbname = Some("deadpool".to_string());
     cfg.manager = Some(ManagerConfig { recycling_method: RecyclingMethod::Fast });
-    let pool = cfg.create_pool(NoTls).unwrap();
+    let pool = cfg.create_pool(Runtime::Tokio1, NoTls).unwrap();
     for i in 1..10 {
         let mut client = pool.get().await.unwrap();
         let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
@@ -51,7 +51,7 @@ PG__DBNAME=deadpool
 ```
 
 ```rust
-use deadpool_postgres::{Manager, Pool};
+use deadpool_postgres::{Manager, Pool, Runtime};
 use dotenv::dotenv;
 use serde::Deserialize;
 use tokio_postgres::NoTls;
@@ -74,7 +74,7 @@ impl Config {
 async fn main() {
     dotenv().ok();
     let mut cfg = Config::from_env().unwrap();
-    let pool = cfg.pg.create_pool(NoTls).unwrap();
+    let pool = cfg.pg.create_pool(Runtime::Tokio1, NoTls).unwrap();
     for i in 1..10 {
         let mut client = pool.get().await.unwrap();
         let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();

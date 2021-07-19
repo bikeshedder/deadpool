@@ -14,7 +14,10 @@ mod tests {
 
     fn create_pool(max_size: usize) -> SqlitePool {
         let manager = SqliteManager::new(":memory:");
-        let pool = SqlitePool::new(manager, max_size);
+        let pool = SqlitePool::builder(manager)
+            .max_size(max_size)
+            .build()
+            .unwrap();
         pool
     }
 

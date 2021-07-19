@@ -1,4 +1,7 @@
-use deadpool::{managed::PoolConfig, Runtime};
+use deadpool::{
+    managed::{BuildError, PoolConfig},
+    Runtime,
+};
 
 use crate::{Manager, Pool};
 
@@ -45,9 +48,12 @@ impl Config {
         }
     }
     /// Create pool using the current configuration
-    pub fn create_pool(&self, runtime: Runtime) -> Pool {
-        let manager = Manager::from_config(&self, runtime);
-        Pool::from_config(manager, self.get_pool_config())
+    pub fn create_pool(&self, runtime: Runtime) -> Result<Pool, BuildError<rusqlite::Error>> {
+        let manager = Manager::from_config(&self, runtime.clone());
+        Pool::builder(manager)
+            .config(self.get_pool_config())
+            .runtime(runtime)
+            .build()
     }
     /// Get `deadpool::PoolConfig` which can be used to construct a
     /// `deadpool::managed::Pool` instance.

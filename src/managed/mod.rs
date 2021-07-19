@@ -37,7 +37,7 @@
 //! #[tokio::main]
 //! async fn main() {
 //!     let mgr = Manager {};
-//!     let pool = Pool::new(mgr, 16);
+//!     let pool = Pool::builder(mgr).max_size(16).build().unwrap();
 //!     let mut conn = pool.get().await.unwrap();
 //!     let answer = conn.get_answer().await;
 //!     assert_eq!(answer, 42);
@@ -57,6 +57,8 @@ use std::{future::Future, marker::PhantomData};
 use async_trait::async_trait;
 use tokio::sync::{Semaphore, TryAcquireError};
 
+mod builder;
+pub use builder::{BuildError, PoolBuilder};
 mod config;
 pub use self::config::{PoolConfig, Timeouts};
 mod errors;
@@ -204,6 +206,7 @@ struct PoolInner<M: Manager> {
     available: AtomicIsize,
     semaphore: Semaphore,
     config: PoolConfig,
+    runtime: Option<Runtime>,
 }
 
 /// A generic object and connection pool.
@@ -225,25 +228,21 @@ impl<M: Manager, W: From<Object<M>>> Clone for Pool<M, W> {
 }
 
 impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
-    /// Create new connection pool with a given `manager` and `max_size`.
-    /// The `manager` is used to create and recycle objects and `max_size`
-    /// is the maximum number of objects ever created.
-    pub fn new(manager: M, max_size: usize) -> Pool<M, W> {
-        Self::from_config(manager, PoolConfig::new(max_size))
+    /// Create a new pool builder. This is the only way to create a pool
+    /// instance.
+    pub fn builder(manager: M) -> PoolBuilder<M, W> {
+        PoolBuilder::new(manager)
     }
-    /// Create new connection pool with a given `manager` and `config`.
-    /// The `manager` is used to create and recycle objects. The config
-    /// specifies the maximum numbers of objects to be created and
-    /// timeouts.
-    pub fn from_config(manager: M, config: PoolConfig) -> Pool<M, W> {
+    pub(crate) fn from_builder(builder: PoolBuilder<M, W>) -> Pool<M, W> {
         Pool {
             inner: Arc::new(PoolInner {
-                manager: Box::new(manager),
-                queue: std::sync::Mutex::new(VecDeque::with_capacity(config.max_size)),
+                manager: Box::new(builder.manager),
+                queue: std::sync::Mutex::new(VecDeque::with_capacity(builder.config.max_size)),
                 size: AtomicUsize::new(0),
                 available: AtomicIsize::new(0),
-                semaphore: Semaphore::new(config.max_size),
-                config,
+                semaphore: Semaphore::new(builder.config.max_size),
+                config: builder.config,
+                runtime: builder.runtime,
             }),
             _wrapper: PhantomData::default(),
         }
@@ -282,7 +281,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             })?
         } else {
             apply_timeout(
-                &self.inner.config.runtime,
+                &self.inner.runtime,
                 TimeoutType::Wait,
                 self.inner.config.timeouts.wait,
                 async {
@@ -310,7 +309,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     obj.state = ObjectState::Recycling;
                     obj.obj = Some(inner_obj);
                     match apply_timeout(
-                        &self.inner.config.runtime,
+                        &self.inner.runtime,
                         TimeoutType::Recycle,
                         self.inner.config.timeouts.recycle,
                         self.inner.manager.recycle(&mut obj),
@@ -332,7 +331,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     self.inner.size.fetch_add(1, Ordering::Relaxed);
                     obj.obj = Some(
                         apply_timeout(
-                            &self.inner.config.runtime,
+                            &self.inner.runtime,
                             TimeoutType::Create,
                             self.inner.config.timeouts.create,
                             self.inner.manager.create(),

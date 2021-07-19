@@ -24,7 +24,7 @@
 //! #[tokio::main]
 //! async fn main() {
 //!     let mut cfg = Config::new("db.sqlite3");
-//!     let pool = cfg.create_pool(Runtime::Tokio1);
+//!     let pool = cfg.create_pool(Runtime::Tokio1).unwrap();
 //!     let conn = pool.get().await.unwrap();
 //!     let result: i64 = conn
 //!         .interact(|conn| {
@@ -101,7 +101,6 @@ impl deadpool::managed::Manager for Manager {
             rusqlite::Connection::open(path)
         })
         .await
-        .unwrap()
     }
 
     async fn recycle(
