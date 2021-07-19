@@ -22,7 +22,7 @@ use std::sync::Arc;
 use deadpool_lapin::{Config, Manager, Pool, Runtime };
 use deadpool_lapin::lapin::{
     options::BasicPublishOptions,
-    BasicProperties
+    BasicProperties,
 };
 use tokio::runtime::Runtime;
 use tokio_amqp::LapinTokioExt;
@@ -31,8 +31,7 @@ use tokio_amqp::LapinTokioExt;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cfg = Config::default();
     cfg.url = Some("amqp://127.0.0.1:5672/%2f".to_string());
-    cfg.pool.get_or_insert_with(Default::default).runtime = Some(Runtime::Tokio1);
-    let pool = cfg.create_pool();
+    let pool = cfg.create_pool(Runtime::Tokio1);
     for i in 1..10usize {
         let mut connection = pool.get().await?;
         let channel = connection.create_channel().await?;
@@ -56,7 +55,7 @@ use std::sync::Arc;
 use deadpool_lapin::Runtime;
 use deadpool_lapin::lapin::{
     options::BasicPublishOptions,
-    BasicProperties
+    BasicProperties,
 };
 use dotenv::dotenv;
 use serde::Deserialize;
@@ -79,8 +78,7 @@ impl Config {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
     let mut cfg = Config::from_env().unwrap();
-    cfg.amqp.pool.get_or_insert_with(Default::default).runtime = Some(Runtime::Tokio1);
-    let pool = cfg.amqp.create_pool();
+    let pool = cfg.amqp.create_pool(Runtime::Tokio1).unwrap();
     for i in 1..10usize {
         let mut connection = pool.get().await?;
         let channel = connection.create_channel().await?;

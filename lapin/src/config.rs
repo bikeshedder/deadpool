@@ -7,6 +7,8 @@ use async_amqp::LapinAsyncStdExt;
 
 use crate::{Pool, PoolConfig};
 
+pub type BuildError = deadpool::managed::BuildError<lapin::Error>;
+
 /// Configuration object. By enabling the `config` feature you can
 /// read the configuration using the [`config`](https://crates.io/crates/config)
 /// crate. e.g.:
@@ -45,19 +47,21 @@ pub struct Config {
 
 impl Config {
     /// Create pool using the current configuration
-    pub fn create_pool(&self) -> Pool {
+    pub fn create_pool(&self, runtime: Runtime) -> Result<Pool, BuildError> {
         let url = self.get_url().to_string();
         let pool_config = self.get_pool_config();
         let connection_properties = self.connection_properties.clone();
-        let connection_properties = match pool_config.runtime {
-            None => connection_properties,
+        let connection_properties = match runtime {
             #[cfg(feature = "rt_tokio_1")]
-            Some(Runtime::Tokio1) => connection_properties.with_tokio(),
+            Runtime::Tokio1 => connection_properties.with_tokio(),
             #[cfg(feature = "rt_async-std_1")]
-            Some(Runtime::AsyncStd1) => connection_properties.with_async_std(),
+            Runtime::AsyncStd1 => connection_properties.with_async_std(),
         };
         let manager = crate::Manager::new(url, connection_properties);
-        Pool::from_config(manager, pool_config)
+        Pool::builder(manager)
+            .config(pool_config)
+            .runtime(runtime)
+            .build()
     }
     /// Get `URL` which can be used to connect to
     /// the database.

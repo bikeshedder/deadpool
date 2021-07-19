@@ -1,3 +1,4 @@
+use deadpool_redis::Runtime;
 use futures::FutureExt;
 
 use redis::cmd;
@@ -20,7 +21,7 @@ impl Config {
 
 fn create_pool() -> deadpool_redis::Pool {
     let cfg = Config::from_env();
-    cfg.redis.create_pool().unwrap()
+    cfg.redis.create_pool(Runtime::Tokio1).unwrap()
 }
 
 #[tokio::main]

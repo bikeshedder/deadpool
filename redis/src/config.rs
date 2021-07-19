@@ -1,5 +1,7 @@
 use std::fmt;
 
+use deadpool::{managed::BuildError, Runtime};
+
 use crate::{Pool, PoolConfig, RedisResult};
 
 /// Configuration object. By enabling the `config` feature you can
@@ -193,19 +195,22 @@ pub struct Config {
 
 impl Config {
     /// Create pool using the current configuration
-    pub fn create_pool(&self) -> Result<Pool, CreatePoolError> {
+    pub fn create_pool(&self, runtime: Runtime) -> Result<Pool, BuildError<redis::RedisError>> {
         let manager = match (&self.url, &self.connection) {
             (Some(url), None) => crate::Manager::new(url.as_str())?,
             (None, Some(connection)) => crate::Manager::new(connection.clone())?,
             (None, None) => crate::Manager::new(ConnectionInfo::default())?,
             (Some(_), Some(_)) => {
-                return Err(CreatePoolError::Config(
+                return Err(BuildError::Config(
                     "url and connection must not be specified at the same time.".to_owned(),
                 ))
             }
         };
         let pool_config = self.get_pool_config();
-        Ok(Pool::from_config(manager, pool_config))
+        Pool::builder(manager)
+            .config(pool_config)
+            .runtime(runtime)
+            .build()
     }
     /// Get `deadpool::PoolConfig` which can be used to construct a
     /// `deadpool::managed::Pool` instance.

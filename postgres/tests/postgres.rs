@@ -6,7 +6,7 @@ use futures::future::join_all;
 use serde::Deserialize;
 use tokio_postgres::{types::Type, IsolationLevel};
 
-use deadpool_postgres::{ManagerConfig, Pool, RecyclingMethod};
+use deadpool_postgres::{ManagerConfig, Pool, RecyclingMethod, Runtime};
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -35,7 +35,9 @@ impl Config {
 
 fn create_pool() -> Pool {
     let cfg = Config::from_env();
-    cfg.pg.create_pool(tokio_postgres::NoTls).unwrap()
+    cfg.pg
+        .create_pool(Runtime::Tokio1, tokio_postgres::NoTls)
+        .unwrap()
 }
 
 #[tokio::test]
@@ -161,7 +163,10 @@ async fn test_recycling_methods() {
     let mut cfg = Config::from_env();
     for recycling_method in recycling_methods {
         cfg.pg.manager = Some(ManagerConfig { recycling_method });
-        let pool = cfg.pg.create_pool(tokio_postgres::NoTls).unwrap();
+        let pool = cfg
+            .pg
+            .create_pool(Runtime::Tokio1, tokio_postgres::NoTls)
+            .unwrap();
         for _ in 0usize..20usize {
             let client = pool.get().await.unwrap();
             let rows = client.query("SELECT 1 + 2", &[]).await.unwrap();

@@ -44,7 +44,15 @@ where
     }
 
     async fn recycle(&self, obj: &mut Self::Type) -> RecycleResult<Self::Error> {
-        let conn = obj.conn.take().ok_or(RecycleError::Message(String::from("Connection is gone. This is probably caused by a previous unsuccessful recycle attempt.")))?;
+        let conn = obj.conn.take().ok_or_else(|| {
+            RecycleError::Message(
+                concat!(
+                    "Connection is gone. This is probably caused by a ",
+                    "previous unsuccessful recycle attempt."
+                )
+                .to_string(),
+            )
+        })?;
         let conn = tokio::task::spawn_blocking(move || {
             conn.execute("SELECT 1")
                 .map_err(Error::QueryError)

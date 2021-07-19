@@ -41,7 +41,7 @@ mod tests {
             create_fail: true,
             recycle_fail: false,
         };
-        let pool = Pool::new(manager, 16);
+        let pool = Pool::builder(manager).max_size(16).build().unwrap();
         {
             assert_eq!(pool.get().await.is_ok(), false);
         }
@@ -68,7 +68,7 @@ mod tests {
             create_fail: false,
             recycle_fail: true,
         };
-        let pool = Pool::new(manager, 16);
+        let pool = Pool::builder(manager).max_size(16).build().unwrap();
         {
             let _a = pool.get().await.unwrap();
             let _b = pool.get().await.unwrap();

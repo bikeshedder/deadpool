@@ -1,7 +1,5 @@
 use std::time::Duration;
 
-use crate::Runtime;
-
 /// Pool configuration
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
@@ -11,9 +9,6 @@ pub struct PoolConfig {
     /// Timeouts
     #[cfg_attr(feature = "config", serde(default))]
     pub timeouts: Timeouts,
-    /// Runtime
-    #[cfg_attr(feature = "config", serde(skip))]
-    pub runtime: Option<Runtime>,
 }
 
 impl PoolConfig {
@@ -22,7 +17,6 @@ impl PoolConfig {
         Self {
             max_size,
             timeouts: Timeouts::default(),
-            runtime: None,
         }
     }
 }
@@ -52,7 +46,7 @@ impl Timeouts {
     pub fn new() -> Self {
         Self::default()
     }
-    /// Create a timeout config with no timeouts set
+    /// Create a timeout config with only the wait timeout set
     pub fn wait_millis(wait: u64) -> Self {
         Self {
             create: None,

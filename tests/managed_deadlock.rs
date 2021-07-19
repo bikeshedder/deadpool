@@ -13,6 +13,7 @@ mod tests {
     use deadpool::managed::{RecycleError, RecycleResult};
     type Pool = deadpool::managed::Pool<Manager>;
 
+    #[derive(Clone)]
     struct Manager {
         create_rx: Arc<Mutex<Receiver<Result<(), ()>>>>,
         recycle_rx: Arc<Mutex<Receiver<Result<(), ()>>>>,
@@ -78,7 +79,7 @@ mod tests {
     async fn test_pool_drained() {
         let manager = Manager::new();
         let mut rc = manager.remote_control.clone();
-        let pool = Pool::new(manager, 1);
+        let pool = Pool::builder(manager).max_size(1).build().unwrap();
         let pool_clone = pool.clone();
         // let first task grab the only connection
         let get_1 = tokio::spawn(async move {

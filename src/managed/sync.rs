@@ -56,11 +56,7 @@ where
     E: Send + 'static,
 {
     /// Create a new wrapped object.
-    ///
-    /// This wrapper requires an actual runtime and therefore
-    /// this method returns `None` when passing `Runtime::None`
-    /// as runtime.
-    pub async fn new<F>(runtime: Runtime, f: F) -> Option<Result<Self, E>>
+    pub async fn new<F>(runtime: Runtime, f: F) -> Result<Self, E>
     where
         F: FnOnce() -> Result<T, E> + Send + 'static,
     {
@@ -72,11 +68,11 @@ where
             Err(SpawnBlockingError::Panic(e)) => panic!("{:?}", e),
             Ok(obj) => obj,
         };
-        Some(result.map(|obj| Self {
+        result.map(|obj| Self {
             obj: Arc::new(Mutex::new(Some(obj))),
             runtime,
             _error: PhantomData::default(),
-        }))
+        })
     }
     /// Interact with the underlying object. This function expects a closure
     /// that takes the object as parameter. The closure is executed in a

@@ -26,7 +26,7 @@ mod tests {
     #[tokio::test]
     async fn test_managed_basic() {
         let mgr = Manager {};
-        let pool = Pool::new(mgr, 16);
+        let pool = Pool::builder(mgr).max_size(16).build().unwrap();
 
         let status = pool.status();
         assert_eq!(status.size, 0);
@@ -66,7 +66,7 @@ mod tests {
     #[tokio::test]
     async fn test_managed_close() {
         let mgr = Manager {};
-        let pool = Pool::new(mgr, 1);
+        let pool = Pool::builder(mgr).max_size(1).build().unwrap();
         // fetch the only object from the pool
         let obj = pool.get().await;
         let join_handle = {
@@ -89,7 +89,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn test_managed_concurrent() {
         let mgr = Manager {};
-        let pool = Pool::new(mgr, 3);
+        let pool = Pool::builder(mgr).max_size(3).build().unwrap();
 
         // Spawn tasks
         let futures = (0..100)
@@ -125,7 +125,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn test_managed_object_take() {
         let mgr = Manager {};
-        let pool = Pool::new(mgr, 2);
+        let pool = Pool::builder(mgr).max_size(2).build().unwrap();
         let obj0 = pool.get().await.unwrap();
         let obj1 = pool.get().await.unwrap();
 

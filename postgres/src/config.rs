@@ -1,7 +1,6 @@
 //! This module describes configuration used for [`Pool`] creation.
 
 use std::env;
-use std::fmt;
 use std::time::Duration;
 
 use tokio_postgres::config::{
@@ -11,34 +10,11 @@ use tokio_postgres::config::{
 use tokio_postgres::tls::{MakeTlsConnect, TlsConnect};
 use tokio_postgres::Socket;
 
-use crate::{Pool, PoolConfig};
+use crate::{Pool, PoolConfig, Runtime};
 
 /// An error which is returned by `Config::create_pool` if something is
 /// wrong with the configuration.
-#[derive(Debug)]
-pub enum ConfigError {
-    /// Message of the error.
-    Message(String),
-}
-
-impl fmt::Display for ConfigError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Message(message) => write!(f, "{}", message),
-        }
-    }
-}
-
-#[cfg(feature = "config")]
-impl From<ConfigError> for ::config_crate::ConfigError {
-    fn from(e: ConfigError) -> Self {
-        match e {
-            ConfigError::Message(message) => Self::Message(message),
-        }
-    }
-}
-
-impl std::error::Error for ConfigError {}
+pub type BuildError = deadpool::managed::BuildError<tokio_postgres::Error>;
 
 /// Properties required of a session.
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -266,7 +242,11 @@ impl Config {
         Self::default()
     }
     /// Create pool using the current configuration
-    pub fn create_pool<T: MakeTlsConnect<Socket>>(&self, tls: T) -> Result<Pool, ConfigError>
+    pub fn create_pool<T: MakeTlsConnect<Socket>>(
+        &self,
+        runtime: Runtime,
+        tls: T,
+    ) -> Result<Pool, BuildError>
     where
         T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
         T::Stream: Sync + Send,
@@ -277,11 +257,14 @@ impl Config {
         let manager_config = self.get_manager_config();
         let manager = crate::Manager::from_config(pg_config, tls, manager_config);
         let pool_config = self.get_pool_config();
-        Ok(Pool::from_config(manager, pool_config))
+        Pool::builder(manager)
+            .config(pool_config)
+            .runtime(runtime)
+            .build()
     }
     /// Get `tokio_postgres::Config` which can be used to connect to
     /// the database.
-    pub fn get_pg_config(&self) -> Result<tokio_postgres::Config, ConfigError> {
+    pub fn get_pg_config(&self) -> Result<tokio_postgres::Config, BuildError> {
         let mut cfg = tokio_postgres::Config::new();
         if let Some(user) = &self.user {
             cfg.user(user.as_str());
@@ -294,14 +277,14 @@ impl Config {
         match &self.dbname {
             Some(dbname) => match dbname.as_str() {
                 "" => {
-                    return Err(ConfigError::Message(
+                    return Err(BuildError::Config(
                         "configuration property \"dbname\" not found".to_string(),
                     ))
                 }
                 dbname => cfg.dbname(dbname),
             },
             None => {
-                return Err(ConfigError::Message(
+                return Err(BuildError::Config(
                     "configuration property \"dbname\" contains an empty string".to_string(),
                 ))
             }
