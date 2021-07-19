@@ -3,6 +3,7 @@
 ## v0.8.3 (unreleased)
 
 * Add `Runtime::spawn_blocking` method
+* Add `Runtime::spawn_blocking_background` method
 
 ## v0.8.2
 

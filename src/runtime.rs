@@ -74,4 +74,27 @@ impl Runtime {
             Self::AsyncStd1 => Ok(async_std::task::spawn_blocking(f).await),
         }
     }
+
+    /// Run the closure on a thread where blocking is acceptable.
+    /// It works similar to [Runtime::spawn_blocking] but does not
+    /// return a future and is meant to be used for background tasks.
+    #[allow(unused_variables)]
+    pub fn spawn_blocking_background<F>(&self, f: F) -> Result<(), SpawnBlockingError>
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        match self {
+            Self::None => Err(SpawnBlockingError::NoRuntime),
+            #[cfg(feature = "rt_tokio_1")]
+            Self::Tokio1 => {
+                tokio::task::spawn_blocking(f);
+                Ok(())
+            }
+            #[cfg(feature = "rt_async-std_1")]
+            Self::AsyncStd1 => {
+                async_std::task::spawn_blocking(f);
+                Ok(())
+            }
+        }
+    }
 }
