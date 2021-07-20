@@ -19,4 +19,16 @@ impl fmt::Display for Error {
     }
 }
 
+impl From<diesel::ConnectionError> for Error {
+    fn from(e: diesel::ConnectionError) -> Self {
+        Self::ConnectionError(e)
+    }
+}
+
+impl From<diesel::result::Error> for Error {
+    fn from(e: diesel::result::Error) -> Self {
+        Self::QueryError(e)
+    }
+}
+
 impl ::std::error::Error for Error {}

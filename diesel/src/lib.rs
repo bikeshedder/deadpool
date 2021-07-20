@@ -19,15 +19,23 @@
 //! ## Example
 //!
 //! ```rust
+//! use deadpool_diesel::{Runtime, sqlite::{Manager, Pool}};
+//! use diesel::{prelude::*, select, sql_types::Text};
+//!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let manager = deadpool_diesel::sqlite::Manager::new(":memory:");
-//!     let pool = deadpool_diesel::sqlite::Pool::builder(manager)
+//!     let manager = Manager::new(":memory:", Runtime::Tokio1);
+//!     let pool = Pool::builder(manager)
 //!         .max_size(8)
 //!         .build()
 //!         .unwrap();
 //!     let conn = pool.get().await?;
-//!     // TODO use the connection with diesel
+//!     let result = conn.interact(|conn| {
+//!         let query = select("Hello world!".into_sql::<Text>());
+//!         query.get_result::<String>(conn)
+//!             .map_err(Into::into)
+//!     }).await.unwrap();
+//!     assert!(result == "Hello world!");
 //!     Ok(())
 //! }
 //! ```
@@ -42,11 +50,9 @@
 //! at your option.
 #![warn(missing_docs, unreachable_pub)]
 
-mod connection;
 mod error;
 mod manager;
 
-pub use connection::Connection;
 pub use error::Error;
 pub use manager::Manager;
 
@@ -62,3 +68,6 @@ pub use deadpool::Runtime;
 
 /// A type alias for using `deadpool::PoolError` with `diesel`
 pub type PoolError = deadpool::managed::PoolError<Error>;
+
+/// A type alias for using `deadpool::managed::sync::SyncWrapper` with `diesel`
+pub type Connection<C> = deadpool::managed::sync::SyncWrapper<C, Error>;

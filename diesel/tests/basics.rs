@@ -8,12 +8,11 @@ mod tests {
     // These type aliases are repeated here as there is no
     // way to enable a crate local feature for the test profile:
     // https://github.com/rust-lang/cargo/issues/2911
-    type SqliteConnection = Connection<diesel::SqliteConnection>;
     type SqliteManager = Manager<diesel::SqliteConnection>;
-    type SqlitePool = Pool<SqliteManager, SqliteConnection>;
+    type SqlitePool = Pool<SqliteManager>;
 
     fn create_pool(max_size: usize) -> SqlitePool {
-        let manager = SqliteManager::new(":memory:");
+        let manager = SqliteManager::new(":memory:", Runtime::Tokio1);
         let pool = SqlitePool::builder(manager)
             .max_size(max_size)
             .build()
@@ -57,9 +56,14 @@ mod tests {
         use diesel::sql_types::Text;
 
         let pool = create_pool(1);
-        let mut conn = pool.get().await.unwrap();
-
-        let query = select("foo".into_sql::<Text>());
-        assert_eq!("foo", query.get_result::<String>(&mut conn).unwrap());
+        let conn = pool.get().await.unwrap();
+        let result = conn
+            .interact(|conn| {
+                let query = select("foo".into_sql::<Text>());
+                query.get_result::<String>(conn).map_err(Into::into)
+            })
+            .await
+            .unwrap();
+        assert_eq!("foo", &result);
     }
 }
