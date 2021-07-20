@@ -47,7 +47,7 @@ impl Runtime {
             #[cfg(feature = "rt_async-std_1")]
             Self::AsyncStd1 => async_std::future::timeout(duration, future).await.ok(),
             #[allow(unreachable_patterns)]
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -66,7 +66,7 @@ impl Runtime {
             #[cfg(feature = "rt_async-std_1")]
             Self::AsyncStd1 => Ok(async_std::task::spawn_blocking(f).await),
             #[allow(unreachable_patterns)]
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -90,7 +90,7 @@ impl Runtime {
                 Ok(())
             }
             #[allow(unreachable_patterns)]
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
