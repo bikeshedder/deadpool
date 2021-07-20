@@ -431,7 +431,7 @@ async fn apply_timeout<O, E>(
         (Some(runtime), Some(duration)) => runtime
             .timeout(duration, future)
             .await
-            .ok_or_else(|| PoolError::Timeout(timeout_type))?
+            .ok_or(PoolError::Timeout(timeout_type))?
             .map_err(Into::into),
         (None, Some(_)) => Err(PoolError::NoRuntimeSpecified),
     }
