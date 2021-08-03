@@ -244,6 +244,15 @@ impl Config {
     pub fn get_pool_config(&self) -> PoolConfig {
         self.pool.clone().unwrap_or_default()
     }
+
+    /// Create the `Config` from a redis URL (like redis://127.0.0.1)
+    pub fn from_url<T: Into<String>>(url: T) -> Config {
+        Config {
+            url: Some(url.into()),
+            connection: None,
+            pool: None,
+        }
+    }
 }
 
 impl Default for Config {
