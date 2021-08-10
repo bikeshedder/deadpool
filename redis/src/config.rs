@@ -93,19 +93,16 @@ impl From<redis::ConnectionAddr> for ConnectionAddr {
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 pub struct ConnectionInfo {
-    addr: Box<ConnectionAddr>,
-    db: i64,
-    username: Option<String>,
-    passwd: Option<String>,
+    addr: ConnectionAddr,
+    #[serde(flatten)]
+    redis: RedisConnectionInfo,
 }
 
 impl From<ConnectionInfo> for redis::ConnectionInfo {
     fn from(info: ConnectionInfo) -> Self {
         Self {
-            addr: Box::new((*info.addr).into()),
-            db: info.db,
-            username: info.username,
-            passwd: info.passwd,
+            addr: info.addr.into(),
+            redis: info.redis.into(),
         }
     }
 }
@@ -113,10 +110,8 @@ impl From<ConnectionInfo> for redis::ConnectionInfo {
 impl From<redis::ConnectionInfo> for ConnectionInfo {
     fn from(info: redis::ConnectionInfo) -> Self {
         Self {
-            addr: Box::new((*info.addr).into()),
-            db: info.db,
-            username: info.username,
-            passwd: info.passwd,
+            addr: info.addr.into(),
+            redis: info.redis.into(),
         }
     }
 }
@@ -124,6 +119,38 @@ impl From<redis::ConnectionInfo> for ConnectionInfo {
 impl redis::IntoConnectionInfo for ConnectionInfo {
     fn into_connection_info(self) -> RedisResult<redis::ConnectionInfo> {
         Ok(self.into())
+    }
+}
+
+/// This is a 1:1 copy of the `redis::RedisConnectionInfo` struct.
+/// This is duplicated here in order to add support for the
+/// `serde::Deserialize` trait which is required for the `config`
+/// support.
+#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "config", derive(serde::Deserialize))]
+pub struct RedisConnectionInfo {
+    pub db: i64,
+    pub username: Option<String>,
+    pub password: Option<String>,
+}
+
+impl From<RedisConnectionInfo> for redis::RedisConnectionInfo {
+    fn from(info: RedisConnectionInfo) -> Self {
+        Self {
+            db: info.db,
+            username: info.username,
+            password: info.password,
+        }
+    }
+}
+
+impl From<redis::RedisConnectionInfo> for RedisConnectionInfo {
+    fn from(info: redis::RedisConnectionInfo) -> Self {
+        Self {
+            db: info.db,
+            username: info.username,
+            password: info.password,
+        }
     }
 }
 
