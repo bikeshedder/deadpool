@@ -5,6 +5,7 @@
 * Remove `deadpool_redis::Connection` type alias
 * Rename `deadpool_redis::ConnectionWrapper` to `Connection`
 * Update `redis` dependency to version `0.21`
+* Add `Config::from_url` method
 
 ## v0.8.1
 
