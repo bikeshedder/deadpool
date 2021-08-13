@@ -4,6 +4,7 @@
 
 * Remove `deadpool_redis::Connection` type alias
 * Rename `deadpool_redis::ConnectionWrapper` to `Connection`
+* Update `redis` dependency to version `0.21`
 
 ## v0.8.1
 
