@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.9.0 (unreleased)
+
+* Remove unused `futures` dependency
+* Update `deadpool` to `0.9`
+
 ## v0.8.0
 
 * Update `config` dependency to version `0.11`
