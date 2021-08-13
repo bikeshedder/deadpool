@@ -1,17 +1,12 @@
 # Change Log
 
-<<<<<<< HEAD
-## v0.8.3 (unreleased)
+## v0.9.0 (unreleased)
 
 * Add `Runtime::spawn_blocking` method
 * Add `Runtime::spawn_blocking_background` method
 * Remove `Runtime::None` in favor of `Option<Runtime>`
-=======
-## v0.9.0 (unreleased)
-
 * Remove `Pool::new` method
 * Add `Pool::builder` method and `PoolBuilder` struct
->>>>>>> dfe0db8 (Add pool builder)
 
 ## v0.8.2
 
