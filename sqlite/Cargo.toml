@@ -16,7 +16,6 @@ all-features = true
 [dependencies]
 deadpool = { path = "../", version = "0.8", default-features = false, features = ["managed"] }
 async-trait = "0.1.17"
-futures = "0.3.1"
 log = "0.4"
 tokio = { version = "1", features = ["rt"] }
 rusqlite = "0.25"
