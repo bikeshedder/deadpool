@@ -14,7 +14,7 @@ resolver = "2"
 all-features = true
 
 [dependencies]
-deadpool = { path = "../", version = "0.8", default-features = false, features = ["managed"] }
+deadpool = { path = "../", version = "0.9.0-pre", default-features = false, features = ["managed"] }
 async-trait = "0.1.17"
 log = "0.4"
 tokio = { version = "1", features = ["rt"] }
@@ -29,6 +29,6 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [features]
 default = ["config", "rt_tokio_1"]
-config = ["config-crate", "serde", "deadpool/config"]
+config = ["config-crate", "serde", "deadpool/serde"]
 rt_tokio_1 = ["deadpool/rt_tokio_1"]
 rt_async-std_1 = ["deadpool/rt_async-std_1"]

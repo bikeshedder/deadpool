@@ -1,13 +1,17 @@
 use std::fmt;
 
-/// Error structure for `Pool::get`
+/// Possible errors of [`Pool::get()`] operation.
+///
+/// [`Pool::get()`]: super::Pool::get
 #[derive(Debug)]
 pub enum PoolError {
-    /// A timeout happened
+    /// Operation timeout happened.
     Timeout,
-    /// The pool has been closed
+
+    /// Pool has been closed.
     Closed,
-    /// No runtime specified
+
+    /// No runtime specified.
     NoRuntimeSpecified,
 }
 
@@ -16,10 +20,10 @@ impl fmt::Display for PoolError {
         match self {
             Self::Timeout => write!(
                 f,
-                "A timeout occured while waiting for an object to become available"
+                "Timeout occurred while waiting for an object to become available",
             ),
-            Self::Closed => write!(f, "The pool has been closed."),
-            Self::NoRuntimeSpecified => write!(f, "No runtime specified."),
+            Self::Closed => write!(f, "Pool has been closed"),
+            Self::NoRuntimeSpecified => write!(f, "No runtime specified"),
         }
     }
 }

@@ -47,49 +47,65 @@
 //! For a more complete example please see
 //! [`deadpool-postgres`](https://crates.io/crates/deadpool-postgres)
 
-use std::collections::VecDeque;
-use std::ops::{Deref, DerefMut};
-use std::sync::atomic::{AtomicIsize, AtomicUsize, Ordering};
-use std::sync::{Arc, Weak};
-use std::time::Duration;
-use std::{future::Future, marker::PhantomData};
+mod builder;
+mod config;
+mod errors;
+pub mod hooks;
+pub mod sync;
+
+use std::{
+    collections::VecDeque,
+    future::Future,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+    sync::{
+        atomic::{AtomicIsize, AtomicUsize, Ordering},
+        Arc, Mutex, Weak,
+    },
+    time::Duration,
+};
 
 use async_trait::async_trait;
 use tokio::sync::{Semaphore, TryAcquireError};
 
-mod builder;
-pub use builder::{BuildError, PoolBuilder};
-mod config;
-pub use self::config::{PoolConfig, Timeouts};
-mod errors;
-pub use errors::{PoolError, RecycleError, TimeoutType};
-pub mod hooks;
-pub mod sync;
-
 use crate::runtime::Runtime;
+
 pub use crate::Status;
 
-/// Result type for the recycle function
+pub use self::{
+    builder::{BuildError, PoolBuilder},
+    config::{PoolConfig, Timeouts},
+    errors::{PoolError, RecycleError, TimeoutType},
+};
+
+/// Result type of the [`Manager::recycle()`] method.
 pub type RecycleResult<E> = Result<(), RecycleError<E>>;
 
-/// This trait is used to `create` new objects or `recycle` existing ones.
+/// Manager responsible for creating new [`Object`]s or recycling existing ones.
 #[async_trait]
 pub trait Manager: Sync + Send {
-    /// Type that the manager creates and recycles.
+    /// Type of [`Object`]s that this [`Manager`] creates and recycles.
     type Type;
-    /// The error that the manager can return when creating and recycling
-    /// objects.
+    /// Error that this [`Manager`] can return when creating and/or recycling
+    /// [`Object`]s.
     type Error;
-    /// Create a new instance of `Type`
+
+    /// Creates a new instance of [`Manager::Type`].
     async fn create(&self) -> Result<Self::Type, Self::Error>;
-    /// Try to recycle an instance of `Type` returning an `Error` if the
-    /// object could not be recycled.
+
+    /// Tries to recycle an instance of [`Manager::Type`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Manager::Error`] if the instance couldn't be recycled.
     async fn recycle(&self, obj: &mut Self::Type) -> RecycleResult<Self::Error>;
-    /// Detach an instance of `Type` from this manager. This method is
-    /// called when using the `Object::take` function for removing
-    /// an object from the pool. If the manager doesn't hold any
-    /// references to the handed out objects the default implementation
-    /// can be used which does nothing.
+
+    /// Detaches an instance of [`Manager::Type`] from this [`Manager`].
+    ///
+    /// This method is called when using the [`Object::take()`] method for
+    /// removing an [`Object`] from a [`Pool`]. If the [`Manager`] doesn't hold
+    /// any references to the handed out [`Object`]s then the default
+    /// implementation can be used which does nothing.
     fn detach(&self, _obj: &mut Self::Type) {}
 }
 
@@ -103,19 +119,27 @@ enum ObjectState {
     Dropped,
 }
 
-/// A wrapper around the actual pooled object which implements the traits
-/// `Deref`, `DerefMut` and `Drop`. Use this object just as if it was of type
-/// `T` and upon leaving scope the `drop` function will take care of
-/// returning it to the pool.
+/// Wrapper around the actual pooled object which implements [`Deref`],
+/// [`DerefMut`] and [`Drop`] traits.
+///
+/// Use this object just as if it was of type `T` and upon leaving a scope the
+/// [`Drop::drop()`] will take care of returning it to the pool.
+#[must_use]
 pub struct Object<M: Manager> {
+    /// Actual pooled object.
     obj: Option<M::Type>,
+
+    /// Current state of the object.
     state: ObjectState,
+
+    /// Pool to return the pooled object to.
     pool: Weak<PoolInner<M>>,
 }
 
 impl<M: Manager> Object<M> {
-    /// Take this object from the pool permanently. This reduces the size of
-    /// the pool.
+    /// Takes this [`Object`] from its [`Pool`] permanently. This reduces the
+    /// size of the [`Pool`].
+    #[must_use]
     pub fn take(mut this: Self) -> M::Type {
         this.state = ObjectState::Taken;
         if let Some(pool) = this.pool.upgrade() {
@@ -123,9 +147,11 @@ impl<M: Manager> Object<M> {
         }
         this.obj.take().unwrap()
     }
-    /// Get the pool this object belongs to. Since objects only hold a
-    /// weak reference to the pool they come from this can fail and
-    /// return `None` instead.
+
+    /// Returns the [`Pool`] this [`Object`] belongs to.
+    ///
+    /// Since [`Object`]s only hold a [`Weak`] reference to the [`Pool`] they
+    /// come from, this can fail and return [`None`] instead.
     pub fn pool(this: &Self) -> Option<Pool<M>> {
         this.pool.upgrade().map(|inner| Pool {
             inner,
@@ -197,32 +223,18 @@ impl<M: Manager> AsMut<M::Type> for Object<M> {
     }
 }
 
-struct PoolInner<M: Manager> {
-    manager: Box<M>,
-    queue: std::sync::Mutex<VecDeque<M::Type>>,
-    size: AtomicUsize,
-    /// The number of available objects in the pool. If there are no
-    /// objects in the pool this number can become negative and stores the
-    /// number of futures waiting for an object.
-    available: AtomicIsize,
-    semaphore: Semaphore,
-    config: PoolConfig,
-    runtime: Option<Runtime>,
-    hooks: hooks::Hooks<M>,
-}
-
-/// A generic object and connection pool.
+/// Generic object and connection pool.
 ///
-/// This struct can be cloned and transferred across thread boundaries
-/// and uses reference counting for its internal state.
+/// This struct can be cloned and transferred across thread boundaries and uses
+/// reference counting for its internal state.
 pub struct Pool<M: Manager, W: From<Object<M>> = Object<M>> {
     inner: Arc<PoolInner<M>>,
     _wrapper: PhantomData<fn() -> W>,
 }
 
 impl<M: Manager, W: From<Object<M>>> Clone for Pool<M, W> {
-    fn clone(&self) -> Pool<M, W> {
-        Pool {
+    fn clone(&self) -> Self {
+        Self {
             inner: self.inner.clone(),
             _wrapper: PhantomData::default(),
         }
@@ -230,16 +242,18 @@ impl<M: Manager, W: From<Object<M>>> Clone for Pool<M, W> {
 }
 
 impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
-    /// Create a new pool builder. This is the only way to create a pool
-    /// instance.
+    /// Instantiates a builder for a new [`Pool`].
+    ///
+    /// This is the only way to create a [`Pool`] instance.
     pub fn builder(manager: M) -> PoolBuilder<M, W> {
         PoolBuilder::new(manager)
     }
-    pub(crate) fn from_builder(builder: PoolBuilder<M, W>) -> Pool<M, W> {
-        Pool {
+
+    pub(crate) fn from_builder(builder: PoolBuilder<M, W>) -> Self {
+        Self {
             inner: Arc::new(PoolInner {
                 manager: Box::new(builder.manager),
-                queue: std::sync::Mutex::new(VecDeque::with_capacity(builder.config.max_size)),
+                queue: Mutex::new(VecDeque::with_capacity(builder.config.max_size)),
                 size: AtomicUsize::new(0),
                 available: AtomicIsize::new(0),
                 semaphore: Semaphore::new(builder.config.max_size),
@@ -250,19 +264,36 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             _wrapper: PhantomData::default(),
         }
     }
-    /// Retrieve object from pool or wait for one to become available.
+
+    /// Retrieves an [`Object`] from this [`Pool`] or waits for the one to
+    /// become available.
+    ///
+    /// # Errors
+    ///
+    /// See [`PoolError`] for details.
     pub async fn get(&self) -> Result<W, PoolError<M::Error>> {
         self.timeout_get(&self.inner.config.timeouts).await
     }
-    /// Retrieve object from the pool and do not wait if there is currently
-    /// no object available and the maximum pool size has been reached.
+
+    /// Retrieves an [`Object`] from this [`Pool`] and doesn't wait if there is
+    /// currently no [`Object`] is available and the maximum [`Pool`] size has
+    /// been reached.
+    ///
+    /// # Errors
+    ///
+    /// See [`PoolError`] for details.
     pub async fn try_get(&self) -> Result<W, PoolError<M::Error>> {
         let mut timeouts = self.inner.config.timeouts.clone();
         timeouts.wait = Some(Duration::from_secs(0));
         self.timeout_get(&timeouts).await
     }
-    /// Retrieve object using a different timeout config than the one
-    /// configured.
+
+    /// Retrieves an [`Object`] from this [`Pool`] using a different `timeout`
+    /// than the configured one.
+    ///
+    /// # Errors
+    ///
+    /// See [`PoolError`] for details.
     pub async fn timeout_get(&self, timeouts: &Timeouts) -> Result<W, PoolError<M::Error>> {
         self.inner.available.fetch_sub(1, Ordering::Relaxed);
 
@@ -363,19 +394,23 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         obj.state = ObjectState::Ready;
         Ok(obj.into())
     }
-    /// Close the pool
+
+    /// Closes this [`Pool`].
     ///
-    /// All current and future tasks waiting for objects return
-    /// `Err(PoolError::Closed)` immediately.
+    /// All current and future tasks waiting for [`Object`]s will return
+    /// [`PoolError::Closed`] immediately.
     pub fn close(&self) {
         self.inner.semaphore.close();
         self.inner.clean_up();
     }
-    /// Returns true if the pool has been closed
+
+    /// Indicates whether this [`Pool`] has been closed.
     pub fn is_closed(&self) -> bool {
         self.inner.is_closed()
     }
-    /// Retrieve status of the pool
+
+    /// Retrieves [`Status`] of this [`Pool`].
+    #[must_use]
     pub fn status(&self) -> Status {
         let max_size = self.inner.config.max_size;
         let size = self.inner.size.load(Ordering::Relaxed);
@@ -386,24 +421,41 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             available,
         }
     }
-    /// Get manager of the pool
+
+    /// Returns [`Manager`] of this [`Pool`].
+    #[must_use]
     pub fn manager(&self) -> &M {
         &*self.inner.manager
     }
 }
 
+struct PoolInner<M: Manager> {
+    manager: Box<M>,
+    queue: Mutex<VecDeque<M::Type>>,
+    size: AtomicUsize,
+    /// Number of available [`Object`]s in the [`Pool`]. If there are no
+    /// [`Object`]s in the [`Pool`] this number can become negative and store
+    /// the number of [`Future`]s waiting for an [`Object`].
+    available: AtomicIsize,
+    semaphore: Semaphore,
+    config: PoolConfig,
+    runtime: Option<Runtime>,
+    hooks: hooks::Hooks<M>,
+}
+
 impl<M: Manager> PoolInner<M> {
-    /// Clean up internals of the pool.
+    /// Cleans up internals of this [`Pool`].
     ///
-    /// This method is called after closing the pool and whenever a
-    /// object is returned to the pool and makes sure closed pools
-    /// do not contain
+    /// This method is called after closing the [`Pool`] and whenever an
+    /// [`Object`] is returned to the [`Pool`] and makes sure closed [`Pool`]s
+    /// don't contain any [`Object`]s.
     fn clean_up(&self) {
         if self.is_closed() {
             self.clear();
         }
     }
-    /// Remove all objects which are currently part of the pool.
+
+    /// Removes all the [`Object`]s which are currently part of this [`Pool`].
     fn clear(&self) {
         let mut queue = self.queue.lock().unwrap();
         self.size.fetch_sub(queue.len(), Ordering::Relaxed);
@@ -411,7 +463,8 @@ impl<M: Manager> PoolInner<M> {
             .fetch_sub(queue.len() as isize, Ordering::Relaxed);
         queue.clear();
     }
-    /// Returns true if the pool has been closed
+
+    /// Indicates whether this [`Pool`] has been closed.
     fn is_closed(&self) -> bool {
         matches!(
             self.semaphore.try_acquire_many(0),

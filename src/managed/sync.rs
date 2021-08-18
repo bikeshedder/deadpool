@@ -1,5 +1,5 @@
-//! This module contains helpers when writing pools for objects
-//! that don't support async and need to be run inside a thread.
+//! Helpers for writing pools for objects that don't support async and need to
+//! be run inside a thread.
 
 use std::{
     any::Any,
@@ -10,22 +10,20 @@ use std::{
 
 use crate::{runtime::SpawnBlockingError, Runtime};
 
-/// This error is returned when the [`Connection::interact`] call
-/// fails.
+/// Possible errors returned when [`Connection::interact()`] fails.
 #[derive(Debug)]
 pub enum InteractError<E> {
-    /// The provided callback panicked
+    /// Provided callback has panicked.
     Panic(Box<dyn Any + Send + 'static>),
-    /// The callback was aborted
+
+    /// Callback was aborted.
     Aborted,
-    /// backend returned an error
+
+    /// Backend returned an error.
     Backend(E),
 }
 
-impl<E> fmt::Display for InteractError<E>
-where
-    E: std::error::Error,
-{
+impl<E: fmt::Display> fmt::Display for InteractError<E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Panic(_) => write!(f, "Panic"),
@@ -35,11 +33,20 @@ where
     }
 }
 
-impl<E> std::error::Error for InteractError<E> where E: std::error::Error {}
+impl<E: std::error::Error> std::error::Error for InteractError<E> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Panic(_) | Self::Aborted => None,
+            Self::Backend(e) => Some(e),
+        }
+    }
+}
 
-/// A wrapper for objects which only provides blocking functions that
-/// need to be called on a separate thread. This wrapper provides access
-/// to the wrapped object via the `interact` function.
+/// Wrapper for objects which only provides blocking functions that need to be
+/// called on a separate thread.
+///
+/// Access to the wrapped object is provided via the [`SyncWrapper::interact()`]
+/// method.
 pub struct SyncWrapper<T, E>
 where
     T: Send + 'static,
@@ -55,7 +62,7 @@ where
     T: Send + 'static,
     E: Send + 'static,
 {
-    /// Create a new wrapped object.
+    /// Creates a new wrapped object.
     pub async fn new<F>(runtime: Runtime, f: F) -> Result<Self, E>
     where
         F: FnOnce() -> Result<T, E> + Send + 'static,
@@ -74,9 +81,12 @@ where
             _error: PhantomData::default(),
         })
     }
-    /// Interact with the underlying object. This function expects a closure
-    /// that takes the object as parameter. The closure is executed in a
-    /// separate thread so that the async runtime is not blocked.
+
+    /// Interacts with the underlying object.
+    ///
+    /// Expects a closure that takes the object as its parameter.
+    /// The closure is executed in a separate thread so that the async runtime
+    /// is not blocked.
     pub async fn interact<F, R>(&self, f: F) -> Result<R, InteractError<E>>
     where
         F: FnOnce(&T) -> Result<R, E> + Send + 'static,
@@ -95,9 +105,10 @@ where
             })?
             .map_err(InteractError::Backend)
     }
-    /// Returns if the underlying mutex has been poisoned.
-    /// This happens when a panic occurs while interacting with
-    /// the object.
+
+    /// Indicates whether the underlying [`Mutex`] has been poisoned.
+    ///
+    /// This happens when a panic occurs while interacting with the object.
     pub fn is_mutex_poisoned(&self) -> bool {
         self.obj.is_poisoned()
     }
