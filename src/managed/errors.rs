@@ -2,12 +2,15 @@ use std::fmt;
 
 use super::hooks::HookError;
 
-/// This error is returned by the `Manager::recycle` function
+/// Possible errors returned by the [`Manager::recycle()`] method.
+///
+/// [`Manager::recycle()`]: super::Manager::recycle
 #[derive(Debug)]
 pub enum RecycleError<E> {
-    /// Recycling failed for some other reason
+    /// Recycling failed for some other reason.
     Message(String),
-    /// The error was caused by the backend
+
+    /// Error caused by the backend.
     Backend(E),
 }
 
@@ -17,46 +20,69 @@ impl<E> From<E> for RecycleError<E> {
     }
 }
 
-impl<E> fmt::Display for RecycleError<E>
-where
-    E: fmt::Display,
-{
+impl<E: fmt::Display> fmt::Display for RecycleError<E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Message(msg) => write!(f, "An error occured while recycling an object: {}", msg),
-            Self::Backend(e) => write!(f, "An error occured while recycling an object: {}", e),
+            Self::Message(msg) => write!(f, "Error occurred while recycling an object: {}", msg),
+            Self::Backend(e) => write!(f, "Error occurred while recycling an object: {}", e),
         }
     }
 }
 
-impl<E> std::error::Error for RecycleError<E> where E: std::error::Error {}
+impl<E: std::error::Error> std::error::Error for RecycleError<E> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Message(_) => None,
+            Self::Backend(e) => Some(e),
+        }
+    }
+}
 
-/// When `Pool::get` returns a timeout error this enum can be used
-/// to figure out which step caused the timeout.
+/// Possible steps causing the timeout in an error returned by [`Pool::get()`]
+/// method.
+///
+/// [`Pool::get()`]: super::Pool::get
 #[derive(Debug)]
 pub enum TimeoutType {
-    /// The timeout happened while waiting for a slot to become available
+    /// Timeout happened while waiting for a slot to become available.
     Wait,
-    /// The timeout happened while creating the object
+
+    /// Timeout happened while creating a new object.
     Create,
-    /// The timeout happened while recycling an object
+
+    /// Timeout happened while recycling an object.
     Recycle,
 }
 
-/// Error structure for `Pool::get`
+/// Possible errors returned by [`Pool::get()`] method.
+///
+/// [`Pool::get()`]: super::Pool::get
 #[derive(Debug)]
 pub enum PoolError<E> {
-    /// A timeout happened
+    /// Timeout happened.
     Timeout(TimeoutType),
-    /// The backend reported an error
+
+    /// Backend reported an error.
     Backend(E),
-    /// The pool has been closed
+
+    /// [`Pool`] has been closed.
+    ///
+    /// [`Pool`]: super::Pool
     Closed,
-    /// No runtime specified
+
+    /// No [`Runtime`] was specified.
+    ///
+    /// [`Runtime`]: crate::Runtime
     NoRuntimeSpecified,
-    /// A post_create hook reported an error
+
+    /// [`PostCreate`] hook reported an error.
+    ///
+    /// [`PostCreate`]: super::hooks::PostCreate
     PostCreateHook(HookError<E>),
-    /// A post_recycle hook reported an error
+
+    /// [`PostRecycle`] hook reported an error.
+    ///
+    /// [`PostRecycle`]: super::hooks::PostRecycle
     PostRecycleHook(HookError<E>),
 }
 
@@ -66,27 +92,33 @@ impl<E> From<E> for PoolError<E> {
     }
 }
 
-impl<E> fmt::Display for PoolError<E>
-where
-    E: fmt::Display,
-{
+impl<E: fmt::Display> fmt::Display for PoolError<E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Timeout(tt) => match tt {
                 TimeoutType::Wait => write!(
                     f,
-                    "A timeout occured while waiting for a slot to become available"
+                    "Timeout occurred while waiting for a slot to become available"
                 ),
-                TimeoutType::Create => write!(f, "A timeout occured while creating a new object"),
-                TimeoutType::Recycle => write!(f, "A timeout occured while recycling an object"),
+                TimeoutType::Create => write!(f, "Timeout occurred while creating a new object"),
+                TimeoutType::Recycle => write!(f, "Timeout occurred while recycling an object"),
             },
-            Self::Backend(e) => write!(f, "An error occured while creating a new object: {}", e),
-            Self::Closed => write!(f, "The pool has been closed."),
-            Self::NoRuntimeSpecified => write!(f, "No runtime specified."),
-            Self::PostCreateHook(msg) => writeln!(f, "post_create hook failed: {}", msg),
-            Self::PostRecycleHook(msg) => writeln!(f, "post_recycle hook failed: {}", msg),
+            Self::Backend(e) => write!(f, "Error occurred while creating a new object: {}", e),
+            Self::Closed => write!(f, "Pool has been closed"),
+            Self::NoRuntimeSpecified => write!(f, "No runtime specified"),
+            Self::PostCreateHook(msg) => writeln!(f, "`post_create` hook failed: {}", msg),
+            Self::PostRecycleHook(msg) => writeln!(f, "`post_recycle` hook failed: {}", msg),
         }
     }
 }
 
-impl<E> std::error::Error for PoolError<E> where E: std::error::Error {}
+impl<E: std::error::Error> std::error::Error for PoolError<E> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Timeout(_) | Self::Closed | Self::NoRuntimeSpecified => None,
+            Self::Backend(e) => Some(e),
+            Self::PostCreateHook(e) => Some(e),
+            Self::PostRecycleHook(e) => Some(e),
+        }
+    }
+}

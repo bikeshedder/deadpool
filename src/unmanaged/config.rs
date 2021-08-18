@@ -2,21 +2,26 @@ use std::time::Duration;
 
 use crate::Runtime;
 
-/// Pool configuration
+/// Pool configuration.
 #[derive(Clone, Debug)]
-#[cfg_attr(feature = "config", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 pub struct PoolConfig {
-    /// Maximum size of the pool
+    /// Maximum size of the pool.
     pub max_size: usize,
-    /// Timeout for `Pool::get`
+
+    /// Timeout for [`Pool::get()`] operation.
+    ///
+    /// [`Pool::get()`]: super::Pool::get
     pub timeout: Option<Duration>,
-    /// Runtime
-    #[cfg_attr(feature = "config", serde(skip))]
+
+    /// [`Runtime`] to be used.
+    #[cfg_attr(feature = "serde", serde(skip))]
     pub runtime: Option<Runtime>,
 }
 
 impl PoolConfig {
-    /// Create pool config without any timeouts
+    /// Create a new [`PoolConfig`] without any timeouts.
+    #[must_use]
     pub fn new(max_size: usize) -> Self {
         Self {
             max_size,
@@ -27,7 +32,7 @@ impl PoolConfig {
 }
 
 impl Default for PoolConfig {
-    /// Create pool with default config. The `max_size` is set to
+    /// Create a [`PoolConfig`] where [`PoolConfig::max_size`] is set to
     /// `cpu_count * 4` ignoring any logical CPUs (Hyper-Threading).
     fn default() -> Self {
         Self::new(num_cpus::get_physical() * 4)
