@@ -94,7 +94,7 @@ impl From<redis::ConnectionAddr> for ConnectionAddr {
 #[cfg_attr(feature = "config", derive(serde::Deserialize))]
 pub struct ConnectionInfo {
     addr: ConnectionAddr,
-    #[serde(flatten)]
+    #[cfg_attr(feature = "config", serde(flatten))]
     redis: RedisConnectionInfo,
 }
 
