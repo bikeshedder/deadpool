@@ -10,11 +10,12 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    container: rust:latest
 
     services:
       postgres:
         image: postgres
+        ports:
+          - 5432:5432
         env:
           POSTGRES_USER: deadpool
           POSTGRES_PASSWORD: deadpool
@@ -27,8 +28,12 @@ jobs:
           --health-retries 5
       redis:
         image: redis
+        ports:
+          - 6379:6379
       rabbitmq:
-        image: rabbitmq
+        image: rabbitmq:3.8
+        ports:
+          - 5672:5672
         env:
           RABBITMQ_DEFAULT_USER: deadpool
           RABBITMQ_DEFAULT_PASS: deadpool
@@ -36,6 +41,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
     - name: Build
       run: cargo build --workspace --all-features --verbose
     - name: Run tests
@@ -48,10 +57,10 @@ jobs:
         cargo test --verbose --features rt_tokio_1
         cargo test --verbose --features rt_async-std_1
       env:
-        PG__HOST: postgres
+        PG__HOST: 127.0.0.1
         PG__PORT: 5432
         PG__USER: deadpool
         PG__PASSWORD: deadpool
         PG__DBNAME: deadpool
-        REDIS__URL: redis://redis/
-        AMQP__URL: amqp://deadpool:deadpool@rabbitmq/deadpool
+        REDIS__URL: redis://127.0.0.1/
+        AMQP__URL: amqp://deadpool:deadpool@127.0.0.1/deadpool
