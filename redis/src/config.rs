@@ -20,6 +20,8 @@ use crate::{Pool, PoolConfig, RedisResult};
 /// ```
 ///
 /// ```rust
+/// # #[derive(serde_1::Deserialize)]
+/// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     redis: deadpool_redis::Config,
 /// }
@@ -28,7 +30,7 @@ use crate::{Pool, PoolConfig, RedisResult};
 ///     pub fn from_env() -> Result<Self, config::ConfigError> {
 ///         let mut cfg = config::Config::new();
 ///         cfg.merge(config::Environment::new().separator("__")).unwrap();
-///         cfg.try_into().unwrap()
+///         cfg.try_into()
 ///     }
 /// }
 /// ```
