@@ -44,7 +44,7 @@ impl<E: std::fmt::Display> fmt::Display for BuildError<E> {
     }
 }
 
-impl<E: std::error::Error> std::error::Error for BuildError<E> {
+impl<E: std::error::Error + 'static> std::error::Error for BuildError<E> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Config(_) | Self::NoRuntimeSpecified(_) => None,
@@ -67,6 +67,23 @@ where
     pub(crate) runtime: Option<Runtime>,
     pub(crate) hooks: Hooks<M>,
     _wrapper: PhantomData<fn() -> W>,
+}
+
+// Implemented manually to avoid unnecessary trait bound on `W` type parameter.
+impl<M, W> fmt::Debug for PoolBuilder<M, W>
+where
+    M: fmt::Debug + Manager,
+    W: From<Object<M>>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PoolBuilder")
+            .field("manager", &self.manager)
+            .field("config", &self.config)
+            .field("runtime", &self.runtime)
+            .field("hooks", &self.hooks)
+            .field("_wrapper", &self._wrapper)
+            .finish()
+    }
 }
 
 impl<M, W> PoolBuilder<M, W>
@@ -161,12 +178,14 @@ where
     ///
     /// The [`Runtime`] is optional. Most [`Pool`]s don't need a
     /// [`Runtime`]. If want to utilize timeouts, however a [`Runtime`] must be
-    /// specified as you will otherwise get a [`PoolError::NoRuntime`] when
-    /// trying to use [`Pool::timeout_get()`].
+    /// specified as you will otherwise get a [`PoolError::NoRuntimeSpecified`]
+    /// when trying to use [`Pool::timeout_get()`].
     ///
     /// [`PoolBuilder::build()`] will fail with a
     /// [`BuildError::NoRuntimeSpecified`] if you try to build a
     /// [`Pool`] with timeouts and no [`Runtime`] specified.
+    ///
+    /// [`PoolError::NoRuntimeSpecified`]: super::PoolError::NoRuntimeSpecified
     pub fn runtime(mut self, value: Runtime) -> Self {
         self.runtime = Some(value);
         self

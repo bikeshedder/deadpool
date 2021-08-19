@@ -10,7 +10,7 @@ use std::{
 
 use crate::{runtime::SpawnBlockingError, Runtime};
 
-/// Possible errors returned when [`Connection::interact()`] fails.
+/// Possible errors returned when [`SyncWrapper::interact()`] fails.
 #[derive(Debug)]
 pub enum InteractError<E> {
     /// Provided callback has panicked.
@@ -33,7 +33,7 @@ impl<E: fmt::Display> fmt::Display for InteractError<E> {
     }
 }
 
-impl<E: std::error::Error> std::error::Error for InteractError<E> {
+impl<E: std::error::Error + 'static> std::error::Error for InteractError<E> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Panic(_) | Self::Aborted => None,
@@ -55,6 +55,21 @@ where
     obj: Arc<Mutex<Option<T>>>,
     runtime: Runtime,
     _error: PhantomData<fn() -> E>,
+}
+
+// Implemented manually to avoid unnecessary trait bound on `E` type parameter.
+impl<T, E> fmt::Debug for SyncWrapper<T, E>
+where
+    T: fmt::Debug + Send + 'static,
+    E: Send + 'static,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SyncWrapper")
+            .field("obj", &self.obj)
+            .field("runtime", &self.runtime)
+            .field("_error", &self._error)
+            .finish()
+    }
 }
 
 impl<T, E> SyncWrapper<T, E>

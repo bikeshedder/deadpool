@@ -1,4 +1,4 @@
-# Deadpool [![Latest Version](https://img.shields.io/crates/v/deadpool.svg)](https://crates.io/crates/deadpool) [![Build Status](https://img.shields.io/github/workflow/status/bikeshedder/deadpool/Rust)](https://github.com/bikeshedder/deadpool/actions?query=workflow%3ARust)
+# Deadpool [![Latest Version](https://img.shields.io/crates/v/deadpool.svg)](https://crates.io/crates/deadpool) [![Build Status](https://img.shields.io/github/workflow/status/bikeshedder/deadpool/Rust)](https://github.com/bikeshedder/deadpool/actions?query=workflow%3ARust) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.54+](https://img.shields.io/badge/rustc-1.54+-lightgray.svg "Rust 1.54+")](https://blog.rust-lang.org/2021/07/29/Rust-1.54.0.html)
 
 
 Deadpool is a dead simple async pool for connections and objects
@@ -12,7 +12,7 @@ This crate provides two implementations:
   - Enabled via the `managed` feature in your `Cargo.toml`
 
 - Unmanaged pool (`deadpool::unmanaged::Pool`)
-  - All objects either need to to be created by the user and added to the
+  - All objects either need to be created by the user and added to the
     pool manually. It is also possible to create a pool from an existing
     collection of objects.
   - Enabled via the `unmanaged` feature in your `Cargo.toml`
@@ -23,7 +23,7 @@ This crate provides two implementations:
 | ------- | ----------- | ------------------ | ------- |
 | `managed` | Enable managed pool implementation | `async-trait` | yes |
 | `unmanaged` | Enable unmanaged pool implementation | - | yes |
-| `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
+| `serde` | Enable support for deserializing pool config | `serde` | no |
 | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `tokio/time` | no |
 | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `async-std` | no |
 
@@ -40,15 +40,14 @@ which work out of the box.
 
 ### Example
 
-```rust,ignore
+```rust
 use async_trait::async_trait;
+use deadpool::managed;
 
 #[derive(Debug)]
 enum Error { Fail }
 
 struct Computer {}
-struct Manager {}
-type Pool = deadpool::managed::Pool<Manager>;
 
 impl Computer {
     async fn get_answer(&self) -> i32 {
@@ -56,22 +55,28 @@ impl Computer {
     }
 }
 
+struct Manager {}
+
 #[async_trait]
-impl deadpool::managed::Manager for Manager {
+impl managed::Manager for Manager {
     type Type = Computer;
     type Error = Error;
+    
     async fn create(&self) -> Result<Computer, Error> {
         Ok(Computer {})
     }
-    async fn recycle(&self, conn: &mut Computer) -> deadpool::managed::RecycleResult<Error> {
+    
+    async fn recycle(&self, _: &mut Computer) -> managed::RecycleResult<Error> {
         Ok(())
     }
 }
 
+type Pool = managed::Pool<Manager>;
+
 #[tokio::main]
 async fn main() {
     let mgr = Manager {};
-    let pool = Pool::builder(mgr).create().unwrap();
+    let pool = Pool::builder(mgr).build().unwrap();
     let mut conn = pool.get().await.unwrap();
     let answer = conn.get_answer().await;
     assert_eq!(answer, 42);
@@ -148,7 +153,7 @@ faster than the managed pool because it does not use a `Manager` trait to
 
 ### Unmanaged pool example
 
-```rust,ignore
+```rust
 use deadpool::unmanaged::Pool;
 
 struct Computer {}
