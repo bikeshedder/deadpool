@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.10.0 (unreleased)
+
+* Re-export `deadpool::managed::Timeouts`
+* Add `Runtime` parameter to `Config::create_pool` method
+
 ## v0.9.0
 
 * Remove generic `<T>` parameter from `Manager`, `Pool` and `Client`
