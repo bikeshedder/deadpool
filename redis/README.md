@@ -1,4 +1,4 @@
-# Deadpool for Redis [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis)
+# Deadpool for Redis [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.54+](https://img.shields.io/badge/rustc-1.54+-lightgray.svg "Rust 1.54+")](https://blog.rust-lang.org/2021/07/29/Rust-1.54.0.html)
 
 Deadpool is a dead simple async pool for connections and objects
 of any type.
@@ -10,15 +10,14 @@ manager for [`redis`](https://crates.io/crates/redis).
 
 | Feature | Description | Extra dependencies | Default |
 | ------- | ----------- | ------------------ | ------- |
-| `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
 | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1`, `redis/tokio-comp` | yes |
 | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1`, `redis/async-std-comp` | no |
+| `serde` | Enable support for [serde](https://crates.io/crates/serde) crate | `deadpool/serde`, `serde/derive` | no |
 
 ## Example
 
-```rust,ignore
-use deadpool_redis::Runtime;
-use deadpool_redis::{cmd, Config, FromRedisValue};
+```rust
+use deadpool_redis::{redis::{cmd, Config, FromRedisValue}, Runtime};
 
 #[tokio::main]
 async fn main() {
@@ -46,21 +45,21 @@ async fn main() {
 ## Example with `config` and `dotenv` crate
 
 ```rust
-use deadpool_redis::Runtime;
-use deadpool_redis::redis::{cmd, FromRedisValue};
+use deadpool_redis::{redis::{cmd, FromRedisValue}, Runtime};
 use dotenv::dotenv;
-use serde::Deserialize;
+use serde_1::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
     redis: deadpool_redis::Config
 }
 
 impl Config {
-    pub fn from_env() -> Result<Self, ::config_crate::ConfigError> {
-        let mut cfg = ::config_crate::Config::new();
-        cfg.merge(::config_crate::Environment::new().separator("__"))?;
+    pub fn from_env() -> Result<Self, config::ConfigError> {
+        let mut cfg = config::Config::new();
+        cfg.merge(config::Environment::new().separator("__"))?;
         cfg.try_into()
     }
 }
@@ -98,8 +97,8 @@ async fn main() {
 
   ```toml
   [dependencies]
-  deadpool-redis = { version = "0.8", features = ["config"] }
-  redis = { version = "0.20", default-features = false, features = ["tls"] }
+  deadpool-redis = { version = "0.9", features = ["serde"] }
+  redis = { version = "0.21", default-features = false, features = ["tls"] }
   ```
 
 ## License

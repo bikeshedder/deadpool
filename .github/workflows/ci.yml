@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: ["master"]
+    tags: ["deadpool-*"]
   pull_request:
     branches: ["master"]
 
@@ -28,7 +29,7 @@ jobs:
           toolchain: stable
           components: clippy
 
-      - run: cargo clippy --workspace
+      - run: cargo clippy --workspace --all-features
 
   rustfmt:
     if: ${{ github.ref == 'refs/heads/master'
@@ -64,9 +65,9 @@ jobs:
           - managed
           - unmanaged
         feature2:
-          - serde
           - rt_tokio_1
           - rt_async-std_1
+          - serde
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -81,23 +82,22 @@ jobs:
 
   check-integration:
     name: Check integration
-    if: ${{ false }}
-    #if: ${{ github.ref == 'refs/heads/master'
-    #        || startsWith(github.ref, 'refs/tags/deadpool-')
-    #        || !contains(github.event.head_commit.message, '[skip ci]') }}
+    if: ${{ github.ref == 'refs/heads/master'
+            || startsWith(github.ref, 'refs/tags/deadpool-')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
       fail-fast: false
       matrix:
         crate:
-          - diesel
-          - lapin
-          - postgres
+          #- diesel
+          #- lapin
+          #- postgres
           - redis
-          - sqlite
+          #- sqlite
         feature:
-          - serde
           - rt_tokio_1
           - rt_async-std_1
+          - serde
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -106,8 +106,9 @@ jobs:
           profile: minimal
           toolchain: stable
 
+      # We don't use `--no-default-features` here as integration crates don't
+      # work with it at all.
       - run: cargo check -p deadpool-${{ matrix.crate }}
-                   --no-default-features
                    --features ${{ matrix.feature }}
 
   msrv:
@@ -136,7 +137,6 @@ jobs:
       - run: cargo check --workspace --all-features
 
   test:
-    name: Test
     if: ${{ github.ref == 'refs/heads/master'
             || startsWith(github.ref, 'refs/tags/deadpool-')
             || !contains(github.event.head_commit.message, '[skip ci]') }}
@@ -148,7 +148,7 @@ jobs:
           #- deadpool-diesel
           #- deadpool-lapin
           #- deadpool-postgres
-          #- deadpool-redis
+          - deadpool-redis
           #- deadpool-sqlite
     runs-on: ubuntu-latest
     services:
@@ -203,6 +203,7 @@ jobs:
   ############
 
   rustdoc:
+    name: Docs
     if: ${{ github.ref == 'refs/heads/master'
             || startsWith(github.ref, 'refs/tags/deadpool-')
             || !contains(github.event.head_commit.message, '[skip ci]') }}
@@ -213,7 +214,7 @@ jobs:
           #- deadpool-diesel
           #- deadpool-lapin
           #- deadpool-postgres
-          #- deadpool-redis
+          - deadpool-redis
           #- deadpool-sqlite
     runs-on: ubuntu-latest
     steps:
