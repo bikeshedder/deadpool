@@ -3,7 +3,7 @@ use std::fmt;
 /// Possible errors of [`Pool::get()`] operation.
 ///
 /// [`Pool::get()`]: super::Pool::get
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum PoolError {
     /// Operation timeout happened.
     Timeout,

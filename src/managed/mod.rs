@@ -1,11 +1,13 @@
-//! This module contains the managed version of the pool. Managed meaning
-//! that it requires a `Manager` trait which is responsible for creating
-//! and recycling objects as they are needed.
+//! Managed version of the pool.
+//!
+//! "Managed" means that it requires a [`Manager`] which is responsible for
+//! creating and recycling objects as they are needed.
 //!
 //! # Example
 //!
 //! ```rust
 //! use async_trait::async_trait;
+//! use deadpool::managed;
 //!
 //! #[derive(Debug)]
 //! enum Error { Fail }
@@ -21,18 +23,19 @@
 //! struct Manager {}
 //!
 //! #[async_trait]
-//! impl deadpool::managed::Manager for Manager {
+//! impl managed::Manager for Manager {
 //!     type Type = Computer;
 //!     type Error = Error;
+//!
 //!     async fn create(&self) -> Result<Computer, Error> {
 //!         Ok(Computer {})
 //!     }
-//!     async fn recycle(&self, conn: &mut Computer) -> deadpool::managed::RecycleResult<Error> {
+//!     async fn recycle(&self, conn: &mut Computer) -> managed::RecycleResult<Error> {
 //!         Ok(())
 //!     }
 //! }
 //!
-//! type Pool = deadpool::managed::Pool<Manager>;
+//! type Pool = managed::Pool<Manager>;
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -45,7 +48,7 @@
 //! ```
 //!
 //! For a more complete example please see
-//! [`deadpool-postgres`](https://crates.io/crates/deadpool-postgres)
+//! [`deadpool-postgres`](https://crates.io/crates/deadpool-postgres) crate.
 
 mod builder;
 mod config;
@@ -55,6 +58,7 @@ pub mod sync;
 
 use std::{
     collections::VecDeque,
+    fmt,
     future::Future,
     marker::PhantomData,
     ops::{Deref, DerefMut},
@@ -109,6 +113,7 @@ pub trait Manager: Sync + Send {
     fn detach(&self, _obj: &mut Self::Type) {}
 }
 
+#[derive(Debug)]
 enum ObjectState {
     Waiting,
     Receiving,
@@ -124,6 +129,7 @@ enum ObjectState {
 ///
 /// Use this object just as if it was of type `T` and upon leaving a scope the
 /// [`Drop::drop()`] will take care of returning it to the pool.
+#[derive(Debug)]
 #[must_use]
 pub struct Object<M: Manager> {
     /// Actual pooled object.
@@ -165,18 +171,18 @@ impl<M: Manager> Drop for Object<M> {
         if let Some(pool) = self.pool.upgrade() {
             match self.state {
                 ObjectState::Waiting => {
-                    pool.available.fetch_add(1, Ordering::Relaxed);
+                    let _ = pool.available.fetch_add(1, Ordering::Relaxed);
                 }
                 ObjectState::Receiving => {
-                    pool.available.fetch_add(1, Ordering::Relaxed);
+                    let _ = pool.available.fetch_add(1, Ordering::Relaxed);
                     pool.semaphore.add_permits(1);
                 }
                 ObjectState::Creating | ObjectState::Taken => {
-                    pool.size.fetch_sub(1, Ordering::Relaxed);
+                    let _ = pool.size.fetch_sub(1, Ordering::Relaxed);
                     pool.semaphore.add_permits(1);
                 }
                 ObjectState::Recycling | ObjectState::Ready => {
-                    pool.available.fetch_add(1, Ordering::Relaxed);
+                    let _ = pool.available.fetch_add(1, Ordering::Relaxed);
                     let obj = self.obj.take().unwrap();
                     {
                         let mut queue = pool.queue.lock().unwrap();
@@ -230,6 +236,21 @@ impl<M: Manager> AsMut<M::Type> for Object<M> {
 pub struct Pool<M: Manager, W: From<Object<M>> = Object<M>> {
     inner: Arc<PoolInner<M>>,
     _wrapper: PhantomData<fn() -> W>,
+}
+
+// Implemented manually to avoid unnecessary trait bound on `W` type parameter.
+impl<M, W> fmt::Debug for Pool<M, W>
+where
+    M: fmt::Debug + Manager,
+    M::Type: fmt::Debug,
+    W: From<Object<M>>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Pool")
+            .field("inner", &self.inner)
+            .field("wrapper", &self._wrapper)
+            .finish()
+    }
 }
 
 impl<M: Manager, W: From<Object<M>>> Clone for Pool<M, W> {
@@ -295,7 +316,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     ///
     /// See [`PoolError`] for details.
     pub async fn timeout_get(&self, timeouts: &Timeouts) -> Result<W, PoolError<M::Error>> {
-        self.inner.available.fetch_sub(1, Ordering::Relaxed);
+        let _ = self.inner.available.fetch_sub(1, Ordering::Relaxed);
 
         let mut obj = Object {
             obj: None,
@@ -360,8 +381,8 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                             break;
                         }
                         Err(_) => {
-                            self.inner.available.fetch_sub(1, Ordering::Relaxed);
-                            self.inner.size.fetch_sub(1, Ordering::Relaxed);
+                            let _ = self.inner.available.fetch_sub(1, Ordering::Relaxed);
+                            let _ = self.inner.size.fetch_sub(1, Ordering::Relaxed);
                             continue;
                         }
                     }
@@ -369,8 +390,8 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                 None => {
                     // Create new object
                     obj.state = ObjectState::Creating;
-                    self.inner.available.fetch_add(1, Ordering::Relaxed);
-                    self.inner.size.fetch_add(1, Ordering::Relaxed);
+                    let _ = self.inner.available.fetch_add(1, Ordering::Relaxed);
+                    let _ = self.inner.size.fetch_add(1, Ordering::Relaxed);
                     obj.obj = Some(
                         apply_timeout(
                             &self.inner.runtime,
@@ -443,6 +464,26 @@ struct PoolInner<M: Manager> {
     hooks: hooks::Hooks<M>,
 }
 
+// Implemented manually to avoid unnecessary trait bound on the struct.
+impl<M> fmt::Debug for PoolInner<M>
+where
+    M: fmt::Debug + Manager,
+    M::Type: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PoolInner")
+            .field("manager", &self.manager)
+            .field("queue", &self.queue)
+            .field("size", &self.size)
+            .field("available", &self.available)
+            .field("semaphore", &self.semaphore)
+            .field("config", &self.config)
+            .field("runtime", &self.runtime)
+            .field("hooks", &self.hooks)
+            .finish()
+    }
+}
+
 impl<M: Manager> PoolInner<M> {
     /// Cleans up internals of this [`Pool`].
     ///
@@ -458,8 +499,9 @@ impl<M: Manager> PoolInner<M> {
     /// Removes all the [`Object`]s which are currently part of this [`Pool`].
     fn clear(&self) {
         let mut queue = self.queue.lock().unwrap();
-        self.size.fetch_sub(queue.len(), Ordering::Relaxed);
-        self.available
+        let _ = self.size.fetch_sub(queue.len(), Ordering::Relaxed);
+        let _ = self
+            .available
             .fetch_sub(queue.len() as isize, Ordering::Relaxed);
         queue.clear();
     }

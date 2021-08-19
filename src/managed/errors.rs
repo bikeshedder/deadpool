@@ -29,7 +29,7 @@ impl<E: fmt::Display> fmt::Display for RecycleError<E> {
     }
 }
 
-impl<E: std::error::Error> std::error::Error for RecycleError<E> {
+impl<E: std::error::Error + 'static> std::error::Error for RecycleError<E> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Message(_) => None,
@@ -42,7 +42,7 @@ impl<E: std::error::Error> std::error::Error for RecycleError<E> {
 /// method.
 ///
 /// [`Pool::get()`]: super::Pool::get
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum TimeoutType {
     /// Timeout happened while waiting for a slot to become available.
     Wait,
@@ -112,7 +112,7 @@ impl<E: fmt::Display> fmt::Display for PoolError<E> {
     }
 }
 
-impl<E: std::error::Error> std::error::Error for PoolError<E> {
+impl<E: std::error::Error + 'static> std::error::Error for PoolError<E> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Timeout(_) | Self::Closed | Self::NoRuntimeSpecified => None,

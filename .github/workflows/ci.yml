@@ -1,0 +1,226 @@
+name: CI
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+env:
+  RUST_BACKTRACE: 1
+
+jobs:
+
+  ##########################
+  # Linting and formatting #
+  ##########################
+
+  clippy:
+    if: ${{ github.ref == 'refs/heads/master'
+            || startsWith(github.ref, 'refs/tags/deadpool-')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: clippy
+
+      - run: cargo clippy --workspace
+
+  rustfmt:
+    if: ${{ github.ref == 'refs/heads/master'
+            || startsWith(github.ref, 'refs/tags/deadpool-')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt
+
+      - run: cargo fmt --all -- --check
+
+
+
+
+  ###########
+  # Testing #
+  ###########
+
+  check-deadpool:
+    name: Check deadpool
+    if: ${{ github.ref == 'refs/heads/master'
+            || startsWith(github.ref, 'refs/tags/deadpool-')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        feature1:
+          - managed
+          - unmanaged
+        feature2:
+          - serde
+          - rt_tokio_1
+          - rt_async-std_1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - run: cargo check -p deadpool
+                   --no-default-features
+                   --features ${{ matrix.feature1 }},${{ matrix.feature2 }}
+
+  check-integration:
+    name: Check integration
+    if: ${{ false }}
+    #if: ${{ github.ref == 'refs/heads/master'
+    #        || startsWith(github.ref, 'refs/tags/deadpool-')
+    #        || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+          - diesel
+          - lapin
+          - postgres
+          - redis
+          - sqlite
+        feature:
+          - serde
+          - rt_tokio_1
+          - rt_async-std_1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - run: cargo check -p deadpool-${{ matrix.crate }}
+                   --no-default-features
+                   --features ${{ matrix.feature }}
+
+  msrv:
+    name: MSRV
+    if: ${{ github.ref == 'refs/heads/master'
+            || startsWith(github.ref, 'refs/tags/deadpool-')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      matrix:
+        msrv: ['1.54.0']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.msrv }}
+          override: true
+
+      - run: cargo +nightly update -Z minimal-versions
+
+      - run: cargo check --workspace --all-features
+
+  test:
+    name: Test
+    if: ${{ github.ref == 'refs/heads/master'
+            || startsWith(github.ref, 'refs/tags/deadpool-')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+          - deadpool
+          #- deadpool-diesel
+          #- deadpool-lapin
+          #- deadpool-postgres
+          #- deadpool-redis
+          #- deadpool-sqlite
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: deadpool
+          POSTGRES_PASSWORD: deadpool
+          POSTGRES_DB: deadpool
+        # Health checks to wait until Postgres has started.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+      rabbitmq:
+        image: rabbitmq:3.8  # 3.9 and above doesn't support env vars
+        ports:
+          - 5672:5672
+        env:
+          RABBITMQ_DEFAULT_USER: deadpool
+          RABBITMQ_DEFAULT_PASS: deadpool
+          RABBITMQ_DEFAULT_VHOST: deadpool
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - run: cargo test -p ${{ matrix.crate }} --all-features
+        env:
+          PG__HOST: 127.0.0.1
+          PG__PORT: 5432
+          PG__USER: deadpool
+          PG__PASSWORD: deadpool
+          PG__DBNAME: deadpool
+          REDIS__URL: redis://127.0.0.1/
+          AMQP__URL: amqp://deadpool:deadpool@127.0.0.1/deadpool
+
+
+
+
+  ############
+  # Building #
+  ############
+
+  rustdoc:
+    if: ${{ github.ref == 'refs/heads/master'
+            || startsWith(github.ref, 'refs/tags/deadpool-')
+            || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      matrix:
+        crate:
+          - deadpool
+          #- deadpool-diesel
+          #- deadpool-lapin
+          #- deadpool-postgres
+          #- deadpool-redis
+          #- deadpool-sqlite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - run: cargo doc -p ${{ matrix.crate }} --all-features

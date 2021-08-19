@@ -69,16 +69,17 @@ impl Runtime {
         match self {
             #[cfg(feature = "rt_tokio_1")]
             Self::Tokio1 => {
-                tokio::task::spawn_blocking(f);
+                drop(tokio::task::spawn_blocking(f));
+                Ok(())
             }
             #[cfg(feature = "rt_async-std_1")]
             Self::AsyncStd1 => {
-                async_std::task::spawn_blocking(f);
+                drop(async_std::task::spawn_blocking(f));
+                Ok(())
             }
             #[allow(unreachable_patterns)]
             _ => unreachable!(),
-        };
-        Ok(())
+        }
     }
 }
 

@@ -52,6 +52,7 @@ pub use self::{config::PoolConfig, errors::PoolError};
 ///
 /// Use this object just as if it was of type `T` and upon leaving a scope the
 /// [`Drop::drop()`] will take care of returning it to the pool.
+#[derive(Debug)]
 #[must_use]
 pub struct Object<T> {
     /// Actual pooled object.
@@ -68,7 +69,7 @@ impl<T> Object<T> {
     #[must_use]
     pub fn take(mut this: Self) -> T {
         if let Some(pool) = this.pool.upgrade() {
-            pool.size.fetch_sub(1, Ordering::Relaxed);
+            let _ = pool.size.fetch_sub(1, Ordering::Relaxed);
             pool.size_semaphore.add_permits(1);
         }
         this.obj.take().unwrap()
@@ -83,7 +84,7 @@ impl<T> Drop for Object<T> {
                     let mut queue = pool.queue.lock().unwrap();
                     queue.push(obj);
                 }
-                pool.available.fetch_add(1, Ordering::Relaxed);
+                let _ = pool.available.fetch_add(1, Ordering::Relaxed);
                 pool.semaphore.add_permits(1);
                 pool.clean_up();
             }
@@ -128,6 +129,7 @@ impl<T> AsMut<T> for Object<T> {
 /// use deadpool::unmanaged::Pool;
 /// let pool = Pool::from(vec![1, 2, 3]);
 /// ```
+#[derive(Debug)]
 pub struct Pool<T> {
     inner: Arc<PoolInner<T>>,
 }
@@ -196,7 +198,7 @@ impl<T> Pool<T> {
             queue.pop().unwrap()
         };
         permit.forget();
-        inner.available.fetch_sub(1, Ordering::Relaxed);
+        let _ = inner.available.fetch_sub(1, Ordering::Relaxed);
         Ok(Object {
             pool: Arc::downgrade(&self.inner),
             obj: Some(obj),
@@ -235,7 +237,7 @@ impl<T> Pool<T> {
             queue.pop().unwrap()
         };
         permit.forget();
-        inner.available.fetch_sub(1, Ordering::Relaxed);
+        let _ = inner.available.fetch_sub(1, Ordering::Relaxed);
         Ok(Object {
             pool: Arc::downgrade(&self.inner),
             obj: Some(obj),
@@ -289,12 +291,12 @@ impl<T> Pool<T> {
     /// `max_size`. In the methods `add` and `try_add` this is ensured by using
     /// the `size_semaphore`.
     fn _add(&self, object: T) {
-        self.inner.size.fetch_add(1, Ordering::Relaxed);
+        let _ = self.inner.size.fetch_add(1, Ordering::Relaxed);
         {
             let mut queue = self.inner.queue.lock().unwrap();
             queue.push(object);
         }
-        self.inner.available.fetch_add(1, Ordering::Relaxed);
+        let _ = self.inner.available.fetch_add(1, Ordering::Relaxed);
         self.inner.semaphore.add_permits(1);
     }
 
@@ -343,6 +345,7 @@ impl<T> Pool<T> {
     }
 }
 
+#[derive(Debug)]
 struct PoolInner<T> {
     config: PoolConfig,
     queue: Mutex<Vec<T>>,
@@ -376,8 +379,9 @@ impl<T> PoolInner<T> {
     /// Removes all the [`Object`]s which are currently part of this [`Pool`].
     fn clear(&self) {
         let mut queue = self.queue.lock().unwrap();
-        self.size.fetch_sub(queue.len(), Ordering::Relaxed);
-        self.available
+        let _ = self.size.fetch_sub(queue.len(), Ordering::Relaxed);
+        let _ = self
+            .available
             .fetch_sub(queue.len() as isize, Ordering::Relaxed);
         queue.clear();
     }

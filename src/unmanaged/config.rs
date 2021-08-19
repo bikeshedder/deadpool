@@ -3,7 +3,7 @@ use std::time::Duration;
 use crate::Runtime;
 
 /// Pool configuration.
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 pub struct PoolConfig {
     /// Maximum size of the pool.
