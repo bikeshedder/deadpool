@@ -1,116 +1,26 @@
-//! # Deadpool for Redis [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis)
-//!
-//! Deadpool is a dead simple async pool for connections and objects
-//! of any type.
-//!
-//! This crate implements a [`deadpool`](https://crates.io/crates/deadpool)
-//! manager for [`redis`](https://crates.io/crates/redis).
-//!
-//! ## Features
-//!
-//! | Feature | Description | Extra dependencies | Default |
-//! | ------- | ----------- | ------------------ | ------- |
-//! | `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
-//! | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1`, `redis/tokio-comp` | yes |
-//! | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1`, `redis/async-std-comp` | no |
-//!
-//! ## Example
-//!
-//! ```rust,ignore
-//! use deadpool_redis::Runtime;
-//! use deadpool_redis::{cmd, Config, FromRedisValue};
-//!
-//! #[tokio::main]
-//! async fn main() {
-//!     let mut cfg = Config::default();
-//!     cfg.url = Some("redis://127.0.0.1/".to_string());
-//!     let pool = cfg.create_pool(Runtime::NoRuntime).unwrap();
-//!     {
-//!         let mut conn = pool.get().await.unwrap();
-//!         cmd("SET")
-//!             .arg(&["deadpool/test_key", "42"])
-//!             .query_async::<_, ()>(&mut conn)
-//!             .await.unwrap();
-//!     }
-//!     {
-//!         let mut conn = pool.get().await.unwrap();
-//!         let value: String = cmd("GET")
-//!             .arg(&["deadpool/test_key"])
-//!             .query_async(&mut conn)
-//!             .await.unwrap();
-//!         assert_eq!(value, "42".to_string());
-//!     }
-//! }
-//! ```
-//!
-//! ## Example with `config` and `dotenv` crate
-//!
-//! ```rust
-//! use deadpool_redis::Runtime;
-//! use deadpool_redis::redis::{cmd, FromRedisValue};
-//! use dotenv::dotenv;
-//! use serde::Deserialize;
-//!
-//! #[derive(Debug, Deserialize)]
-//! struct Config {
-//!     #[serde(default)]
-//!     redis: deadpool_redis::Config
-//! }
-//!
-//! impl Config {
-//!     pub fn from_env() -> Result<Self, ::config_crate::ConfigError> {
-//!         let mut cfg = ::config_crate::Config::new();
-//!         cfg.merge(::config_crate::Environment::new().separator("__"))?;
-//!         cfg.try_into()
-//!     }
-//! }
-//!
-//! #[tokio::main]
-//! async fn main() {
-//!     dotenv().ok();
-//!     let cfg = Config::from_env().unwrap();
-//!     let pool = cfg.redis.create_pool(Runtime::Tokio1).unwrap();
-//!     {
-//!         let mut conn = pool.get().await.unwrap();
-//!         cmd("SET")
-//!             .arg(&["deadpool/test_key", "42"])
-//!             .query_async::<_, ()>(&mut conn)
-//!             .await.unwrap();
-//!     }
-//!     {
-//!         let mut conn = pool.get().await.unwrap();
-//!         let value: String = cmd("GET")
-//!             .arg(&["deadpool/test_key"])
-//!             .query_async(&mut conn)
-//!             .await.unwrap();
-//!         assert_eq!(value, "42".to_string());
-//!     }
-//! }
-//! ```
-//!
-//! ## FAQ
-//!
-//! - **How can I enable features of the `redis` crate?**
-//!
-//!   Make sure that you depend on the same version of `redis` as
-//!   `deadpool-redis` does and enable the needed features in your own
-//!   `Crate.toml` file:
-//!
-//!   ```toml
-//!   [dependencies]
-//!   deadpool-redis = { version = "0.8", features = ["config"] }
-//!   redis = { version = "0.20", default-features = false, features = ["tls"] }
-//!   ```
-//!
-//! ## License
-//!
-//! Licensed under either of
-//!
-//! - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
-//! - MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
-//!
-//! at your option.
-#![warn(missing_docs, unreachable_pub)]
+#![doc = include_str!("../README.md")]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![deny(
+    nonstandard_style,
+    rust_2018_idioms,
+    rustdoc::broken_intra_doc_links,
+    rustdoc::private_intra_doc_links
+)]
+#![forbid(non_ascii_idents, unsafe_code)]
+#![warn(
+    deprecated_in_future,
+    missing_copy_implementations,
+    missing_debug_implementations,
+    missing_docs,
+    unreachable_pub,
+    unused_import_braces,
+    unused_labels,
+    unused_lifetimes,
+    unused_qualifications,
+    unused_results
+)]
+
+mod config;
 
 use std::{
     ops::{Deref, DerefMut},
@@ -118,43 +28,43 @@ use std::{
 };
 
 use async_trait::async_trait;
-/// Re-export deadpool::managed::PoolConfig
-pub use deadpool::managed::PoolConfig;
-use deadpool::managed::RecycleError;
-/// Re-export deadpool::Runtime;
-pub use deadpool::Runtime;
+use deadpool::managed;
 use redis::{
     aio::{Connection as RedisConnection, ConnectionLike},
     Client, IntoConnectionInfo, RedisError, RedisResult,
 };
 
-/// A type alias for using `deadpool::Pool` with `redis`
-pub type Pool = deadpool::managed::Pool<Manager, Connection>;
-
-/// A type alias for using `deadpool::PoolError` with `redis`
-pub type PoolError = deadpool::managed::PoolError<RedisError>;
-
-/// A type alias for using `deadpool::Object` with `redis`
-type Object = deadpool::managed::Object<Manager>;
-
-type RecycleResult = deadpool::managed::RecycleResult<RedisError>;
-
-/// Re-export redis crate
+pub use deadpool::{managed::PoolConfig, Runtime};
 pub use redis;
 
-mod config;
-pub use config::{Config, CreatePoolError};
+pub use self::config::{Config, CreatePoolError};
 
-/// A wrapper for `redis::Connection`. This structure implements
-/// `redis::aio::ConnectionLike` and can therefore be used just
-/// like a regular `redis::aio::Connection`
+/// Type alias for using [`deadpool::managed::Pool`] with [`redis`].
+pub type Pool = managed::Pool<Manager, Connection>;
+
+/// Type alias for using [`deadpool::managed::PoolError`] with [`redis`].
+pub type PoolError = managed::PoolError<RedisError>;
+
+/// Type alias for using [`deadpool::managed::Object`] with [`redis`].
+type Object = managed::Object<Manager>;
+
+/// Type alias for using [`deadpool::managed::RecycleResult`] with [`redis`].
+type RecycleResult = managed::RecycleResult<RedisError>;
+
+/// Wrapper around [`redis::aio::Connection`].
+///
+/// This structure implements [`redis::aio::ConnectionLike`] and can therefore
+/// be used just like a regular [`redis::aio::Connection`].
+#[allow(missing_debug_implementations)] // `redis::aio::Connection: !Debug`
 pub struct Connection {
     conn: Object,
 }
 
 impl Connection {
-    /// Take this object from the pool permanently. This reduces the size of
-    /// the pool.
+    /// Takes this [`Connection`] from its [`Pool`] permanently.
+    ///
+    /// This reduces the size of the [`Pool`].
+    #[must_use]
     pub fn take(this: Self) -> RedisConnection {
         Object::take(this.conn)
     }
@@ -168,6 +78,7 @@ impl From<Object> for Connection {
 
 impl Deref for Connection {
     type Target = RedisConnection;
+
     fn deref(&self) -> &RedisConnection {
         &self.conn
     }
@@ -198,6 +109,7 @@ impl ConnectionLike for Connection {
     ) -> redis::RedisFuture<'a, redis::Value> {
         self.conn.req_packed_command(cmd)
     }
+
     fn req_packed_commands<'a>(
         &'a mut self,
         cmd: &'a redis::Pipeline,
@@ -206,19 +118,23 @@ impl ConnectionLike for Connection {
     ) -> redis::RedisFuture<'a, Vec<redis::Value>> {
         self.conn.req_packed_commands(cmd, offset, count)
     }
+
     fn get_db(&self) -> i64 {
         self.conn.get_db()
     }
 }
 
-/// The manager for creating and recyling lapin connections
+/// [`Manager`] for creating and recycling [`redis`] connections.
+///
+/// [`Manager`]: managed::Manager
+#[derive(Debug)]
 pub struct Manager {
     client: Client,
     ping_number: AtomicUsize,
 }
 
 impl Manager {
-    /// Create manager using `PgConfig` and a `TlsConnector`
+    /// Creates a new [`Manager`] from the given `params`.
     pub fn new<T: IntoConnectionInfo>(params: T) -> RedisResult<Self> {
         Ok(Self {
             client: Client::open(params)?,
@@ -228,27 +144,26 @@ impl Manager {
 }
 
 #[async_trait]
-impl deadpool::managed::Manager for Manager {
+impl managed::Manager for Manager {
     type Type = RedisConnection;
     type Error = RedisError;
+
     async fn create(&self) -> Result<RedisConnection, RedisError> {
         let conn = self.client.get_async_connection().await?;
         Ok(conn)
     }
+
     async fn recycle(&self, conn: &mut RedisConnection) -> RecycleResult {
         let ping_number = self.ping_number.fetch_add(1, Ordering::Relaxed).to_string();
-        match redis::cmd(&format!("PING {}", ping_number))
+        let n = redis::cmd(&format!("PING {}", ping_number))
             .query_async::<_, String>(conn)
-            .await
-        {
-            Ok(n) => {
-                if n == ping_number {
-                    Ok(())
-                } else {
-                    Err(RecycleError::Message(String::from("Invalid PING response")))
-                }
-            }
-            Err(e) => Err(e.into()),
+            .await?;
+        if n == ping_number {
+            Ok(())
+        } else {
+            Err(managed::RecycleError::Message(
+                "Invalid PING response".into(),
+            ))
         }
     }
 }

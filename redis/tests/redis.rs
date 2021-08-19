@@ -1,10 +1,12 @@
+#![cfg(feature = "serde")]
+
 use deadpool_redis::Runtime;
 use futures::FutureExt;
-
 use redis::cmd;
-use serde::Deserialize;
+use serde_1::Deserialize;
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Default, Deserialize)]
+#[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
     redis: deadpool_redis::Config,
@@ -12,8 +14,8 @@ struct Config {
 
 impl Config {
     pub fn from_env() -> Self {
-        let mut cfg = ::config_crate::Config::default();
-        cfg.merge(::config_crate::Environment::new().separator("__"))
+        let mut cfg = config::Config::default();
+        cfg.merge(config::Environment::new().separator("__"))
             .unwrap();
         cfg.try_into().unwrap()
     }
@@ -24,8 +26,7 @@ fn create_pool() -> deadpool_redis::Pool {
     cfg.redis.create_pool(Runtime::Tokio1).unwrap()
 }
 
-#[tokio::main]
-#[test]
+#[tokio::test]
 async fn test_pipeline() {
     use deadpool_redis::redis::pipe;
     let pool = create_pool();
@@ -43,8 +44,7 @@ async fn test_pipeline() {
     assert_eq!(value, "42".to_string());
 }
 
-#[tokio::main]
-#[test]
+#[tokio::test]
 async fn test_high_level_commands() {
     use deadpool_redis::redis::AsyncCommands;
     let pool = create_pool();

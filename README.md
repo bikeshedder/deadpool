@@ -23,9 +23,9 @@ This crate provides two implementations:
 | ------- | ----------- | ------------------ | ------- |
 | `managed` | Enable managed pool implementation | `async-trait` | yes |
 | `unmanaged` | Enable unmanaged pool implementation | - | yes |
-| `serde` | Enable support for deserializing pool config | `serde` | no |
 | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `tokio/time` | no |
 | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `async-std` | no |
+| `serde` | Enable support for deserializing pool config | `serde/derive` | no |
 
 The runtime features (`rt_*`) are only needed if you need support for
 timeouts. If you try to use timeouts without specifying a runtime at
