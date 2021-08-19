@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-redis"
-version = "0.8.1"
+version = "0.9.0"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for redis"
 keywords = ["async", "redis", "pool"]

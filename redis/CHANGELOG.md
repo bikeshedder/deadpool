@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.9.0 (unreleased)
+## v0.9.0
 
 * Remove `deadpool_redis::Connection` type alias
 * Rename `deadpool_redis::ConnectionWrapper` to `Connection`
