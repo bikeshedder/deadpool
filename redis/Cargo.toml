@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-redis"
-version = "0.9.0-pre"
+version = "0.10.0-pre"
 edition = "2018"
 resolver = "2"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
@@ -16,9 +16,9 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["rt_tokio_1"]
-serde = ["deadpool/serde", "serde_1"]
 rt_tokio_1 = ["deadpool/rt_tokio_1", "redis/tokio-comp"]
 rt_async-std_1 = ["deadpool/rt_async-std_1", "redis/async-std-comp"]
+serde = ["deadpool/serde", "serde_1"]
 
 [dependencies]
 async-trait = "0.1.17"

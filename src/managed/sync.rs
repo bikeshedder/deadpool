@@ -47,6 +47,7 @@ impl<E: std::error::Error + 'static> std::error::Error for InteractError<E> {
 ///
 /// Access to the wrapped object is provided via the [`SyncWrapper::interact()`]
 /// method.
+#[must_use]
 pub struct SyncWrapper<T, E>
 where
     T: Send + 'static,
@@ -83,7 +84,7 @@ where
         F: FnOnce() -> Result<T, E> + Send + 'static,
     {
         let result = match runtime.spawn_blocking(move || f()).await {
-            // FIXME panicking when the creation panics is not nice
+            // FIXME: Panicking when the creation panics is not nice.
             // In order to handle this properly the Manager::create
             // methods needs to support a custom error enum which
             // supports a Panic variant.
