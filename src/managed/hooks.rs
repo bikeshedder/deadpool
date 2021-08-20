@@ -83,6 +83,7 @@ impl<M: Manager> fmt::Debug for Hooks<M> {
     }
 }
 
+// Implemented manually to avoid unnecessary trait bound on `M` type parameter.
 impl<M: Manager> Default for Hooks<M> {
     fn default() -> Self {
         Self {

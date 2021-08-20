@@ -1,39 +1,36 @@
 [package]
 name = "deadpool-lapin"
-version = "0.8.0"
+version = "0.9.0-pre"
+edition = "2018"
+resolver = "2"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for lapin"
 keywords = ["async", "lapin", "pool", "amqp", "rabbitmq"]
 license = "MIT/Apache-2.0"
 repository = "https://github.com/bikeshedder/deadpool"
 readme = "README.md"
-edition = "2018"
-resolver = "2"
 
 [package.metadata.docs.rs]
 all-features = true
-
-[dependencies]
-deadpool = { path = "../", version = "0.9.0-pre", default-features = false, features = ["managed"] }
-async-trait = "0.1.17"
-log = "0.4"
-# only required when using the config feature
-config-crate = { package = "config", version = "0.11", default-features = false, optional = true }
-serde = { version = "1.0", features = ["derive"], optional = true }
-tokio-amqp = { version = "1.0", optional = true }
-async-amqp = { version = "1.2", optional = true }
-
-[dependencies.lapin]
-version = "1"
-default-features = false
-
-[dev-dependencies]
-tokio = { version = "1", features = ["sync", "macros", "rt-multi-thread"] }
-tokio-amqp = "1"
-dotenv = "0.15"
+rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["config", "rt_tokio_1"]
-config = ["config-crate", "serde", "deadpool/serde"]
+default = ["rt_tokio_1"]
 rt_tokio_1 = ["deadpool/rt_tokio_1", "tokio-amqp"]
 rt_async-std_1 = ["deadpool/rt_async-std_1", "async-amqp"]
+serde = ["deadpool/serde", "serde_1"]
+
+[dependencies]
+async-amqp = { version = "1.2", optional = true }
+async-trait = "0.1.17"
+deadpool = { path = "../", version = "0.9.0-pre", default-features = false, features = ["managed"] }
+lapin = { version = "1.0", default-features = false }
+log = "0.4"
+serde_1 = { package = "serde", version = "1.0", features = ["derive"], optional = true }
+tokio-amqp = { version = "1.0", optional = true }
+
+[dev-dependencies]
+config = { version = "0.11", default-features = false }
+dotenv = "0.15"
+tokio = { version = "1.0", features = ["sync", "macros", "rt-multi-thread"] }
+tokio-amqp = "1.0"

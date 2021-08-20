@@ -1,163 +1,83 @@
-//! # Deadpool for Lapin [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin)
-//!
-//! Deadpool is a dead simple async pool for connections and objects
-//! of any type.
-//!
-//! This crate implements a [`deadpool`](https://crates.io/crates/deadpool)
-//! manager for [`lapin`](https://crates.io/crates/lapin).
-//!
-//! ## Features
-//!
-//! | Feature | Description | Extra dependencies | Default |
-//! | ------- | ----------- | ------------------ | ------- |
-//! | `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
-//! | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
-//! | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
-//!
-//! ## Example with `tokio-amqp` crate
-//!
-//! ```rust,ignore
-//! use std::sync::Arc;
-//!
-//! use deadpool_lapin::{Config, Manager, Pool, Runtime };
-//! use deadpool_lapin::lapin::{
-//!     options::BasicPublishOptions,
-//!     BasicProperties,
-//! };
-//! use tokio::runtime::Runtime;
-//! use tokio_amqp::LapinTokioExt;
-//!
-//! #[tokio::main]
-//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let mut cfg = Config::default();
-//!     cfg.url = Some("amqp://127.0.0.1:5672/%2f".to_string());
-//!     let pool = cfg.create_pool(Runtime::Tokio1);
-//!     for i in 1..10usize {
-//!         let mut connection = pool.get().await?;
-//!         let channel = connection.create_channel().await?;
-//!         channel.basic_publish(
-//!             "",
-//!             "hello",
-//!             BasicPublishOptions::default(),
-//!             b"hello from deadpool".to_vec(),
-//!             BasicProperties::default()
-//!         ).await?;
-//!     }
-//!     Ok(())
-//! }
-//! ```
-//!
-//! ## Example with `config`, `dotenv` and `tokio-amqp` crate
-//!
-//! ```rust
-//! use std::sync::Arc;
-//!
-//! use deadpool_lapin::Runtime;
-//! use deadpool_lapin::lapin::{
-//!     options::BasicPublishOptions,
-//!     BasicProperties,
-//! };
-//! use dotenv::dotenv;
-//! use serde::Deserialize;
-//!
-//! #[derive(Debug, Deserialize)]
-//! struct Config {
-//!     #[serde(default)]
-//!     amqp: deadpool_lapin::Config
-//! }
-//!
-//! impl Config {
-//!     pub fn from_env() -> Result<Self, ::config_crate::ConfigError> {
-//!         let mut cfg = ::config_crate::Config::new();
-//!         cfg.merge(::config_crate::Environment::new().separator("__"))?;
-//!         cfg.try_into()
-//!     }
-//! }
-//!
-//! #[tokio::main]
-//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     dotenv().ok();
-//!     let mut cfg = Config::from_env().unwrap();
-//!     let pool = cfg.amqp.create_pool(Runtime::Tokio1).unwrap();
-//!     for i in 1..10usize {
-//!         let mut connection = pool.get().await?;
-//!         let channel = connection.create_channel().await?;
-//!         channel.basic_publish(
-//!             "",
-//!             "hello",
-//!             BasicPublishOptions::default(),
-//!             b"hello from deadpool".to_vec(),
-//!             BasicProperties::default()
-//!         ).await?;
-//!     }
-//!     Ok(())
-//! }
-//! ```
-//!
-//! ## License
-//!
-//! Licensed under either of
-//!
-//! - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
-//! - MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
-//!
-//! at your option.
-#![warn(missing_docs)]
-
-use async_trait::async_trait;
-use lapin::{ConnectionProperties, Error};
+#![doc = include_str!("../README.md")]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![deny(
+    nonstandard_style,
+    rust_2018_idioms,
+    rustdoc::broken_intra_doc_links,
+    rustdoc::private_intra_doc_links
+)]
+#![forbid(non_ascii_idents, unsafe_code)]
+#![warn(
+    deprecated_in_future,
+    missing_copy_implementations,
+    missing_debug_implementations,
+    missing_docs,
+    unreachable_pub,
+    unused_import_braces,
+    unused_labels,
+    unused_lifetimes,
+    unused_qualifications,
+    unused_results
+)]
 
 mod config;
-pub use crate::config::Config;
 
-/// Re-export deadpool::managed::PoolConfig
-pub use deadpool::managed::PoolConfig;
-/// Re-export deadpool::Runtime;
-pub use deadpool::Runtime;
+use async_trait::async_trait;
+use deadpool::managed;
+use lapin::{ConnectionProperties, Error};
 
-/// A type alias for using `deadpool::Pool` with `lapin`
-pub type Pool = deadpool::managed::Pool<Manager>;
-
-/// A type alias for using `deadpool::PoolError` with `lapin`
-pub type PoolError = deadpool::managed::PoolError<Error>;
-
-/// A type alias for using `deadpool::Object` with `lapin`
-pub type Connection = deadpool::managed::Object<Manager>;
-
-type RecycleResult = deadpool::managed::RecycleResult<Error>;
-type RecycleError = deadpool::managed::RecycleError<Error>;
-
-/// Re-export lapin crate
+pub use deadpool::{managed::PoolConfig, Runtime};
 pub use lapin;
 
-/// The manager for creating and recyling lapin connections
+pub use self::config::{BuildError, Config};
+
+/// Type alias for using [`deadpool::managed::Pool`] with [`lapin`].
+pub type Pool = managed::Pool<Manager>;
+
+/// Type alias for using [`deadpool::managed::PoolError`] with [`lapin`].
+pub type PoolError = managed::PoolError<Error>;
+
+/// Type alias for using [`deadpool::managed::Object`] with [`lapin`].
+pub type Connection = managed::Object<Manager>;
+
+type RecycleResult = managed::RecycleResult<Error>;
+type RecycleError = managed::RecycleError<Error>;
+
+/// [`Manager`] for creating and recycling [`lapin::Connection`].
+///
+/// [`Manager`]: managed::Manager
+#[derive(Debug)]
 pub struct Manager {
     addr: String,
     connection_properties: ConnectionProperties,
 }
 
 impl Manager {
-    /// Create manager using AMQP address and `lapin::ConnectionProperties`
-    pub fn new(addr: String, connection_properties: ConnectionProperties) -> Self {
+    /// Creates a new [`Manager`] using the given AMQP address and
+    /// [`lapin::ConnectionProperties`].
+    #[must_use]
+    pub fn new<S: Into<String>>(addr: S, connection_properties: ConnectionProperties) -> Self {
         Self {
-            addr,
+            addr: addr.into(),
             connection_properties,
         }
     }
 }
 
 #[async_trait]
-impl deadpool::managed::Manager for Manager {
+impl managed::Manager for Manager {
     type Type = lapin::Connection;
     type Error = Error;
+
     async fn create(&self) -> Result<lapin::Connection, Error> {
-        let connection =
+        let conn =
             lapin::Connection::connect(self.addr.as_str(), self.connection_properties.clone())
                 .await?;
-        Ok(connection)
+        Ok(conn)
     }
-    async fn recycle(&self, connection: &mut lapin::Connection) -> RecycleResult {
-        match connection.status().state() {
+
+    async fn recycle(&self, conn: &mut lapin::Connection) -> RecycleResult {
+        match conn.status().state() {
             lapin::ConnectionState::Connected => Ok(()),
             other_state => Err(RecycleError::Message(format!(
                 "lapin connection is in state: {:?}",

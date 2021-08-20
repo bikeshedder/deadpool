@@ -74,8 +74,9 @@ impl Timeouts {
     }
 }
 
+// Implemented manually to provide a custom documentation.
 impl Default for Timeouts {
-    /// Create an empty [`Timeouts`] config (no timeouts set).
+    /// Creates an empty [`Timeouts`] config (no timeouts set).
     fn default() -> Self {
         Self {
             create: None,

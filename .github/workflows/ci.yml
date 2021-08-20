@@ -90,7 +90,7 @@ jobs:
       matrix:
         crate:
           - diesel
-          #- lapin
+          - lapin
           #- postgres
           - redis
           #- sqlite
@@ -124,8 +124,15 @@ jobs:
             || startsWith(github.ref, 'refs/tags/deadpool-')
             || !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
+      fail-fast: false
       matrix:
-        msrv: ['1.54.0']
+        include:
+          - { crate: deadpool, msrv: '1.54.0' }
+          - { crate: deadpool-diesel, msrv: '1.54.0' }
+          - { crate: deadpool-lapin, msrv: '1.54.0' }
+          #- { crate: deadpool-postgres, msrv: '1.54.0' }
+          - { crate: deadpool-redis, msrv: '1.54.0' }
+          #- { crate: deadpool-sqlite, msrv: '1.54.0' }
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -141,7 +148,7 @@ jobs:
 
       - run: cargo +nightly update -Z minimal-versions
 
-      - run: cargo check --workspace --all-features
+      - run: cargo check -p ${{ matrix.crate }} --all-features
 
   test:
     if: ${{ github.ref == 'refs/heads/master'
@@ -153,7 +160,7 @@ jobs:
         crate:
           - deadpool
           - deadpool-diesel
-          #- deadpool-lapin
+          - deadpool-lapin
           #- deadpool-postgres
           - deadpool-redis
           #- deadpool-sqlite
@@ -219,7 +226,7 @@ jobs:
         crate:
           - deadpool
           - deadpool-diesel
-          #- deadpool-lapin
+          - deadpool-lapin
           #- deadpool-postgres
           - deadpool-redis
           #- deadpool-sqlite
