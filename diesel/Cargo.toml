@@ -24,7 +24,6 @@ rt_async-std_1 = ["deadpool/rt_async-std_1"]
 serde = ["deadpool/serde"]
 
 [dependencies]
-async-trait = "0.1.17"
 deadpool = { path = "../", version = "0.9.0-pre", default-features = false, features = ["managed"] }
 diesel = { version = "1.4.7", default-features = false }
 

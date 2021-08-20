@@ -1,4 +1,4 @@
-# Deadpool for PostgreSQL [![Latest Version](https://img.shields.io/crates/v/deadpool-postgres.svg)](https://crates.io/crates/deadpool-postgres)
+# Deadpool for PostgreSQL [![Latest Version](https://img.shields.io/crates/v/deadpool-postgres.svg)](https://crates.io/crates/deadpool-postgres) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.54+](https://img.shields.io/badge/rustc-1.54+-lightgray.svg "Rust 1.54+")](https://blog.rust-lang.org/2021/07/29/Rust-1.54.0.html)
 
 Deadpool is a dead simple async pool for connections and objects
 of any type.
@@ -12,9 +12,9 @@ and `tokio_postgres::Transaction`.
 
 | Feature | Description | Extra dependencies | Default |
 | ------- | ----------- | ------------------ | ------- |
-| `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
 | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
 | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
+| `serde` | Enable support for [serde](https://crates.io/crates/serde) crate | `deadpool/serde`, `serde/derive` | no |
 
 **Important:** `async-std` support is currently limited to the
 `async-std` specific timeout function. You still need to enable
@@ -23,7 +23,7 @@ with `async-std`.
 
 ## Example
 
-```rust,ignore
+```rust,no_run
 use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod, Runtime};
 use tokio_postgres::NoTls;
 
@@ -49,23 +49,23 @@ async fn main() {
 # .env
 PG__DBNAME=deadpool
 ```
-
 ```rust
 use deadpool_postgres::{Manager, Pool, Runtime};
 use dotenv::dotenv;
-use serde::Deserialize;
+use serde_1::Deserialize;
 use tokio_postgres::NoTls;
 
 #[derive(Debug, Deserialize)]
+#[serde(crate = "serde_1")]
 struct Config {
     pg: deadpool_postgres::Config
 }
 
 impl Config {
-    pub fn from_env() -> Result<Self, ::config_crate::ConfigError> {
-        let mut cfg = ::config_crate::Config::new();
+    pub fn from_env() -> Result<Self, config::ConfigError> {
+        let mut cfg = config::Config::new();
         cfg.set_default("pg.dbname", "deadpool");
-        cfg.merge(::config_crate::Environment::new().separator("__"))?;
+        cfg.merge(config::Environment::new().separator("__"))?;
         cfg.try_into()
     }
 }
@@ -92,7 +92,7 @@ In your own code you will probably want to use `::config::ConfigError` and
 
 ## Example using an existing `tokio_postgres::Config` object
 
-```rust,ignore
+```rust,no_run
 use std::env;
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
 use tokio_postgres::NoTls;
@@ -108,7 +108,7 @@ async fn main() {
         recycling_method: RecyclingMethod::Fast
     };
     let mgr = Manager::from_config(pg_config, NoTls, mgr_config);
-    let pool = Pool::new(mgr, 16);
+    let pool = Pool::builder(mgr).max_size(16).build().unwrap();
     for i in 1..10 {
         let mut client = pool.get().await.unwrap();
         let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();

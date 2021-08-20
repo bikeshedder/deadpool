@@ -27,8 +27,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use async_trait::async_trait;
-use deadpool::managed;
+use deadpool::{async_trait, managed};
 use redis::{
     aio::{Connection as RedisConnection, ConnectionLike},
     Client, IntoConnectionInfo, RedisError, RedisResult,

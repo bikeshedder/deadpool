@@ -1,7 +1,7 @@
 use std::{fmt, marker::PhantomData};
 
-use async_trait::async_trait;
 use deadpool::{
+    async_trait,
     managed::{self, sync::SyncWrapper, RecycleError, RecycleResult},
     Runtime,
 };

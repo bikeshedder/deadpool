@@ -1,170 +1,31 @@
-//! This module describes configuration used for [`Pool`] creation.
+//! Configuration used for [`Pool`] creation.
 
-use std::env;
-use std::time::Duration;
+use std::{env, time::Duration};
 
-use tokio_postgres::config::{
-    ChannelBinding as PgChannelBinding, SslMode as PgSslMode,
-    TargetSessionAttrs as PgTargetSessionAttrs,
+use deadpool::managed;
+#[cfg(feature = "serde")]
+use serde_1 as serde;
+use tokio_postgres::{
+    config::{
+        ChannelBinding as PgChannelBinding, SslMode as PgSslMode,
+        TargetSessionAttrs as PgTargetSessionAttrs,
+    },
+    tls::{MakeTlsConnect, TlsConnect},
+    Socket,
 };
-use tokio_postgres::tls::{MakeTlsConnect, TlsConnect};
-use tokio_postgres::Socket;
 
-use crate::{Pool, PoolConfig, Runtime};
+use super::{Pool, PoolConfig, Runtime};
 
-/// An error which is returned by `Config::create_pool` if something is
-/// wrong with the configuration.
-pub type BuildError = deadpool::managed::BuildError<tokio_postgres::Error>;
+/// Error returned by [`Config::create_pool()`] method if something is wrong
+/// with the configuration.
+pub type BuildError = managed::BuildError<tokio_postgres::Error>;
 
-/// Properties required of a session.
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "config", derive(serde::Deserialize))]
-#[non_exhaustive]
-pub enum TargetSessionAttrs {
-    /// No special properties are required.
-    Any,
-    /// The session must allow writes.
-    ReadWrite,
-}
-
-impl From<TargetSessionAttrs> for PgTargetSessionAttrs {
-    fn from(attrs: TargetSessionAttrs) -> Self {
-        match attrs {
-            TargetSessionAttrs::Any => Self::Any,
-            TargetSessionAttrs::ReadWrite => Self::ReadWrite,
-        }
-    }
-}
-
-/// TLS configuration.
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "config", derive(serde::Deserialize))]
-#[non_exhaustive]
-pub enum SslMode {
-    /// Do not use TLS.
-    Disable,
-    /// Attempt to connect with TLS but allow sessions without.
-    Prefer,
-    /// Require the use of TLS.
-    Require,
-}
-
-impl From<SslMode> for PgSslMode {
-    fn from(mode: SslMode) -> Self {
-        match mode {
-            SslMode::Disable => Self::Disable,
-            SslMode::Prefer => Self::Prefer,
-            SslMode::Require => Self::Require,
-        }
-    }
-}
-
-/// Channel binding configuration.
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "config", derive(serde::Deserialize))]
-#[non_exhaustive]
-pub enum ChannelBinding {
-    /// Do not use channel binding.
-    Disable,
-    /// Attempt to use channel binding but allow sessions without.
-    Prefer,
-    /// Require the use of channel binding.
-    Require,
-}
-
-impl From<ChannelBinding> for PgChannelBinding {
-    fn from(cb: ChannelBinding) -> Self {
-        match cb {
-            ChannelBinding::Disable => Self::Disable,
-            ChannelBinding::Prefer => Self::Prefer,
-            ChannelBinding::Require => Self::Require,
-        }
-    }
-}
-
-/// This enum is used to control how the connection is recycled.
-/// **Attention:** The current default is `Verified` but will be changed
-/// to `Fast` in the next minor release of `deadpool-postgres`. Please
-/// make sure to explicitly state this if you want to keep using the
-/// `Verified` recycling method.
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "config", derive(serde::Deserialize))]
-pub enum RecyclingMethod {
-    /// Only run `Client::is_closed` when recycling existing connections.
-    /// Unless you have special needs this is a safe choice.
-    Fast,
-    /// Run `Client::is_closed` and execute a test query. This is slower
-    /// but guarantees that the database connection is ready to be used.
-    /// Normally `Client::is_closed` should be enough to filter out bad
-    /// connections but under some circumstances (i.e. hard-closed
-    /// network connections) it is possible that `Client::is_closed` returns
-    /// `false` but the connection is dead. You will receive an error on
-    /// your first query then.
-    Verified,
-    /// Like `Verified` query method but instead use the following sequence of
-    /// statements which guarantees a prestine connection:
-    ///
-    /// ```rust,ignore
-    /// CLOSE ALL;
-    /// SET SESSION AUTHORIZATION DEFAULT;
-    /// RESET ALL;
-    /// UNLISTEN *;
-    /// SELECT pg_advisory_unlock_all();
-    /// DISCARD TEMP;
-    /// DISCARD SEQUENCES;
-    /// ```
-    ///
-    /// This is similar to calling `DISCARD ALL` but does not call
-    /// `DEALLOCATE ALL` and `DISCARD PLAN` so that the statement cache
-    /// is not rendered ineffective.
-    Clean,
-    /// Like `Verified` but allows to specify a custom SQL to be executed.
-    Custom(String),
-}
-
-const DISCARD_SQL: &str = "
-CLOSE ALL;
-SET SESSION AUTHORIZATION DEFAULT;
-RESET ALL;
-UNLISTEN *;
-SELECT pg_advisory_unlock_all();
-DISCARD TEMP;
-DISCARD SEQUENCES;
-";
-
-impl RecyclingMethod {
-    /// Return SQL query to be executed when recycling a connection.
-    pub fn query(&self) -> Option<&str> {
-        match self {
-            Self::Fast => None,
-            Self::Verified => Some(""),
-            Self::Clean => Some(DISCARD_SQL),
-            Self::Custom(sql) => Some(&sql),
-        }
-    }
-}
-
-impl Default for RecyclingMethod {
-    fn default() -> Self {
-        Self::Fast
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "config", derive(serde::Deserialize))]
-/// Configuration object for the manager. This currently only makes it
-/// possible to specify which recycling method should be used when retrieving
-/// existing objects from the pool.
-pub struct ManagerConfig {
-    /// This controls how the connection is recycled. See `RecyclingMethod`
-    pub recycling_method: RecyclingMethod,
-}
-
-/// Configuration object. By enabling the `config` feature you can
-/// read the configuration using the [`config`](https://crates.io/crates/config)
-/// crate.
+/// Configuration object.
 ///
-/// ## Example environment
+/// # Example (from environment)
+///
+/// By enabling the `serde` feature you can read the configuration using the
+/// [`config`](https://crates.io/crates/config) crate as following:
 /// ```env
 /// PG__HOST=pg.example.com
 /// PG__USER=john_doe
@@ -174,74 +35,93 @@ pub struct ManagerConfig {
 /// PG__POOL__TIMEOUTS__WAIT__SECS=5
 /// PG__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
-///
-/// ## Example usage
-/// ```rust,ignore
+/// ```rust
+/// # #[derive(serde_1::Deserialize)]
+/// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     pg: deadpool_postgres::Config,
 /// }
 /// impl Config {
-///     pub fn from_env() -> Result<Self, ConfigError> {
+///     pub fn from_env() -> Result<Self, config::ConfigError> {
 ///         let mut cfg = config::Config::new();
 ///         cfg.merge(config::Environment::new().separator("__")).unwrap();
-///         cfg.try_into().unwrap()
+///         cfg.try_into()
 ///     }
 /// }
 /// ```
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "config", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct Config {
-    /// See `tokio_postgres::Config::user`
+    /// See [`tokio_postgres::Config::user`].
     pub user: Option<String>,
-    /// See `tokio_postgres::Config::password`
+    /// See [`tokio_postgres::Config::password`].
     pub password: Option<String>,
-    /// See `tokio_postgres::Config::dbname`
+    /// See [`tokio_postgres::Config::dbname`].
     pub dbname: Option<String>,
-    /// See `tokio_postgres::Config::options`
+    /// See [`tokio_postgres::Config::options`].
     pub options: Option<String>,
-    /// See `tokio_postgres::Config::application_name`
+    /// See [`tokio_postgres::Config::application_name`].
     pub application_name: Option<String>,
-    /// See `tokio_postgres::Config::ssl_mode`
+    /// See [`tokio_postgres::Config::ssl_mode`].
     pub ssl_mode: Option<SslMode>,
-    /// This is similar to `hosts` but only allows one host to be specified.
-    /// Unlike `tokio-postgres::Config` this structure differenciates between
+    /// This is similar to [`Config::hosts`] but only allows one host to be
+    /// specified.
+    ///
+    /// Unlike [`tokio_postgres::Config`] this structure differentiates between
     /// one host and more than one host. This makes it possible to store this
-    /// configuration in an envorinment variable.
-    /// See `tokio_postgres::Config::host`
+    /// configuration in an environment variable.
+    ///
+    /// See [`tokio_postgres::Config::host`].
     pub host: Option<String>,
-    /// See `tokio_postgres::Config::hosts`
+    /// See [`tokio_postgres::Config::host`].
     pub hosts: Option<Vec<String>>,
-    /// This is similar to `ports` but only allows one port to be specified.
-    /// Unlike `tokio-postgres::Config` this structure differenciates between
+    /// This is similar to [`Config::ports`] but only allows one port to be
+    /// specified.
+    ///
+    /// Unlike [`tokio_postgres::Config`] this structure differentiates between
     /// one port and more than one port. This makes it possible to store this
     /// configuration in an environment variable.
-    /// See `tokio_postgres::Config::port`
+    ///
+    /// See [`tokio_postgres::Config::port`].
     pub port: Option<u16>,
-    /// See `tokio_postgres::Config::port`
+    /// See [`tokio_postgres::Config::port`].
     pub ports: Option<Vec<u16>>,
-    /// See `tokio_postgres::Config::connect_timeout`
+    /// See [`tokio_postgres::Config::connect_timeout`].
     pub connect_timeout: Option<Duration>,
-    /// See `tokio_postgres::Config::keepalives`
+    /// See [`tokio_postgres::Config::keepalives`].
     pub keepalives: Option<bool>,
-    /// See `tokio_postgres::Config::keepalives_idle`
+    /// See [`tokio_postgres::Config::keepalives_idle`].
     pub keepalives_idle: Option<Duration>,
-    /// See `tokio_postgres::Config::target_session_attrs`
+    /// See [`tokio_postgres::Config::target_session_attrs`].
     pub target_session_attrs: Option<TargetSessionAttrs>,
-    /// See `tokio_postgres::Config::channel_binding`
+    /// See [`tokio_postgres::Config::channel_binding`].
     pub channel_binding: Option<ChannelBinding>,
-    /// Manager configuration
+
+    /// [`Manager`] configuration.
+    ///
+    /// [`Manager`]: super::Manager
     pub manager: Option<ManagerConfig>,
-    /// Pool configuration
+
+    /// [`Pool`] configuration.
     pub pool: Option<PoolConfig>,
 }
 
 impl Config {
-    /// Create new config instance with default values. This function is
-    /// identical to `Config::default`.
+    /// Create a new [`Config`] instance with default values. This function is
+    /// identical to [`Config::default()`].
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
-    /// Create pool using the current configuration
+
+    /// Creates a new [`Pool`] using this [`Config`].
+    ///
+    /// # Errors
+    ///
+    /// See [`BuildError`] and [`tokio_postgres::Error`] for details.
+    ///
+    /// [`BuildError`]: managed::BuildError
     pub fn create_pool<T: MakeTlsConnect<Socket>>(
         &self,
         runtime: Runtime,
@@ -262,8 +142,10 @@ impl Config {
             .runtime(runtime)
             .build()
     }
-    /// Get `tokio_postgres::Config` which can be used to connect to
+
+    /// Returns [`tokio_postgres::Config`] which can be used to connect to
     /// the database.
+    #[allow(unused_results)]
     pub fn get_pg_config(&self) -> Result<tokio_postgres::Config, BuildError> {
         let mut cfg = tokio_postgres::Config::new();
         if let Some(user) = &self.user {
@@ -278,14 +160,14 @@ impl Config {
             Some(dbname) => match dbname.as_str() {
                 "" => {
                     return Err(BuildError::Config(
-                        "configuration property \"dbname\" not found".to_string(),
+                        "configuration property \"dbname\" not found".into(),
                     ))
                 }
                 dbname => cfg.dbname(dbname),
             },
             None => {
                 return Err(BuildError::Config(
-                    "configuration property \"dbname\" contains an empty string".to_string(),
+                    "configuration property \"dbname\" contains an empty string".into(),
                 ))
             }
         };
@@ -304,14 +186,14 @@ impl Config {
             }
         }
         if self.host.is_none() && self.hosts.is_none() {
-            // Systems that support it default to unix domain sockets
+            // Systems that support it default to unix domain sockets.
             #[cfg(unix)]
             {
                 cfg.host_path("/run/postgresql");
                 cfg.host_path("/var/run/postgresql");
                 cfg.host_path("/tmp");
             }
-            // Windows and other systems use 127.0.0.1 instead
+            // Windows and other systems use 127.0.0.1 instead.
             #[cfg(not(unix))]
             cfg.host("127.0.0.1");
         }
@@ -334,14 +216,203 @@ impl Config {
         }
         Ok(cfg)
     }
-    /// Get `deadpool_postgres::ManagerConfig` which can be used to
-    /// construct a `deadpool::managed::Pool` instance.
+
+    /// Returns [`ManagerConfig`] which can be used to construct a
+    /// [`deadpool::managed::Pool`] instance.
+    #[must_use]
     pub fn get_manager_config(&self) -> ManagerConfig {
         self.manager.clone().unwrap_or_default()
     }
-    /// Get `deadpool::PoolConfig` which can be used to construct a
-    /// `deadpool::managed::Pool` instance.
+
+    /// Returns [`deadpool::managed::PoolConfig`] which can be used to construct
+    /// a [`deadpool::managed::Pool`] instance.
+    #[must_use]
     pub fn get_pool_config(&self) -> PoolConfig {
         self.pool.clone().unwrap_or_default()
+    }
+}
+
+/// Possible methods of how a connection is recycled.
+///
+/// **Attention:** The current default is [`Verified`] but will be changed to
+/// [`Fast`] in the next minor release of [`deadpool-postgres`]. Please, make
+/// sure to explicitly state this if you want to keep using the [`Verified`]
+/// recycling method.
+///
+/// [`Fast`]: RecyclingMethod::Fast
+/// [`Verified`]: RecyclingMethod::Verified
+#[derive(Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+pub enum RecyclingMethod {
+    /// Only run [`Client::is_closed()`][1] when recycling existing connections.
+    ///
+    /// Unless you have special needs this is a safe choice.
+    ///
+    /// [1]: tokio_postgres::Client::is_closed
+    Fast,
+
+    /// Run [`Client::is_closed()`][1] and execute a test query.
+    ///
+    /// This is slower, but guarantees that the database connection is ready to
+    /// be used. Normally, [`Client::is_closed()`][1] should be enough to filter
+    /// out bad connections, but under some circumstances (i.e. hard-closed
+    /// network connections) it's possible that [`Client::is_closed()`][1]
+    /// returns `false` while the connection is dead. You will receive an error
+    /// on your first query then.
+    ///
+    /// [1]: tokio_postgres::Client::is_closed
+    Verified,
+
+    /// Like [`Verified`] query method, but instead use the following sequence
+    /// of statements which guarantees a pristine connection:
+    /// ```sql
+    /// CLOSE ALL;
+    /// SET SESSION AUTHORIZATION DEFAULT;
+    /// RESET ALL;
+    /// UNLISTEN *;
+    /// SELECT pg_advisory_unlock_all();
+    /// DISCARD TEMP;
+    /// DISCARD SEQUENCES;
+    /// ```
+    ///
+    /// This is similar to calling `DISCARD ALL`. but doesn't call
+    /// `DEALLOCATE ALL` and `DISCARD PLAN`, so that the statement cache is not
+    /// rendered ineffective.
+    ///
+    /// [`Verified`]: RecyclingMethod::Verified
+    Clean,
+
+    /// Like [`Verified`] but allows to specify a custom SQL to be executed.
+    ///
+    /// [`Verified`]: RecyclingMethod::Verified
+    Custom(String),
+}
+
+impl Default for RecyclingMethod {
+    fn default() -> Self {
+        Self::Fast
+    }
+}
+
+impl RecyclingMethod {
+    const DISCARD_SQL: &'static str = "\
+        CLOSE ALL; \
+        SET SESSION AUTHORIZATION DEFAULT; \
+        RESET ALL; \
+        UNLISTEN *; \
+        SELECT pg_advisory_unlock_all(); \
+        DISCARD TEMP; \
+        DISCARD SEQUENCES;\
+    ";
+
+    /// Returns SQL query to be executed when recycling a connection.
+    pub fn query(&self) -> Option<&str> {
+        match self {
+            Self::Fast => None,
+            Self::Verified => Some(""),
+            Self::Clean => Some(Self::DISCARD_SQL),
+            Self::Custom(sql) => Some(&sql),
+        }
+    }
+}
+
+/// Configuration object for a [`Manager`].
+///
+/// This currently only makes it possible to specify which [`RecyclingMethod`]
+/// should be used when retrieving existing objects from the [`Pool`].
+///
+/// [`Manager`]: super::Manager
+#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+pub struct ManagerConfig {
+    /// Method of how a connection is recycled. See [`RecyclingMethod`].
+    pub recycling_method: RecyclingMethod,
+}
+
+/// Properties required of a session.
+///
+/// This is a 1:1 copy of the [`PgTargetSessionAttrs`] enumeration.
+/// This is duplicated here in order to add support for the
+/// [`serde::Deserialize`] trait which is required for the [`serde`] support.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[non_exhaustive]
+pub enum TargetSessionAttrs {
+    /// No special properties are required.
+    Any,
+
+    /// The session must allow writes.
+    ReadWrite,
+}
+
+impl From<TargetSessionAttrs> for PgTargetSessionAttrs {
+    fn from(attrs: TargetSessionAttrs) -> Self {
+        match attrs {
+            TargetSessionAttrs::Any => Self::Any,
+            TargetSessionAttrs::ReadWrite => Self::ReadWrite,
+        }
+    }
+}
+
+/// TLS configuration.
+///
+/// This is a 1:1 copy of the [`PgSslMode`] enumeration.
+/// This is duplicated here in order to add support for the
+/// [`serde::Deserialize`] trait which is required for the [`serde`] support.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[non_exhaustive]
+pub enum SslMode {
+    /// Do not use TLS.
+    Disable,
+
+    /// Attempt to connect with TLS but allow sessions without.
+    Prefer,
+
+    /// Require the use of TLS.
+    Require,
+}
+
+impl From<SslMode> for PgSslMode {
+    fn from(mode: SslMode) -> Self {
+        match mode {
+            SslMode::Disable => Self::Disable,
+            SslMode::Prefer => Self::Prefer,
+            SslMode::Require => Self::Require,
+        }
+    }
+}
+
+/// Channel binding configuration.
+///
+/// This is a 1:1 copy of the [`PgChannelBinding`] enumeration.
+/// This is duplicated here in order to add support for the
+/// [`serde::Deserialize`] trait which is required for the [`serde`] support.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[non_exhaustive]
+pub enum ChannelBinding {
+    /// Do not use channel binding.
+    Disable,
+
+    /// Attempt to use channel binding but allow sessions without.
+    Prefer,
+
+    /// Require the use of channel binding.
+    Require,
+}
+
+impl From<ChannelBinding> for PgChannelBinding {
+    fn from(cb: ChannelBinding) -> Self {
+        match cb {
+            ChannelBinding::Disable => Self::Disable,
+            ChannelBinding::Prefer => Self::Prefer,
+            ChannelBinding::Require => Self::Require,
+        }
     }
 }

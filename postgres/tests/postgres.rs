@@ -1,14 +1,13 @@
-use std::collections::HashMap;
-use std::env;
-use std::time::Duration;
+use std::{collections::HashMap, env, time::Duration};
 
-use futures::future::join_all;
-use serde::Deserialize;
+use futures::future;
+use serde_1::Deserialize;
 use tokio_postgres::{types::Type, IsolationLevel};
 
 use deadpool_postgres::{ManagerConfig, Pool, RecyclingMethod, Runtime};
 
 #[derive(Debug, Deserialize)]
+#[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
     pg: deadpool_postgres::Config,
@@ -16,16 +15,17 @@ struct Config {
 
 impl Config {
     pub fn from_env() -> Self {
-        let mut cfg = ::config_crate::Config::new();
-        cfg.merge(::config_crate::Environment::new().separator("__"))
+        let mut cfg = config::Config::new();
+        cfg.merge(config::Environment::new().separator("__"))
             .unwrap();
         let mut cfg = cfg.try_into::<Self>().unwrap();
         cfg.pg.dbname.get_or_insert("deadpool".to_string());
         cfg
     }
+
     pub fn from_env_with_prefix(prefix: &str) -> Self {
-        let mut cfg = ::config_crate::Config::new();
-        cfg.merge(::config_crate::Environment::with_prefix(prefix).separator("__"))
+        let mut cfg = config::Config::new();
+        cfg.merge(config::Environment::with_prefix(prefix).separator("__"))
             .unwrap();
         let mut cfg = cfg.try_into::<Self>().unwrap();
         cfg.pg.dbname.get_or_insert("deadpool".to_string());
@@ -41,7 +41,7 @@ fn create_pool() -> Pool {
 }
 
 #[tokio::test]
-async fn test_basic() {
+async fn basic() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
     let stmt = client.prepare_cached("SELECT 1 + 2").await.unwrap();
@@ -52,7 +52,7 @@ async fn test_basic() {
 }
 
 #[tokio::test]
-async fn test_prepare_typed_cached() {
+async fn prepare_typed_cached() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
     let stmt = client
@@ -65,7 +65,7 @@ async fn test_prepare_typed_cached() {
 }
 
 #[tokio::test]
-async fn test_prepare_typed_error() {
+async fn prepare_typed_error() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
     let stmt = client
@@ -76,7 +76,7 @@ async fn test_prepare_typed_error() {
 }
 
 #[tokio::test]
-async fn test_transaction_1() {
+async fn transaction_1() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
     {
@@ -91,7 +91,7 @@ async fn test_transaction_1() {
 }
 
 #[tokio::test]
-async fn test_transaction_2() {
+async fn transaction_2() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
     let stmt = client.prepare_cached("SELECT 1 + 2").await.unwrap();
@@ -106,7 +106,7 @@ async fn test_transaction_2() {
 }
 
 #[tokio::test]
-async fn test_transaction_pipeline() {
+async fn transaction_pipeline() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
     let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
@@ -121,14 +121,14 @@ async fn test_transaction_pipeline() {
             value
         });
     }
-    let results = join_all(futures).await;
+    let results = future::join_all(futures).await;
     for i in 0..100 {
         assert_eq!(results[i], (i as i32) + 1);
     }
 }
 
 #[tokio::test]
-async fn test_transaction_builder() {
+async fn transaction_builder() {
     let pool = create_pool();
     let mut client = pool.get().await.unwrap();
     let txn = client
@@ -146,14 +146,14 @@ async fn test_transaction_builder() {
 }
 
 #[tokio::test]
-async fn test_generic_client() {
+async fn generic_client() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
     _use_generic_client(&**client);
 }
 
 #[tokio::test]
-async fn test_recycling_methods() {
+async fn recycling_methods() {
     let recycling_methods = vec![
         RecyclingMethod::Fast,
         RecyclingMethod::Verified,
@@ -181,7 +181,7 @@ fn _use_generic_client(_client: &impl tokio_postgres::GenericClient) {
 }
 
 #[tokio::test]
-async fn test_statement_cache_clear() {
+async fn statement_cache_clear() {
     let pool = create_pool();
     let client = pool.get().await.unwrap();
     assert!(client.statement_cache.size() == 0);
@@ -192,7 +192,7 @@ async fn test_statement_cache_clear() {
 }
 
 #[tokio::test]
-async fn test_statement_caches_clear() {
+async fn statement_caches_clear() {
     let pool = create_pool();
     // prepare 1st client
     let client0 = pool.get().await.unwrap();
@@ -231,16 +231,16 @@ impl Drop for Env {
         for (name, value) in self.backup.iter() {
             println!("setting {} = {:?}", name, value);
             match value {
-                Some(value) => env::set_var(name.as_str(), value),
+                Some(val) => env::set_var(name.as_str(), val),
                 None => env::remove_var(name.as_str()),
             }
         }
     }
 }
 
+#[cfg(feature = "serde")]
 #[test]
-#[cfg(feature = "config")]
-fn test_config_from_env() {
+fn config_from_env() {
     // This test must not use "PG" as prefix as this can cause the other
     // tests which also use the "PG" prefix to fail.
     let mut env = Env::new();
@@ -258,7 +258,7 @@ fn test_config_from_env() {
     env.set("ENV_TEST_PG__POOL__TIMEOUTS__RECYCLE__NANOS", "0");
     let cfg = Config::from_env_with_prefix("ENV_TEST");
     // `tokio_postgres::Config` does not provide any read access to its
-    // internals so we can only check if the environment was actually read
+    // internals, so we can only check if the environment was actually read
     // correctly.
     assert_eq!(cfg.pg.host, Some("pg.example.com".to_string()));
     assert_eq!(cfg.pg.port, Some(5433));
