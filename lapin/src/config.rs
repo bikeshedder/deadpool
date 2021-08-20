@@ -1,70 +1,83 @@
-use deadpool::Runtime;
+#[cfg(feature = "rt_async-std_1")]
+use async_amqp::LapinAsyncStdExt;
+use deadpool::{managed, Runtime};
 #[cfg(feature = "rt_tokio_1")]
 use tokio_amqp::LapinTokioExt;
 
-#[cfg(feature = "rt_async-std_1")]
-use async_amqp::LapinAsyncStdExt;
+use crate::{Manager, Pool, PoolConfig};
 
-use crate::{Pool, PoolConfig};
+/// Error of building a [`Pool`].
+pub type BuildError = managed::BuildError<lapin::Error>;
 
-pub type BuildError = deadpool::managed::BuildError<lapin::Error>;
-
-/// Configuration object. By enabling the `config` feature you can
-/// read the configuration using the [`config`](https://crates.io/crates/config)
-/// crate. e.g.:
+/// Configuration object.
 ///
-/// ## Example environment
+/// # Example (from environment)
+///
+/// By enabling the `serde` feature you can read the configuration using the
+/// [`config`](https://crates.io/crates/config) crate as following:
 /// ```env
 /// AMQP__URL=amqp://127.0.0.1:5672/%2f
 /// AMQP__POOL__MAX_SIZE=16
 /// AMQP__POOL__TIMEOUTS__WAIT__SECS=2
 /// AMQP__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
-/// ## Example usage
-/// ```rust,ignore
+/// ```rust
+/// # #[derive(serde_1::Deserialize)]
+/// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     amqp: deadpool_lapin::Config,
 /// }
+///
 /// impl Config {
 ///     pub fn from_env() -> Result<Self, config::ConfigError> {
 ///         let mut cfg = config::Config::new();
 ///         cfg.merge(config::Environment::new().separator("__")).unwrap();
-///         cfg.try_into().unwrap()
+///         cfg.try_into()
 ///     }
 /// }
 /// ```
-#[derive(Clone, Debug)]
-#[cfg_attr(feature = "config", derive(serde::Deserialize))]
+#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde_1::Deserialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct Config {
-    /// AMQP server URL
+    /// AMQP server URL.
     pub url: Option<String>,
-    /// Pool configuration
+
+    /// [`Pool`] configuration.
     pub pool: Option<PoolConfig>,
-    /// Connection properties
-    #[cfg_attr(feature = "config", serde(skip))]
+
+    /// Connection properties.
+    #[cfg_attr(feature = "serde", serde(skip))]
     pub connection_properties: lapin::ConnectionProperties,
 }
 
 impl Config {
-    /// Create pool using the current configuration
+    /// Creates a new [`Pool`] using this [`Config`].
+    ///
+    /// # Errors
+    ///
+    /// See [`BuildError`] and [`lapin::Error`] for details.
+    ///
+    /// [`BuildError`]: managed::BuildError
     pub fn create_pool(&self, runtime: Runtime) -> Result<Pool, BuildError> {
         let url = self.get_url().to_string();
         let pool_config = self.get_pool_config();
-        let connection_properties = self.connection_properties.clone();
-        let connection_properties = match runtime {
+
+        let conn_props = self.connection_properties.clone();
+        let conn_props = match runtime {
             #[cfg(feature = "rt_tokio_1")]
-            Runtime::Tokio1 => connection_properties.with_tokio(),
+            Runtime::Tokio1 => conn_props.with_tokio(),
             #[cfg(feature = "rt_async-std_1")]
-            Runtime::AsyncStd1 => connection_properties.with_async_std(),
+            Runtime::AsyncStd1 => conn_props.with_async_std(),
         };
-        let manager = crate::Manager::new(url, connection_properties);
-        Pool::builder(manager)
+
+        Pool::builder(Manager::new(url, conn_props))
             .config(pool_config)
             .runtime(runtime)
             .build()
     }
-    /// Get `URL` which can be used to connect to
-    /// the database.
+
+    /// Returns URL which can be used to connect to the database.
     pub fn get_url(&self) -> &str {
         if let Some(url) = &self.url {
             url
@@ -72,19 +85,11 @@ impl Config {
             "amqp://127.0.0.1:5672/%2f"
         }
     }
-    /// Get `deadpool::PoolConfig` which can be used to construct a
-    /// `deadpool::managed::Pool` instance.
+
+    /// Returns [`deadpool::managed::PoolConfig`] which can be used to construct
+    /// a [`deadpool::managed::Pool`] instance.
+    #[must_use]
     pub fn get_pool_config(&self) -> PoolConfig {
         self.pool.clone().unwrap_or_default()
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            url: None,
-            pool: None,
-            connection_properties: lapin::ConnectionProperties::default(),
-        }
     }
 }

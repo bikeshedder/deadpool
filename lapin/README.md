@@ -1,4 +1,4 @@
-# Deadpool for Lapin [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin)
+# Deadpool for Lapin [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.54+](https://img.shields.io/badge/rustc-1.54+-lightgray.svg "Rust 1.54+")](https://blog.rust-lang.org/2021/07/29/Rust-1.54.0.html)
 
 Deadpool is a dead simple async pool for connections and objects
 of any type.
@@ -10,29 +10,28 @@ manager for [`lapin`](https://crates.io/crates/lapin).
 
 | Feature | Description | Extra dependencies | Default |
 | ------- | ----------- | ------------------ | ------- |
-| `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
 | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
 | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
+| `serde` | Enable support for [serde](https://crates.io/crates/serde) crate | `deadpool/serde`, `serde/derive` | no |
 
 ## Example with `tokio-amqp` crate
 
-```rust,ignore
+```rust,no_run
 use std::sync::Arc;
 
-use deadpool_lapin::{Config, Manager, Pool, Runtime };
+use deadpool_lapin::{Config, Manager, Pool, Runtime};
 use deadpool_lapin::lapin::{
     options::BasicPublishOptions,
     BasicProperties,
 };
-use tokio::runtime::Runtime;
 use tokio_amqp::LapinTokioExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cfg = Config::default();
-    cfg.url = Some("amqp://127.0.0.1:5672/%2f".to_string());
-    let pool = cfg.create_pool(Runtime::Tokio1);
-    for i in 1..10usize {
+    cfg.url = Some("amqp://127.0.0.1:5672/%2f".into());
+    let pool = cfg.create_pool(Runtime::Tokio1)?;
+    for _ in 1..10 {
         let mut connection = pool.get().await?;
         let channel = connection.create_channel().await?;
         channel.basic_publish(
@@ -40,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "hello",
             BasicPublishOptions::default(),
             b"hello from deadpool".to_vec(),
-            BasicProperties::default()
+            BasicProperties::default(),
         ).await?;
     }
     Ok(())
@@ -58,18 +57,19 @@ use deadpool_lapin::lapin::{
     BasicProperties,
 };
 use dotenv::dotenv;
-use serde::Deserialize;
+use serde_1::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
     amqp: deadpool_lapin::Config
 }
 
 impl Config {
-    pub fn from_env() -> Result<Self, ::config_crate::ConfigError> {
-        let mut cfg = ::config_crate::Config::new();
-        cfg.merge(::config_crate::Environment::new().separator("__"))?;
+    pub fn from_env() -> Result<Self, config::ConfigError> {
+        let mut cfg = config::Config::new();
+        cfg.merge(config::Environment::new().separator("__"))?;
         cfg.try_into()
     }
 }
@@ -79,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
     let mut cfg = Config::from_env().unwrap();
     let pool = cfg.amqp.create_pool(Runtime::Tokio1).unwrap();
-    for i in 1..10usize {
+    for _ in 1..10 {
         let mut connection = pool.get().await?;
         let channel = connection.create_channel().await?;
         channel.basic_publish(
@@ -87,7 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "hello",
             BasicPublishOptions::default(),
             b"hello from deadpool".to_vec(),
-            BasicProperties::default()
+            BasicProperties::default(),
         ).await?;
     }
     Ok(())

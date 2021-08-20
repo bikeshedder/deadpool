@@ -28,17 +28,17 @@ async-trait = { version = "0.1.17", optional = true }
 # `serde` feature
 serde = { version = "1.0", features = ["derive"], optional = true }
 # `rt_async-std_1` feature
-async-std = { version = "1", features = ["unstable"], optional = true }
+async-std = { version = "1.0", features = ["unstable"], optional = true }
 # The dependency of tokio::sync is non-optional. Deadpool depends on
 # `tokio::sync::Semaphore`. No other features of `tokio` are enabled or used
 # unless the `rt_tokio_1` feature is enabled.
-tokio = { version = "1", features = ["sync"] }
+tokio = { version = "1.0", features = ["sync"] }
 
 [dev-dependencies]
-async-std = { version = "1", features = ["attributes"] }
+async-std = { version = "1.0", features = ["attributes"] }
 config = { version = "0.11", default-features = false }
 criterion = "0.3"
-tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "time"] }
+tokio = { version = "1.0", features = ["macros", "rt", "rt-multi-thread", "time"] }
 
 [[bench]]
 name = "unmanaged"
