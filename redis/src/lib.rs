@@ -134,6 +134,10 @@ pub struct Manager {
 
 impl Manager {
     /// Creates a new [`Manager`] from the given `params`.
+    ///
+    /// # Errors
+    ///
+    /// If establishing a new [`Client`] fails.
     pub fn new<T: IntoConnectionInfo>(params: T) -> RedisResult<Self> {
         Ok(Self {
             client: Client::open(params)?,

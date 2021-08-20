@@ -79,7 +79,7 @@ impl Config {
     /// a [`deadpool::managed::Pool`] instance.
     #[must_use]
     pub fn get_pool_config(&self) -> PoolConfig {
-        self.pool.clone().unwrap_or_default()
+        self.pool.unwrap_or_default()
     }
 
     /// Creates a new [`Config`] from the given Redis URL (like

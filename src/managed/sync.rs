@@ -113,7 +113,7 @@ where
             .spawn_blocking(move || {
                 let guard = arc.lock().unwrap();
                 let conn = guard.as_ref().unwrap();
-                f(&conn)
+                f(conn)
             })
             .await
             .map_err(|e| match e {

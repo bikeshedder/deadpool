@@ -62,7 +62,7 @@ impl Config {
     ///
     /// [`RedisError`]: redis::RedisError
     pub fn create_pool(&self, runtime: Runtime) -> Result<Pool, BuildError<rusqlite::Error>> {
-        let manager = Manager::from_config(&self, runtime);
+        let manager = Manager::from_config(self, runtime);
         Pool::builder(manager)
             .config(self.get_pool_config())
             .runtime(runtime)
@@ -73,6 +73,6 @@ impl Config {
     /// a [`deadpool::managed::Pool`] instance.
     #[must_use]
     pub fn get_pool_config(&self) -> PoolConfig {
-        self.pool.clone().unwrap_or_default()
+        self.pool.unwrap_or_default()
     }
 }

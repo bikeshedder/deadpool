@@ -39,6 +39,10 @@ impl Runtime {
     }
 
     /// Runs the given closure on a thread where blocking is acceptable.
+    ///
+    /// # Errors
+    ///
+    /// See [`SpawnBlockingError`] for details.
     #[allow(unused_variables)]
     pub async fn spawn_blocking<F, R>(&self, f: F) -> Result<R, SpawnBlockingError>
     where
@@ -61,6 +65,10 @@ impl Runtime {
     ///
     /// It works similar to [`Runtime::spawn_blocking()`] but doesn't return a
     /// [`Future`] and is meant to be used for background tasks.
+    ///
+    /// # Errors
+    ///
+    /// See [`SpawnBlockingError`] for details.
     #[allow(unused_variables)]
     pub fn spawn_blocking_background<F>(&self, f: F) -> Result<(), SpawnBlockingError>
     where

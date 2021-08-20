@@ -304,7 +304,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     ///
     /// See [`PoolError`] for details.
     pub async fn try_get(&self) -> Result<W, PoolError<M::Error>> {
-        let mut timeouts = self.inner.config.timeouts.clone();
+        let mut timeouts = self.inner.config.timeouts;
         timeouts.wait = Some(Duration::from_secs(0));
         self.timeout_get(&timeouts).await
     }
@@ -336,7 +336,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             })?
         } else {
             apply_timeout(
-                &self.inner.runtime,
+                self.inner.runtime,
                 TimeoutType::Wait,
                 self.inner.config.timeouts.wait,
                 async {
@@ -364,7 +364,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     obj.state = ObjectState::Recycling;
                     obj.obj = Some(inner_obj);
                     match apply_timeout(
-                        &self.inner.runtime,
+                        self.inner.runtime,
                         TimeoutType::Recycle,
                         self.inner.config.timeouts.recycle,
                         self.inner.manager.recycle(&mut obj),
@@ -373,7 +373,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     {
                         Ok(_) => {
                             // Apply post_recycle hooks
-                            for hook in self.inner.hooks.post_recycle.iter() {
+                            for hook in &self.inner.hooks.post_recycle {
                                 hook.post_recycle(&mut obj.obj.as_mut().unwrap())
                                     .await
                                     .map_err(PoolError::PostRecycleHook)?;
@@ -394,7 +394,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     let _ = self.inner.size.fetch_add(1, Ordering::Relaxed);
                     obj.obj = Some(
                         apply_timeout(
-                            &self.inner.runtime,
+                            self.inner.runtime,
                             TimeoutType::Create,
                             self.inner.config.timeouts.create,
                             self.inner.manager.create(),
@@ -402,7 +402,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                         .await?,
                     );
                     // Apply post_create hooks
-                    for hook in self.inner.hooks.post_create.iter() {
+                    for hook in &self.inner.hooks.post_create {
                         hook.post_create(&mut obj.obj.as_mut().unwrap())
                             .await
                             .map_err(PoolError::PostCreateHook)?;
@@ -516,7 +516,7 @@ impl<M: Manager> PoolInner<M> {
 }
 
 async fn apply_timeout<O, E>(
-    runtime: &Option<Runtime>,
+    runtime: Option<Runtime>,
     timeout_type: TimeoutType,
     duration: Option<Duration>,
     future: impl Future<Output = Result<O, impl Into<PoolError<E>>>>,

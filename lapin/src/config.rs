@@ -79,17 +79,13 @@ impl Config {
 
     /// Returns URL which can be used to connect to the database.
     pub fn get_url(&self) -> &str {
-        if let Some(url) = &self.url {
-            url
-        } else {
-            "amqp://127.0.0.1:5672/%2f"
-        }
+        self.url.as_deref().unwrap_or("amqp://127.0.0.1:5672/%2f")
     }
 
     /// Returns [`deadpool::managed::PoolConfig`] which can be used to construct
     /// a [`deadpool::managed::Pool`] instance.
     #[must_use]
     pub fn get_pool_config(&self) -> PoolConfig {
-        self.pool.clone().unwrap_or_default()
+        self.pool.unwrap_or_default()
     }
 }
