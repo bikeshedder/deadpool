@@ -1,4 +1,4 @@
-# Deadpool for Diesel [![Latest Version](https://img.shields.io/crates/v/deadpool-diesel.svg)](https://crates.io/crates/deadpool-diesel)
+# Deadpool for Diesel [![Latest Version](https://img.shields.io/crates/v/deadpool-diesel.svg)](https://crates.io/crates/deadpool-diesel) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.54+](https://img.shields.io/badge/rustc-1.54+-lightgray.svg "Rust 1.54+")](https://blog.rust-lang.org/2021/07/29/Rust-1.54.0.html)
 
 Deadpool is a dead simple async pool for connections and objects
 of any type.
@@ -15,6 +15,7 @@ manager for [`diesel`](https://crates.io/crates/diesel) connections.
 | `mysql` | Enable `mysql` feature in `diesel` crate | `diesel/mysql` | no |
 | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
 | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
+| `serde` | Enable support for [serde](https://crates.io/crates/serde) crate | `deadpool/serde` | no |
 
 ## Example
 

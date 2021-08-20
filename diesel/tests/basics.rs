@@ -1,69 +1,64 @@
-#[cfg(test)]
-mod tests {
-    use tokio::sync::mpsc;
+#![cfg(feature = "sqlite")]
 
-    use deadpool::managed::Pool;
-    use deadpool_diesel::*;
+use tokio::sync::mpsc;
 
-    // These type aliases are repeated here as there is no
-    // way to enable a crate local feature for the test profile:
-    // https://github.com/rust-lang/cargo/issues/2911
-    type SqliteManager = Manager<diesel::SqliteConnection>;
-    type SqlitePool = Pool<SqliteManager>;
+use deadpool_diesel::{Manager, Pool, Runtime};
 
-    fn create_pool(max_size: usize) -> SqlitePool {
-        let manager = SqliteManager::new(":memory:", Runtime::Tokio1);
-        let pool = SqlitePool::builder(manager)
-            .max_size(max_size)
-            .build()
-            .unwrap();
-        pool
-    }
+type SqliteManager = Manager<diesel::SqliteConnection>;
+type SqlitePool = Pool<SqliteManager>;
 
-    #[tokio::test]
-    async fn establish_basic_connection() {
-        let pool = create_pool(2);
+fn create_pool(max_size: usize) -> SqlitePool {
+    let manager = SqliteManager::new(":memory:", Runtime::Tokio1);
+    let pool = SqlitePool::builder(manager)
+        .max_size(max_size)
+        .build()
+        .unwrap();
+    pool
+}
 
-        let (s1, mut r1) = mpsc::channel(1);
-        let (s2, mut r2) = mpsc::channel(1);
+#[tokio::test]
+async fn establish_basic_connection() {
+    let pool = create_pool(2);
 
-        let pool1 = pool.clone();
-        let t1 = tokio::spawn(async move {
-            let conn = pool1.get().await.unwrap();
-            s1.send(()).await.unwrap();
-            r2.recv().await.unwrap();
-            drop(conn)
-        });
+    let (s1, mut r1) = mpsc::channel(1);
+    let (s2, mut r2) = mpsc::channel(1);
 
-        let pool2 = pool.clone();
-        let t2 = tokio::spawn(async move {
-            let conn = pool2.get().await.unwrap();
-            s2.send(()).await.unwrap();
-            r1.recv().await.unwrap();
-            drop(conn)
-        });
+    let pool1 = pool.clone();
+    let t1 = tokio::spawn(async move {
+        let conn = pool1.get().await.unwrap();
+        s1.send(()).await.unwrap();
+        r2.recv().await.unwrap();
+        drop(conn)
+    });
 
-        t1.await.unwrap();
-        t2.await.unwrap();
+    let pool2 = pool.clone();
+    let t2 = tokio::spawn(async move {
+        let conn = pool2.get().await.unwrap();
+        s2.send(()).await.unwrap();
+        r1.recv().await.unwrap();
+        drop(conn)
+    });
 
-        pool.get().await.unwrap();
-    }
+    t1.await.unwrap();
+    t2.await.unwrap();
 
-    #[tokio::test]
-    async fn pooled_connection_impls_connection() {
-        use diesel::prelude::*;
-        use diesel::select;
-        use diesel::sql_types::Text;
+    drop(pool.get().await.unwrap());
+}
 
-        let pool = create_pool(1);
-        let conn = pool.get().await.unwrap();
-        let result = conn
-            .interact(|conn| {
-                let query = select("foo".into_sql::<Text>());
-                query.get_result::<String>(conn).map_err(Into::into)
-            })
-            .await
-            .unwrap();
-        assert_eq!("foo", &result);
-    }
+#[tokio::test]
+async fn pooled_connection_impls_connection() {
+    use diesel::prelude::*;
+    use diesel::select;
+    use diesel::sql_types::Text;
+
+    let pool = create_pool(1);
+    let conn = pool.get().await.unwrap();
+    let result = conn
+        .interact(|conn| {
+            let query = select("foo".into_sql::<Text>());
+            query.get_result::<String>(conn).map_err(Into::into)
+        })
+        .await
+        .unwrap();
+    assert_eq!("foo", &result);
 }

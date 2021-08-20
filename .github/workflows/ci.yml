@@ -89,7 +89,7 @@ jobs:
       fail-fast: false
       matrix:
         crate:
-          #- diesel
+          - diesel
           #- lapin
           #- postgres
           - redis
@@ -98,6 +98,13 @@ jobs:
           - rt_tokio_1
           - rt_async-std_1
           - serde
+        include:  # additional inclusions for matrix
+          - crate: diesel
+            feature: mysql
+          - crate: diesel
+            feature: postgres
+          - crate: diesel
+            feature: sqlite
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -145,7 +152,7 @@ jobs:
       matrix:
         crate:
           - deadpool
-          #- deadpool-diesel
+          - deadpool-diesel
           #- deadpool-lapin
           #- deadpool-postgres
           - deadpool-redis
@@ -211,7 +218,7 @@ jobs:
       matrix:
         crate:
           - deadpool
-          #- deadpool-diesel
+          - deadpool-diesel
           #- deadpool-lapin
           #- deadpool-postgres
           - deadpool-redis
