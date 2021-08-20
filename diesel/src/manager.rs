@@ -53,7 +53,7 @@ where
 
     async fn create(&self) -> Result<Self::Type, Self::Error> {
         let database_url = self.database_url.clone();
-        SyncWrapper::new(self.runtime.clone(), move || {
+        SyncWrapper::new(self.runtime, move || {
             C::establish(&database_url).map_err(Error::Connection)
         })
         .await

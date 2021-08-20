@@ -2,14 +2,14 @@ use deadpool_sqlite::{Config, InteractError, Pool, Runtime};
 
 fn create_pool() -> Pool {
     let cfg = Config {
-        path: String::from("db.sqlite3"),
+        path: "db.sqlite3".into(),
         pool: None,
     };
     cfg.create_pool(Runtime::Tokio1).unwrap()
 }
 
 #[tokio::test]
-async fn test_basic() {
+async fn basic() {
     let pool = create_pool();
     let conn = pool.get().await.unwrap();
     let result: i64 = conn
@@ -25,7 +25,7 @@ async fn test_basic() {
 }
 
 #[tokio::test]
-async fn test_panic() {
+async fn panic() {
     let pool = create_pool();
     {
         let conn = pool.get().await.unwrap();
@@ -36,8 +36,7 @@ async fn test_panic() {
             .await;
         assert!(matches!(result, Err(InteractError::Panic(_))))
     }
-    // The previous callback panicked. The pool should
-    // recover from this.
+    // The previous callback panicked. The pool should recover from this.
     let conn = pool.get().await.unwrap();
     let result: i64 = conn
         .interact(|conn| {

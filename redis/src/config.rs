@@ -64,7 +64,7 @@ impl Config {
             (None, None) => crate::Manager::new(ConnectionInfo::default())?,
             (Some(_), Some(_)) => {
                 return Err(BuildError::Config(
-                    "url and connection must not be specified at the same time.".to_owned(),
+                    "url and connection must not be specified at the same time.".into(),
                 ))
             }
         };

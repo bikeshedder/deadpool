@@ -1,78 +1,54 @@
-//! # Deadpool for SQLite [![Latest Version](https://img.shields.io/crates/v/deadpool-sqlite.svg)](https://crates.io/crates/deadpool-sqlite)
-//!
-//! Deadpool is a dead simple async pool for connections and objects
-//! of any type.
-//!
-//! This crate implements a [`deadpool`](https://crates.io/crates/deadpool)
-//! manager for [`rusqlite`](https://crates.io/crates/rusqlite)
-//! and provides a wrapper that ensures correct use of the connection
-//! inside a separate thread.
-//!
-//! ## Features
-//!
-//! | Feature | Description | Extra dependencies | Default |
-//! | ------- | ----------- | ------------------ | ------- |
-//! | `config` | Enable support for [config](https://crates.io/crates/config) crate | `config`, `serde/derive` | yes |
-//! | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
-//! | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
-//!
-//! ## Example
-//!
-//! ```rust
-//! use deadpool_sqlite::{Config, Runtime};
-//!
-//! #[tokio::main]
-//! async fn main() {
-//!     let mut cfg = Config::new("db.sqlite3");
-//!     let pool = cfg.create_pool(Runtime::Tokio1).unwrap();
-//!     let conn = pool.get().await.unwrap();
-//!     let result: i64 = conn
-//!         .interact(|conn| {
-//!             let mut stmt = conn.prepare("SELECT 1")?;
-//!             let mut rows = stmt.query([])?;
-//!             let row = rows.next()?.unwrap();
-//!             row.get(0)
-//!         })
-//!         .await
-//!         .unwrap();
-//!     assert_eq!(result, 1);
-//! }
-//! ```
-//!
-//! ## License
-//!
-//! Licensed under either of
-//!
-//! - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
-//! - MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
-//!
-//! at your option.
-#![warn(missing_docs, unreachable_pub)]
-
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering;
-
-use deadpool::managed::sync::SyncWrapper;
-use deadpool::managed::RecycleError;
-use rusqlite::Error;
+#![doc = include_str!("../README.md")]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![deny(
+    nonstandard_style,
+    rust_2018_idioms,
+    rustdoc::broken_intra_doc_links,
+    rustdoc::private_intra_doc_links
+)]
+#![forbid(non_ascii_idents, unsafe_code)]
+#![warn(
+    deprecated_in_future,
+    missing_copy_implementations,
+    missing_debug_implementations,
+    missing_docs,
+    unreachable_pub,
+    unused_import_braces,
+    unused_labels,
+    unused_lifetimes,
+    unused_qualifications,
+    unused_results
+)]
 
 mod config;
-pub use config::Config;
 
-pub use deadpool::managed::sync::InteractError;
-pub use deadpool::managed::PoolConfig;
-pub use deadpool::Runtime;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
-/// A type alias for using `deadpool::Pool` with `rusqlite`
-pub type Pool = deadpool::managed::Pool<Manager>;
+use deadpool::{
+    async_trait,
+    managed::{self, sync::SyncWrapper, RecycleError},
+};
 
-/// A type alias for using `deadpool::PoolError` with `rusqlite`
-pub type PoolError = deadpool::managed::PoolError<Error>;
+pub use deadpool::{
+    managed::{sync::InteractError, PoolConfig},
+    Runtime,
+};
 
-/// A type alias for using `deadpool::Object` with `rusqlite`
-pub type Connection = deadpool::managed::Object<Manager>;
+pub use self::config::Config;
 
-/// The manager for creating and recyling SQLite connections
+/// Type alias for using [`deadpool::managed::Pool`] with [`rusqlite`].
+pub type Pool = managed::Pool<Manager>;
+
+/// Type alias for using [`deadpool::managed::PoolError`] with [`rusqlite`].
+pub type PoolError = managed::PoolError<rusqlite::Error>;
+
+/// Type alias for using [`deadpool::managed::Object`] with [`rusqlite`].
+pub type Connection = managed::Object<Manager>;
+
+/// [`Manager`] for creating and recycling SQLite [`Connection`]s.
+///
+/// [`Manager`]: managed::Manager
+#[derive(Debug)]
 pub struct Manager {
     config: Config,
     recycle_count: AtomicUsize,
@@ -80,7 +56,9 @@ pub struct Manager {
 }
 
 impl Manager {
-    /// Create manager using a `deadpool_sqlite::Config`
+    /// Creates a new [`Manager`] using the given [`Config`] backed by the
+    /// specified [`Runtime`].
+    #[must_use]
     pub fn from_config(config: &Config, runtime: Runtime) -> Self {
         Self {
             config: config.clone(),
@@ -90,26 +68,20 @@ impl Manager {
     }
 }
 
-#[async_trait::async_trait]
-impl deadpool::managed::Manager for Manager {
+#[async_trait]
+impl managed::Manager for Manager {
     type Type = SyncWrapper<rusqlite::Connection, rusqlite::Error>;
-    type Error = Error;
+    type Error = rusqlite::Error;
 
     async fn create(&self) -> Result<Self::Type, Self::Error> {
         let path = self.config.path.clone();
-        SyncWrapper::new(self.runtime.clone(), move || {
-            rusqlite::Connection::open(path)
-        })
-        .await
+        SyncWrapper::new(self.runtime, move || rusqlite::Connection::open(path)).await
     }
 
-    async fn recycle(
-        &self,
-        conn: &mut Self::Type,
-    ) -> deadpool::managed::RecycleResult<Self::Error> {
+    async fn recycle(&self, conn: &mut Self::Type) -> managed::RecycleResult<Self::Error> {
         if conn.is_mutex_poisoned() {
             return Err(RecycleError::Message(
-                "Mutex is poisoned. Connection is considered unusable.".to_string(),
+                "Mutex is poisoned. Connection is considered unusable.".into(),
             ));
         }
         let recycle_count = self.recycle_count.fetch_add(1, Ordering::Relaxed);
@@ -120,9 +92,7 @@ impl deadpool::managed::Manager for Manager {
         if n == recycle_count {
             Ok(())
         } else {
-            Err(RecycleError::Message(String::from(
-                "Recycle count mismatch",
-            )))
+            Err(RecycleError::Message("Recycle count mismatch".into()))
         }
     }
 }

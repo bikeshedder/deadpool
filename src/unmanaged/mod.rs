@@ -213,7 +213,7 @@ impl<T> Pool<T> {
     /// See [`PoolError`] for details.
     pub async fn timeout_get(&self, timeout: Option<Duration>) -> Result<Object<T>, PoolError> {
         let inner = self.inner.as_ref();
-        let permit = match (timeout, inner.config.runtime.clone()) {
+        let permit = match (timeout, inner.config.runtime) {
             (None, _) => inner
                 .semaphore
                 .acquire()
