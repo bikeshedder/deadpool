@@ -24,7 +24,7 @@ use deadpool_lapin::lapin::{
     options::BasicPublishOptions,
     BasicProperties,
 };
-use tokio_amqp::LapinTokioExt;
+use tokio_amqp::LapinTokioExt as _;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

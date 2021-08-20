@@ -22,8 +22,7 @@
 
 mod config;
 
-use async_trait::async_trait;
-use deadpool::managed;
+use deadpool::{async_trait, managed};
 use lapin::{ConnectionProperties, Error};
 
 pub use deadpool::{managed::PoolConfig, Runtime};

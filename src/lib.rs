@@ -20,6 +20,8 @@
     unused_results
 )]
 
+mod runtime;
+
 #[cfg(feature = "managed")]
 #[cfg_attr(docsrs, doc(cfg(feature = "managed")))]
 pub mod managed;
@@ -28,7 +30,10 @@ pub mod managed;
 #[cfg_attr(docsrs, doc(cfg(feature = "unmanaged")))]
 pub mod unmanaged;
 
-mod runtime;
+// For handy re-usage in integration crates.
+#[cfg(feature = "managed")]
+#[doc(hidden)]
+pub use async_trait::async_trait;
 
 pub use self::runtime::Runtime;
 

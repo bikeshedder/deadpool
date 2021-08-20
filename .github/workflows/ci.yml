@@ -91,7 +91,7 @@ jobs:
         crate:
           - diesel
           - lapin
-          #- postgres
+          - postgres
           - redis
           #- sqlite
         feature:
@@ -130,7 +130,7 @@ jobs:
           - { crate: deadpool, msrv: '1.54.0' }
           - { crate: deadpool-diesel, msrv: '1.54.0' }
           - { crate: deadpool-lapin, msrv: '1.54.0' }
-          #- { crate: deadpool-postgres, msrv: '1.54.0' }
+          - { crate: deadpool-postgres, msrv: '1.54.0' }
           - { crate: deadpool-redis, msrv: '1.54.0' }
           #- { crate: deadpool-sqlite, msrv: '1.54.0' }
     runs-on: ubuntu-latest
@@ -161,7 +161,7 @@ jobs:
           - deadpool
           - deadpool-diesel
           - deadpool-lapin
-          #- deadpool-postgres
+          - deadpool-postgres
           - deadpool-redis
           #- deadpool-sqlite
     runs-on: ubuntu-latest
@@ -227,7 +227,7 @@ jobs:
           - deadpool
           - deadpool-diesel
           - deadpool-lapin
-          #- deadpool-postgres
+          - deadpool-postgres
           - deadpool-redis
           #- deadpool-sqlite
     runs-on: ubuntu-latest

@@ -1,35 +1,33 @@
 [package]
 name = "deadpool-postgres"
-version = "0.9.0"
+version = "0.10.0-pre"
+edition = "2018"
+resolver = "2"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for tokio-postgres"
 keywords = ["async", "database", "pool", "postgres"]
 license = "MIT/Apache-2.0"
 repository = "https://github.com/bikeshedder/deadpool"
 readme = "README.md"
-edition = "2018"
-resolver = "2"
 
 [package.metadata.docs.rs]
 all-features = true
 
-[dependencies]
-deadpool = { path = "../", version = "0.9.0-pre", default-features = false, features = ["managed"] }
-async-trait = "0.1.17"
-futures = "0.3.1"
-log = "0.4"
-tokio = { version = "1", features = ["rt"] }
-tokio-postgres = "0.7.2"
-# only required when using the config feature
-config-crate = { package = "config", version = "0.11", default-features = false, optional = true }
-serde = { version = "1.0", features = ["derive"], optional = true}
-
-[dev-dependencies]
-dotenv = "0.15.0"
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-
 [features]
-default = ["config", "rt_tokio_1"]
-config = ["config-crate", "serde", "deadpool/serde"]
+default = ["rt_tokio_1"]
 rt_tokio_1 = ["deadpool/rt_tokio_1"]
 rt_async-std_1 = ["deadpool/rt_async-std_1"]
+serde = ["deadpool/serde", "serde_1"]
+
+[dependencies]
+deadpool = { path = "../", version = "0.9.0-pre", default-features = false, features = ["managed"] }
+log = "0.4"
+serde_1 = { package = "serde", version = "1.0", features = ["derive"], optional = true }
+tokio = { version = "1", features = ["rt"] }
+tokio-postgres = "0.7.2"
+
+[dev-dependencies]
+config = { version = "0.11", default-features = false }
+dotenv = "0.15.0"
+futures = "0.3.1"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }

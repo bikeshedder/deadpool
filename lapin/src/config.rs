@@ -1,8 +1,8 @@
 #[cfg(feature = "rt_async-std_1")]
-use async_amqp::LapinAsyncStdExt;
+use async_amqp::LapinAsyncStdExt as _;
 use deadpool::{managed, Runtime};
 #[cfg(feature = "rt_tokio_1")]
-use tokio_amqp::LapinTokioExt;
+use tokio_amqp::LapinTokioExt as _;
 
 use crate::{Manager, Pool, PoolConfig};
 
