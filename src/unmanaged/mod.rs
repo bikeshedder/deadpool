@@ -160,7 +160,7 @@ impl<T> Pool<T> {
     pub fn from_config(config: &PoolConfig) -> Self {
         Self {
             inner: Arc::new(PoolInner {
-                config: config.clone(),
+                config: *config,
                 queue: Mutex::new(Vec::with_capacity(config.max_size)),
                 size: AtomicUsize::new(0),
                 size_semaphore: Semaphore::new(config.max_size),

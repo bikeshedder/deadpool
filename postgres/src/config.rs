@@ -122,11 +122,7 @@ impl Config {
     /// See [`BuildError`] and [`tokio_postgres::Error`] for details.
     ///
     /// [`BuildError`]: managed::BuildError
-    pub fn create_pool<T: MakeTlsConnect<Socket>>(
-        &self,
-        runtime: Runtime,
-        tls: T,
-    ) -> Result<Pool, BuildError>
+    pub fn create_pool<T>(&self, runtime: Runtime, tls: T) -> Result<Pool, BuildError>
     where
         T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
         T::Stream: Sync + Send,
@@ -228,7 +224,7 @@ impl Config {
     /// a [`deadpool::managed::Pool`] instance.
     #[must_use]
     pub fn get_pool_config(&self) -> PoolConfig {
-        self.pool.clone().unwrap_or_default()
+        self.pool.unwrap_or_default()
     }
 }
 
@@ -312,7 +308,7 @@ impl RecyclingMethod {
             Self::Fast => None,
             Self::Verified => Some(""),
             Self::Clean => Some(Self::DISCARD_SQL),
-            Self::Custom(sql) => Some(&sql),
+            Self::Custom(sql) => Some(sql),
         }
     }
 }

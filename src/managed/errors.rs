@@ -117,8 +117,7 @@ impl<E: std::error::Error + 'static> std::error::Error for PoolError<E> {
         match self {
             Self::Timeout(_) | Self::Closed | Self::NoRuntimeSpecified => None,
             Self::Backend(e) => Some(e),
-            Self::PostCreateHook(e) => Some(e),
-            Self::PostRecycleHook(e) => Some(e),
+            Self::PostCreateHook(e) | Self::PostRecycleHook(e) => Some(e),
         }
     }
 }

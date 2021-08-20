@@ -183,12 +183,12 @@ pub struct StatementCaches {
 
 impl StatementCaches {
     fn attach(&self, cache: &Arc<StatementCache>) {
-        let cache = Arc::downgrade(&cache);
-        self.caches.lock().unwrap().push(cache)
+        let cache = Arc::downgrade(cache);
+        self.caches.lock().unwrap().push(cache);
     }
 
     fn detach(&self, cache: &Arc<StatementCache>) {
-        let cache = Arc::downgrade(&cache);
+        let cache = Arc::downgrade(cache);
         self.caches.lock().unwrap().retain(|sc| !sc.ptr_eq(&cache));
     }
 
@@ -297,11 +297,7 @@ impl StatementCache {
             query: Cow::Borrowed(query),
             types: Cow::Borrowed(types),
         };
-        self.map
-            .read()
-            .unwrap()
-            .get(&key)
-            .map(|stmt| stmt.to_owned())
+        self.map.read().unwrap().get(&key).map(ToOwned::to_owned)
     }
 
     /// Inserts a [`Statement`] into this [`StatementCache`].
@@ -358,6 +354,7 @@ pub struct ClientWrapper {
 impl ClientWrapper {
     /// Create a new [`ClientWrapper`] instance using the given
     /// [`tokio_postgres::Client`].
+    #[must_use]
     pub fn new(client: PgClient) -> Self {
         Self {
             client,
@@ -432,7 +429,7 @@ impl<'a> Transaction<'a> {
     /// Like [`tokio_postgres::Transaction::prepare()`], but uses an existing
     /// [`Statement`] from the [`StatementCache`] if possible.
     pub async fn prepare_cached(&self, query: &str) -> Result<Statement, Error> {
-        self.statement_cache.prepare(&self.client(), query).await
+        self.statement_cache.prepare(self.client(), query).await
     }
 
     /// Like [`tokio_postgres::Transaction::prepare_typed()`], but uses an
@@ -443,7 +440,7 @@ impl<'a> Transaction<'a> {
         types: &[Type],
     ) -> Result<Statement, Error> {
         self.statement_cache
-            .prepare_typed(&self.client(), query, types)
+            .prepare_typed(self.client(), query, types)
             .await
     }
 
@@ -498,6 +495,7 @@ impl<'a> DerefMut for Transaction<'a> {
 /// Wrapper around [`tokio_postgres::TransactionBuilder`] with a
 /// [`StatementCache`] from the [`Client`] object it was created by.
 #[allow(missing_debug_implementations)] // due to `StatementCache`
+#[must_use = "builder does nothing itself, use `.start()` to use it"]
 pub struct TransactionBuilder<'a> {
     /// Original [`PgTransactionBuilder`].
     builder: PgTransactionBuilder<'a>,
