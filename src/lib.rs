@@ -35,7 +35,7 @@ pub mod unmanaged;
 #[doc(hidden)]
 pub use async_trait::async_trait;
 
-pub use self::runtime::Runtime;
+pub use self::runtime::{Runtime, SpawnBlockingError};
 
 /// The current pool status.
 #[derive(Clone, Copy, Debug)]
