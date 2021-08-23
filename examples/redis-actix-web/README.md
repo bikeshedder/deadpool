@@ -1,4 +1,4 @@
-# deadpool-redis + actix-web example
+# `deadpool-redis` + `actix-web` example
 
 This example combines `deadpool-redis` with a `actix-web` webservice to
 implement a simple API service that responds to a PING Redis query.

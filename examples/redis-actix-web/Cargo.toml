@@ -1,10 +1,12 @@
 [package]
-name = "deadpool-example-redis-actix-web"
-version = "0.1.0"
-authors = ["Tomas Hromada <tomas@hey.com>"]
+name = "example-redis-actix-web"
+version = "0.0.0"
 edition = "2018"
+resolver = "2"
+authors = ["Tomas Hromada <tomas@hey.com>"]
+publish = false
 
 [dependencies]
-actix-web = "4.0.0-beta.1"
-deadpool-redis = { version = "0.7", path = "../../redis" }
+actix-web = "4.0.0-beta.8"
+deadpool-redis = { version = "0.10.0-pre", path = "../../redis" }
 redis = { version = "0.19", features = ["tokio-comp"] }

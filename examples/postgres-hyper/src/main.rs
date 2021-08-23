@@ -1,8 +1,7 @@
-use std::fmt;
 use std::net::SocketAddr;
 
 use config::ConfigError;
-use deadpool_postgres::{Client, Pool, PoolError};
+use deadpool_postgres::{Client, Pool, PoolError, Runtime};
 use dotenv::dotenv;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{header, Body, Method, Request, Response, Server, StatusCode};
@@ -17,37 +16,22 @@ struct Config {
 
 impl Config {
     fn from_env() -> Result<Self, ConfigError> {
-        let mut cfg = ::config::Config::new();
-        cfg.merge(::config::Environment::new().separator("__"))?;
+        let mut cfg = config::Config::new();
+        cfg.merge(config::Environment::new().separator("__"))?;
         cfg.try_into()
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct Event {
     id: Uuid,
     title: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 enum Error {
-    PoolError(PoolError),
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::PoolError(err) => write!(f, "{}", err),
-        }
-    }
-}
-
-impl std::error::Error for Error {}
-
-impl From<PoolError> for Error {
-    fn from(error: PoolError) -> Self {
-        Self::PoolError(error)
-    }
+    #[error("{0}")]
+    PoolError(#[from] PoolError),
 }
 
 async fn event_list(pool: &Pool) -> Result<Vec<Event>, PoolError> {
@@ -89,7 +73,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         dotenv().ok();
         let config = Config::from_env()?;
         let addr: SocketAddr = config.listen.parse()?;
-        let pool = config.pg.create_pool(tokio_postgres::NoTls)?;
+        let pool = config
+            .pg
+            .create_pool(Runtime::Tokio1, tokio_postgres::NoTls)?;
 
         let make_svc = make_service_fn(|_conn| {
             let pool = pool.clone();
