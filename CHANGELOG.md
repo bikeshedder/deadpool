@@ -2,6 +2,8 @@
 
 ## v0.9.0 (unreleased)
 
+* __Breaking:__ Replace `config` feature with `serde` (opted out by default)
+* Fix `std::error::Error::source` implementations for library errors
 * Add `Runtime::spawn_blocking` method
 * Add `Runtime::spawn_blocking_background` method
 * Remove `Runtime::None` in favor of `Option<Runtime>`
