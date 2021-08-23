@@ -22,7 +22,9 @@ pub type BuildError = managed::BuildError<lapin::Error>;
 /// AMQP__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
-/// # #[derive(serde_1::Deserialize)]
+/// # use serde_1 as serde;
+/// #
+/// #[derive(serde::Deserialize)]
 /// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     amqp: deadpool_lapin::Config,

@@ -52,11 +52,11 @@ PG__DBNAME=deadpool
 ```rust
 use deadpool_postgres::{Manager, Pool, Runtime};
 use dotenv::dotenv;
-use serde_1::Deserialize;
+# use serde_1 as serde;
 use tokio_postgres::NoTls;
 
-#[derive(Debug, Deserialize)]
-#[serde(crate = "serde_1")]
+#[derive(Debug, serde::Deserialize)]
+# #[serde(crate = "serde_1")]
 struct Config {
     pg: deadpool_postgres::Config
 }

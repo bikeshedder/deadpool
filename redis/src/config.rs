@@ -19,7 +19,9 @@ use crate::{Pool, PoolConfig, RedisResult};
 /// REDIS__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
-/// # #[derive(serde_1::Deserialize)]
+/// # use serde_1 as serde;
+/// #
+/// #[derive(serde::Deserialize)]
 /// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     redis: deadpool_redis::Config,

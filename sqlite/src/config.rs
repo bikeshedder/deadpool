@@ -20,7 +20,9 @@ use crate::{Manager, Pool};
 /// SQLITE__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
-/// # #[derive(serde_1::Deserialize)]
+/// # use serde_1 as serde;
+/// #
+/// #[derive(serde::Deserialize)]
 /// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     sqlite: deadpool_sqlite::Config,
