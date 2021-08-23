@@ -1,6 +1,6 @@
 use actix_web::{error, get, web, App, HttpResponse, HttpServer};
 use config::ConfigError;
-use deadpool_postgres::{Client, Pool, PoolError};
+use deadpool_postgres::{Client, Pool, PoolError, Runtime};
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -13,28 +13,22 @@ struct Config {
 
 impl Config {
     fn from_env() -> Result<Self, ConfigError> {
-        let mut cfg = ::config::Config::new();
-        cfg.merge(::config::Environment::new().separator("__"))?;
+        let mut cfg = config::Config::new();
+        cfg.merge(config::Environment::new().separator("__"))?;
         cfg.try_into()
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize, Serialize)]
 struct Event {
     id: Uuid,
     title: String,
 }
 
-#[derive(failure::Fail, Debug)]
+#[derive(Debug, thiserror::Error)]
 enum Error {
-    #[fail(display = "An internal error occured. Please try again later.")]
-    PoolError(PoolError),
-}
-
-impl From<PoolError> for Error {
-    fn from(error: PoolError) -> Self {
-        Self::PoolError(error)
-    }
+    #[error("An internal error occurred. Please try again later.")]
+    PoolError(#[from] PoolError),
 }
 
 impl error::ResponseError for Error {}
@@ -62,10 +56,17 @@ async fn index(db_pool: web::Data<Pool>) -> Result<HttpResponse, Error> {
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     let config = Config::from_env().unwrap();
-    let pool = config.pg.create_pool(tokio_postgres::NoTls).unwrap();
-    let server = HttpServer::new(move || App::new().data(pool.clone()).service(index))
-        .bind(&config.listen)?
-        .run();
+    let pool = config
+        .pg
+        .create_pool(Runtime::Tokio1, tokio_postgres::NoTls)
+        .unwrap();
+    let server = HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(pool.clone()))
+            .service(index)
+    })
+    .bind(&config.listen)?
+    .run();
     println!("Server running at http://{}/", &config.listen);
     println!(
         "Try the following URLs: http://{}/v1.0/event.list",

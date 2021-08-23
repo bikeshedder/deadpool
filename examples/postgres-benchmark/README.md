@@ -1,4 +1,4 @@
-# deadpool-postgres benchmark
+# `deadpool-postgres` benchmark
 
 This example compares 16,000 queries run with 16 workers in
 parallel. The first implementation creates 16.000 separate

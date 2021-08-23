@@ -1,7 +1,9 @@
 use std::time::{Duration, Instant};
 
+use deadpool_postgres::Runtime;
 use dotenv::dotenv;
 use serde::Deserialize;
+use tokio::sync::mpsc;
 
 const WORKERS: usize = 16;
 const ITERATIONS: usize = 1000;
@@ -13,9 +15,9 @@ struct Config {
 }
 
 impl Config {
-    pub fn from_env() -> Result<Self, ::config::ConfigError> {
-        let mut cfg = ::config::Config::new();
-        cfg.merge(::config::Environment::new().separator("__"))?;
+    pub fn from_env() -> Result<Self, config::ConfigError> {
+        let mut cfg = config::Config::new();
+        cfg.merge(config::Environment::new().separator("__"))?;
         cfg.try_into()
     }
 }
@@ -23,15 +25,15 @@ impl Config {
 async fn without_pool(config: &Config) -> Duration {
     let pg_config = config.pg.get_pg_config().unwrap();
     let now = Instant::now();
-    let (tx, mut rx) = tokio::sync::mpsc::channel::<usize>(16);
-    for i in 0usize..WORKERS {
+    let (tx, mut rx) = mpsc::channel::<usize>(16);
+    for i in 0..WORKERS {
         let tx = tx.clone();
         let pg_config = pg_config.clone();
         tokio::spawn(async move {
             for _ in 0..ITERATIONS {
                 let (client, connection) = pg_config.connect(tokio_postgres::NoTls).await.unwrap();
                 tokio::spawn(connection);
-                let stmt = client.prepare_cached("SELECT 1 + 2").await.unwrap();
+                let stmt = client.prepare("SELECT 1 + 2").await.unwrap();
                 let rows = client.query(&stmt, &[]).await.unwrap();
                 let value: i32 = rows[0].get(0);
                 assert_eq!(value, 3);
@@ -46,9 +48,12 @@ async fn without_pool(config: &Config) -> Duration {
 }
 
 async fn with_deadpool(config: &Config) -> Duration {
-    let pool = config.pg.create_pool(tokio_postgres::NoTls).unwrap();
+    let pool = config
+        .pg
+        .create_pool(Runtime::Tokio1, tokio_postgres::NoTls)
+        .unwrap();
     let now = Instant::now();
-    let (tx, mut rx) = tokio::sync::mpsc::channel::<usize>(16);
+    let (tx, mut rx) = mpsc::channel::<usize>(16);
     for i in 0..WORKERS {
         let pool = pool.clone();
         let tx = tx.clone();
@@ -63,7 +68,7 @@ async fn with_deadpool(config: &Config) -> Duration {
             tx.send(i).await.unwrap();
         });
     }
-    for _ in 0usize..WORKERS {
+    for _ in 0..WORKERS {
         rx.recv().await.unwrap();
     }
     now.elapsed()

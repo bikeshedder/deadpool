@@ -1,4 +1,4 @@
-# deadpool-postgres + hyper example
+# `deadpool-postgres` + `hyper` example
 
 This example combines `deadpool-postgres` with a `hyper` webservice to
 implement a simple API service that responds with JSON read from
