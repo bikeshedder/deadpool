@@ -2,7 +2,8 @@
 
 ## v0.9.0 (unreleased)
 
-* Remove unused `futures` dependency
+* __Breaking:__ Replace `config` feature with `serde` (opted out by default)
+* Remove unused `futures` and `log` dependencies
 * Update `deadpool` to `0.9`
 
 ## v0.8.0

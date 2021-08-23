@@ -2,9 +2,12 @@
 
 ## v0.9.0 (unreleased)
 
+* __Breaking:__ Replace `config` feature with `serde` (opted out by default)
+* Fix `std::error::Error::source` implementations for library errors
 * Remove `deadpool_redis::Connection` type alias
 * Rename `deadpool_redis::ConnectionWrapper` to `Connection`
 * Update `redis` dependency to version `0.21`
+* Remove unused `log` dependency
 * Add `Config::from_url` method
 
 ## v0.8.1

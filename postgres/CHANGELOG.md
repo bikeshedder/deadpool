@@ -2,8 +2,10 @@
 
 ## v0.10.0 (unreleased)
 
+* __Breaking:__ Replace `config` feature with `serde` (opted out by default)
 * Re-export `deadpool::managed::Timeouts`
 * Add `Runtime` parameter to `Config::create_pool` method
+* Remove redundant `futures` dependency
 
 ## v0.9.0
 
