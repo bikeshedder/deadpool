@@ -46,10 +46,10 @@ async fn main() {
 ```rust
 use deadpool_redis::{redis::{cmd, FromRedisValue}, Runtime};
 use dotenv::dotenv;
-use serde_1::Deserialize;
+# use serde_1 as serde;
 
-#[derive(Debug, Deserialize)]
-#[serde(crate = "serde_1")]
+#[derive(Debug, serde::Deserialize)]
+# #[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
     redis: deadpool_redis::Config

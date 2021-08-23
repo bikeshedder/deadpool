@@ -36,7 +36,9 @@ pub type BuildError = managed::BuildError<tokio_postgres::Error>;
 /// PG__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
-/// # #[derive(serde_1::Deserialize)]
+/// # use serde_1 as serde;
+/// #
+/// #[derive(serde::Deserialize)]
 /// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     pg: deadpool_postgres::Config,
