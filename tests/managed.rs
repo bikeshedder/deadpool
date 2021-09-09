@@ -162,3 +162,26 @@ async fn object_take() {
     assert_eq!(status.size, 2);
     assert_eq!(status.available, 2);
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn get_pooled() {
+    let mgr = Manager {};
+    let pool = Pool::builder(mgr).max_size(2).build().unwrap();
+    assert_eq!(pool.get_pooled().len(), 0);
+    let obj0 = pool.get().await.unwrap();
+    assert_eq!(pool.get_pooled().len(), 0);
+    let obj1 = pool.get().await.unwrap();
+    assert_eq!(pool.get_pooled().len(), 0);
+    drop(obj0);
+    assert_eq!(pool.get_pooled().len(), 1);
+    drop(obj1);
+    assert_eq!(pool.get_pooled().len(), 2);
+    // remove all objects from the pool
+    assert_eq!(pool.status().available, 2);
+    let _ = pool
+        .get_pooled()
+        .into_iter()
+        .map(Object::take)
+        .collect::<Vec<_>>();
+    assert_eq!(pool.status().available, 0);
+}

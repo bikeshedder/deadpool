@@ -9,6 +9,7 @@
 * Remove `Runtime::None` in favor of `Option<Runtime>`
 * Remove `Pool::new` method
 * Add `Pool::builder` method and `PoolBuilder` struct
+* Add `Pool::get_pooled` method
 
 ## v0.8.2
 

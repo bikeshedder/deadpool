@@ -448,6 +448,71 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     pub fn manager(&self) -> &M {
         &*self.inner.manager
     }
+
+    /// Returns the currently pooled objects.
+    ///
+    /// Objects returned by this method are neither recycled nor
+    /// are any hooks called. This method provides a rather low level
+    /// access to the currently pooled objects.
+    ///
+    /// This method can be used for custom health checks. e.g.:
+    ///
+    /// ```rust,ignore
+    /// const GC_TIMEOUT: usize = 60_000;
+    /// use tokio::time::{sleep, Duration};
+    ///
+    /// fn spawn_pool_gc(pool: Pool) {
+    ///     tokio::spawn(async move {
+    ///         sleep(Duration::from_millis(GC_TIMEOUT)).await;
+    ///         for obj in pool.get_pooled() {
+    ///            if !some_clever_alive_check(obj) {
+    ///                Object::take(obj);
+    ///            }
+    ///         }
+    ///     });
+    /// }
+    /// ```
+    #[must_use]
+    pub fn get_pooled(&self) -> Vec<W> {
+        // Grab as many permits as possible
+        let mut permit_count = 0usize;
+        while let Ok(permit) = self.inner.semaphore.try_acquire() {
+            permit.forget();
+            permit_count += 1;
+        }
+        // Lock the mutex once
+        let mut queue = self.inner.queue.lock().unwrap();
+        // Add back permits if the size is smaller than
+        // current pool size.
+        let delta = permit_count - queue.len();
+        if delta > 0 {
+            permit_count -= delta;
+        }
+        // Remove all available objects from the queue
+        let objs = queue.drain(0..permit_count).collect::<Vec<M::Type>>();
+        // Drop the mutex guard as soon as possible
+        drop(queue);
+        // Add back permits that were acquired too much
+        if delta > 0 {
+            self.inner.semaphore.add_permits(delta);
+        }
+        // Update pool state
+        let _ = self
+            .inner
+            .available
+            .fetch_sub(objs.len() as isize, Ordering::Relaxed);
+        // Return wrapped objects
+        objs.into_iter()
+            .map(|obj| {
+                Object {
+                    obj: Some(obj),
+                    state: ObjectState::Ready,
+                    pool: Arc::downgrade(&self.inner),
+                }
+                .into()
+            })
+            .collect()
+    }
 }
 
 struct PoolInner<M: Manager> {
