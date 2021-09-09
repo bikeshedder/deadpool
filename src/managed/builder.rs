@@ -89,7 +89,7 @@ where
 impl<M, W> PoolBuilder<M, W>
 where
     M: Manager,
-    W: From<Object<M>>,
+    W: From<Object<M>> + Into<Object<M>>,
 {
     pub(crate) fn new(manager: M) -> Self {
         Self {

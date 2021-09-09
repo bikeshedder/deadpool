@@ -3,6 +3,7 @@
 ## v0.9.0 (unreleased)
 
 * __Breaking:__ Replace `config` feature with `serde` (opted out by default)
+* __Breaking:__ Wrappers are now required to implement `Into<Object<T>>`
 * Fix `std::error::Error::source` implementations for library errors
 * Add `Runtime::spawn_blocking` method
 * Add `Runtime::spawn_blocking_background` method

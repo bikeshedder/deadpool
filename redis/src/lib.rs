@@ -75,6 +75,12 @@ impl From<Object> for Connection {
     }
 }
 
+impl Into<Object> for Connection {
+    fn into(self) -> Object {
+        self.conn
+    }
+}
+
 impl Deref for Connection {
     type Target = RedisConnection;
 

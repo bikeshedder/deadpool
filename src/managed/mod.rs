@@ -146,7 +146,8 @@ impl<M: Manager> Object<M> {
     /// Takes this [`Object`] from its [`Pool`] permanently. This reduces the
     /// size of the [`Pool`].
     #[must_use]
-    pub fn take(mut this: Self) -> M::Type {
+    pub fn take(this: impl Into<Self>) -> M::Type {
+        let mut this = this.into();
         this.state = ObjectState::Taken;
         if let Some(pool) = this.pool.upgrade() {
             pool.manager.detach(&mut this);
@@ -233,7 +234,7 @@ impl<M: Manager> AsMut<M::Type> for Object<M> {
 ///
 /// This struct can be cloned and transferred across thread boundaries and uses
 /// reference counting for its internal state.
-pub struct Pool<M: Manager, W: From<Object<M>> = Object<M>> {
+pub struct Pool<M: Manager, W: From<Object<M>> + Into<Object<M>> = Object<M>> {
     inner: Arc<PoolInner<M>>,
     _wrapper: PhantomData<fn() -> W>,
 }
@@ -243,7 +244,7 @@ impl<M, W> fmt::Debug for Pool<M, W>
 where
     M: fmt::Debug + Manager,
     M::Type: fmt::Debug,
-    W: From<Object<M>>,
+    W: From<Object<M>> + Into<Object<M>>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Pool")
@@ -253,7 +254,7 @@ where
     }
 }
 
-impl<M: Manager, W: From<Object<M>>> Clone for Pool<M, W> {
+impl<M: Manager, W: From<Object<M>> + Into<Object<M>>> Clone for Pool<M, W> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -262,7 +263,7 @@ impl<M: Manager, W: From<Object<M>>> Clone for Pool<M, W> {
     }
 }
 
-impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
+impl<M: Manager, W: From<Object<M>> + Into<Object<M>>> Pool<M, W> {
     /// Instantiates a builder for a new [`Pool`].
     ///
     /// This is the only way to create a [`Pool`] instance.
