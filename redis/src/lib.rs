@@ -75,9 +75,9 @@ impl From<Object> for Connection {
     }
 }
 
-impl Into<Object> for Connection {
-    fn into(self) -> Object {
-        self.conn
+impl From<Connection> for Object {
+    fn from(conn: Connection) -> Object {
+        conn.conn
     }
 }
 
