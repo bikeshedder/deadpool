@@ -66,7 +66,7 @@ use std::{
         atomic::{AtomicIsize, AtomicUsize, Ordering},
         Arc, Mutex, Weak,
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use async_trait::async_trait;
@@ -124,6 +124,34 @@ enum ObjectState {
     Dropped,
 }
 
+/// Statistics regarding an object returned by the pool
+#[derive(Clone, Copy, Debug)]
+#[must_use]
+pub struct Statistics {
+    /// The instant when this object was created
+    pub created: Instant,
+    /// The instant when this object was last used (returned by the pool)
+    pub recycled: Option<Instant>,
+    /// The number of times the objects has been recycled
+    pub recycle_count: usize,
+}
+
+impl Default for Statistics {
+    fn default() -> Self {
+        Self {
+            created: Instant::now(),
+            recycled: None,
+            recycle_count: 0,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct WithStatistics<T> {
+    obj: T,
+    stats: Statistics,
+}
+
 /// Wrapper around the actual pooled object which implements [`Deref`],
 /// [`DerefMut`] and [`Drop`] traits.
 ///
@@ -133,7 +161,7 @@ enum ObjectState {
 #[must_use]
 pub struct Object<M: Manager> {
     /// Actual pooled object.
-    obj: Option<M::Type>,
+    obj: Option<WithStatistics<M::Type>>,
 
     /// Current state of the object.
     state: ObjectState,
@@ -151,7 +179,12 @@ impl<M: Manager> Object<M> {
         if let Some(pool) = this.pool.upgrade() {
             pool.manager.detach(&mut this);
         }
-        this.obj.take().unwrap()
+        this.obj.take().unwrap().obj
+    }
+
+    /// Get object statistics
+    pub fn statistics(this: &Self) -> Statistics {
+        this.obj.as_ref().unwrap().stats
     }
 
     /// Returns the [`Pool`] this [`Object`] belongs to.
@@ -207,13 +240,13 @@ impl<M: Manager> Drop for Object<M> {
 impl<M: Manager> Deref for Object<M> {
     type Target = M::Type;
     fn deref(&self) -> &M::Type {
-        self.obj.as_ref().unwrap()
+        &self.obj.as_ref().unwrap().obj
     }
 }
 
 impl<M: Manager> DerefMut for Object<M> {
     fn deref_mut(&mut self) -> &mut M::Type {
-        self.obj.as_mut().unwrap()
+        &mut self.obj.as_mut().unwrap().obj
     }
 }
 
@@ -373,11 +406,13 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     {
                         Ok(_) => {
                             // Apply post_recycle hooks
+                            let with_stats = obj.obj.as_mut().unwrap();
                             for hook in &self.inner.hooks.post_recycle {
-                                hook.post_recycle(&mut obj.obj.as_mut().unwrap())
+                                hook.post_recycle(&mut with_stats.obj, &with_stats.stats)
                                     .await
                                     .map_err(PoolError::PostRecycleHook)?;
                             }
+                            with_stats.stats.recycle_count += 1;
                             break;
                         }
                         Err(_) => {
@@ -392,18 +427,20 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     obj.state = ObjectState::Creating;
                     let _ = self.inner.available.fetch_add(1, Ordering::Relaxed);
                     let _ = self.inner.size.fetch_add(1, Ordering::Relaxed);
-                    obj.obj = Some(
-                        apply_timeout(
+                    obj.obj = Some(WithStatistics {
+                        obj: apply_timeout(
                             self.inner.runtime,
                             TimeoutType::Create,
                             self.inner.config.timeouts.create,
                             self.inner.manager.create(),
                         )
                         .await?,
-                    );
+                        stats: Statistics::default(),
+                    });
                     // Apply post_create hooks
                     for hook in &self.inner.hooks.post_create {
-                        hook.post_create(&mut obj.obj.as_mut().unwrap())
+                        let with_stats = obj.obj.as_mut().unwrap();
+                        hook.post_create(&mut with_stats.obj)
                             .await
                             .map_err(PoolError::PostCreateHook)?;
                     }
@@ -412,7 +449,9 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             }
         }
 
+        obj.obj.as_mut().unwrap().stats.recycled = Some(Instant::now());
         obj.state = ObjectState::Ready;
+
         Ok(obj.into())
     }
 
@@ -452,7 +491,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
 
 struct PoolInner<M: Manager> {
     manager: Box<M>,
-    queue: Mutex<VecDeque<M::Type>>,
+    queue: Mutex<VecDeque<WithStatistics<M::Type>>>,
     size: AtomicUsize,
     /// Number of available [`Object`]s in the [`Pool`]. If there are no
     /// [`Object`]s in the [`Pool`] this number can become negative and store
