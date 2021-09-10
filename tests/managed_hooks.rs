@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use deadpool::managed::{
     hooks::{HookError, PostCreate, PostRecycle},
-    Manager, Pool, RecycleResult,
+    Manager, Pool, RecycleResult, Statistics,
 };
 
 struct Computer {}
@@ -35,7 +35,7 @@ impl PostCreate<Computer> for IncrementHook {
 
 #[async_trait]
 impl PostRecycle<Computer> for IncrementHook {
-    async fn post_recycle(&self, obj: &mut usize) -> Result<(), HookError<()>> {
+    async fn post_recycle(&self, obj: &mut usize, _: &Statistics) -> Result<(), HookError<()>> {
         *obj += 1;
         Ok(())
     }
