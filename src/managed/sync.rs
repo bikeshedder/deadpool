@@ -105,14 +105,14 @@ where
     /// is not blocked.
     pub async fn interact<F, R>(&self, f: F) -> Result<R, InteractError<E>>
     where
-        F: FnOnce(&T) -> Result<R, E> + Send + 'static,
+        F: FnOnce(&mut T) -> Result<R, E> + Send + 'static,
         R: Send + 'static,
     {
         let arc = self.obj.clone();
         self.runtime
             .spawn_blocking(move || {
-                let guard = arc.lock().unwrap();
-                let conn = guard.as_ref().unwrap();
+                let mut guard = arc.lock().unwrap();
+                let conn = guard.as_mut().unwrap();
                 f(conn)
             })
             .await
