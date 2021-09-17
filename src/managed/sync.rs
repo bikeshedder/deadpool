@@ -122,6 +122,14 @@ where
             .map_err(InteractError::Backend)
     }
 
+    /// Get the underlying object wrapped in a Mutex that's wrapped in an Arc.
+    ///
+    /// Note: Anything you do with the object should be wrapped in a `spawn_blocking` closure
+    /// so that the async runtime is not blocked.
+    pub fn inner_obj(&self) -> Arc<Mutex<Option<T>>> {
+        self.obj.clone()
+    }
+
     /// Indicates whether the underlying [`Mutex`] has been poisoned.
     ///
     /// This happens when a panic occurs while interacting with the object.
@@ -137,7 +145,7 @@ where
 {
     fn drop(&mut self) {
         let arc = self.obj.clone();
-        // Drop the `rusqlite::Connection` inside a `spawn_blocking`
+        // Drop the internal connection inside a `spawn_blocking`
         // as the `drop` function of it can block.
         self.runtime
             .spawn_blocking_background(move || match arc.lock() {
