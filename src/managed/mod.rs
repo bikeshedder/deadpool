@@ -130,10 +130,21 @@ enum ObjectState {
 pub struct Statistics {
     /// The instant when this object was created
     pub created: Instant,
-    /// The instant when this object was last used (returned by the pool)
+    /// The instant when this object was last used
     pub recycled: Option<Instant>,
     /// The number of times the objects has been recycled
     pub recycle_count: usize,
+}
+
+impl Statistics {
+    /// Access the age of this object
+    pub fn age(&self) -> Duration {
+        self.created.elapsed()
+    }
+    /// Get the time elapsed when this object was last used
+    pub fn last_used(&self) -> Duration {
+        self.recycled.unwrap_or(self.created).elapsed()
+    }
 }
 
 impl Default for Statistics {
@@ -413,6 +424,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                                     .map_err(PoolError::PostRecycleHook)?;
                             }
                             with_stats.stats.recycle_count += 1;
+                            with_stats.stats.recycled = Some(Instant::now());
                             break;
                         }
                         Err(_) => {
@@ -449,7 +461,6 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             }
         }
 
-        obj.obj.as_mut().unwrap().stats.recycled = Some(Instant::now());
         obj.state = ObjectState::Ready;
 
         Ok(obj.into())
