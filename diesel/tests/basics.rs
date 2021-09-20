@@ -62,3 +62,22 @@ async fn pooled_connection_impls_connection() {
         .unwrap();
     assert_eq!("foo", &result);
 }
+
+#[tokio::test]
+async fn lock() {
+    use diesel::prelude::*;
+    use diesel::select;
+    use diesel::sql_types::Text;
+
+    let pool = create_pool(1);
+    let wrapper = pool.get().await.unwrap();
+    let result = tokio::task::spawn_blocking(move || {
+        let conn = wrapper.try_lock().unwrap();
+        let query = select("foo".into_sql::<Text>());
+        query.get_result::<String>(&*conn)
+    })
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!("foo", &result);
+}

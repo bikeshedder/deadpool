@@ -5,7 +5,8 @@ use std::{
     any::Any,
     fmt,
     marker::PhantomData,
-    sync::{Arc, Mutex},
+    ops::{Deref, DerefMut},
+    sync::{Arc, Mutex, MutexGuard, PoisonError, TryLockError},
 };
 
 use crate::{runtime::SpawnBlockingError, Runtime};
@@ -128,6 +129,18 @@ where
     pub fn is_mutex_poisoned(&self) -> bool {
         self.obj.is_poisoned()
     }
+
+    /// Lock the underlying mutex and return a guard for the inner
+    /// object.
+    pub fn lock(&self) -> Result<SyncGuard<'_, T>, PoisonError<MutexGuard<'_, Option<T>>>> {
+        self.obj.lock().map(SyncGuard)
+    }
+
+    /// Try to lock the underlying mutex and return a guard for the
+    /// inner object.
+    pub fn try_lock(&self) -> Result<SyncGuard<'_, T>, TryLockError<MutexGuard<'_, Option<T>>>> {
+        self.obj.try_lock().map(SyncGuard)
+    }
 }
 
 impl<T, E> Drop for SyncWrapper<T, E>
@@ -145,5 +158,39 @@ where
                 Err(e) => drop(e.into_inner().take()),
             })
             .unwrap();
+    }
+}
+
+/// This guard is returned when calling `SyncWrapper::lock` or
+/// `SyncWrapper::try_lock`. This is basicly just a wrapper around
+/// a `MutexGuard` but hides some implementation details.
+///
+/// **Important:** Any blocking operation using this object
+/// should be executed on a separate thread (e.g. via `spawn_blocking`).
+#[derive(Debug)]
+pub struct SyncGuard<'a, T: Send>(MutexGuard<'a, Option<T>>);
+
+impl<'a, T: Send> Deref for SyncGuard<'a, T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        self.0.as_ref().unwrap()
+    }
+}
+
+impl<'a, T: Send> DerefMut for SyncGuard<'a, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.0.as_mut().unwrap()
+    }
+}
+
+impl<'a, T: Send> AsRef<T> for SyncGuard<'a, T> {
+    fn as_ref(&self) -> &T {
+        self.0.as_ref().unwrap()
+    }
+}
+
+impl<'a, T: Send> AsMut<T> for SyncGuard<'a, T> {
+    fn as_mut(&mut self) -> &mut T {
+        self.0.as_mut().unwrap()
     }
 }
