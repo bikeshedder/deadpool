@@ -4,7 +4,7 @@ use std::fmt;
 
 use async_trait::async_trait;
 
-use super::{Manager, Statistics};
+use super::{metrics::Metrics, Manager};
 
 /// Possible errors returned by [`Hooks`] which will abort the creation and/or
 /// recycling of objects.
@@ -59,7 +59,7 @@ pub trait PostRecycle<M: Manager>: Sync + Send {
     async fn post_recycle(
         &self,
         obj: &mut M::Type,
-        statistics: &Statistics,
+        metrics: &Metrics,
     ) -> Result<(), HookError<M::Error>>;
 }
 
