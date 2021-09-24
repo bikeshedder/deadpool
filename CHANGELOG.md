@@ -9,6 +9,7 @@
 * Remove `Runtime::None` in favor of `Option<Runtime>`
 * Remove `Pool::new` method
 * Add `Pool::builder` method and `PoolBuilder` struct
+* Add `Object::metrics` method and `Metrics` struct
 
 ## v0.8.2
 
