@@ -56,6 +56,7 @@ mod dropguard;
 mod errors;
 pub mod hooks;
 mod metrics;
+pub mod reexports;
 pub mod sync;
 
 use std::{

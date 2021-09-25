@@ -1,6 +1,23 @@
 //! Helpers for writing pools for objects that don't support async and need to
 //! be run inside a thread.
 
+pub mod reexports {
+    //! This module contains all things that should be reexported
+    //! by backend implementations in order to avoid direct
+    //! dependencies on the `deadpool` crate itself.
+    //!
+    //! This module is the variant that should be used by *sync*
+    //! backends.
+    //!
+    //! Crates based on [`deadpool::managed::sync`] should include this line:
+    //! ```rust
+    //! pub use deadpool::managed::sync::reexports::*;
+    //! ```
+
+    pub use super::super::reexports::*;
+    pub use super::{InteractError, SyncGuard};
+}
+
 use std::{
     any::Any,
     fmt,
