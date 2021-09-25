@@ -75,19 +75,13 @@ pub enum PoolError<E> {
     /// [`Runtime`]: crate::Runtime
     NoRuntimeSpecified,
 
-    /// [`PostCreate`] hook reported an error.
-    ///
-    /// [`PostCreate`]: super::hooks::PostCreate
+    /// A `post_create` hook reported an error.
     PostCreateHook(HookError<E>),
 
-    /// [`PreRecycle`] hook reported an error.
-    ///
-    /// [`PreRecycle`]: super::hooks::PreRecycle
+    /// A `pre_recycle` hook reported an error.
     PreRecycleHook(HookError<E>),
 
-    /// [`PostRecycle`] hook reported an error.
-    ///
-    /// [`PostRecycle`]: super::hooks::PostRecycle
+    /// A `post_recycle` hook reported an error.
     PostRecycleHook(HookError<E>),
 }
 
