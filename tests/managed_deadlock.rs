@@ -84,31 +84,34 @@ async fn pool_drained() {
     let pool_clone = pool.clone();
 
     // let first task grab the only connection
-    let get_1 = tokio::spawn(async move {
-        drop(pool_clone.get().await.unwrap());
-    });
+    let get_1 = tokio::spawn(async move { pool_clone.get().await });
     task::yield_now().await;
-    assert_eq!(pool.status().size, 1);
-    assert_eq!(pool.status().available, 0);
+    assert_eq!(pool.status().size, 0);
+    assert_eq!(pool.status().available, -1);
 
     // let second task wait for the connection
     let pool_clone = pool.clone();
-    let get_2 = tokio::spawn(async move {
-        drop(pool_clone.get().await.unwrap());
-    });
+    let get_2 = tokio::spawn(async move { pool_clone.get().await });
     task::yield_now().await;
-    assert_eq!(pool.status().size, 1);
-    assert_eq!(pool.status().available, -1);
+    assert_eq!(pool.status().size, 0);
+    assert_eq!(pool.status().available, -2);
 
     // first task receives an error
     rc.create_err();
-    assert!(get_1.await.is_err());
+    assert!(get_1.await.unwrap().is_err());
+    assert_eq!(pool.status().size, 0);
+    assert_eq!(pool.status().available, -1);
 
     // the second task should now be able to create an object
     rc.create_ok();
-    let result = time::timeout(Duration::from_millis(10), get_2).await;
-    assert!(result.is_ok(), "get_2 should not time out");
-    assert!(result.unwrap().is_ok(), "get_2 should receive an object");
+    let get_2_result = time::timeout(Duration::from_millis(10), get_2).await;
+    assert!(get_2_result.is_ok(), "get_2 should not time out");
+    assert_eq!(pool.status().size, 1);
+    assert_eq!(pool.status().available, 0);
+    assert!(
+        get_2_result.unwrap().unwrap().is_ok(),
+        "get_2 should receive an object"
+    );
     assert_eq!(pool.status().size, 1);
     assert_eq!(pool.status().available, 1);
 }
