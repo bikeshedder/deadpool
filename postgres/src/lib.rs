@@ -40,10 +40,7 @@ use tokio_postgres::{
     TransactionBuilder as PgTransactionBuilder,
 };
 
-pub use deadpool::{
-    managed::{PoolConfig, Timeouts},
-    Runtime,
-};
+pub use deadpool::managed::reexports::*;
 pub use tokio_postgres;
 
 pub use self::config::{Config, ManagerConfig, RecyclingMethod};

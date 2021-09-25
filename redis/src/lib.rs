@@ -33,7 +33,7 @@ use redis::{
     Client, IntoConnectionInfo, RedisError, RedisResult,
 };
 
-pub use deadpool::{managed::PoolConfig, Runtime};
+pub use deadpool::managed::reexports::*;
 pub use redis;
 
 pub use self::config::{Config, CreatePoolError};

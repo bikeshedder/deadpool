@@ -25,7 +25,7 @@ mod config;
 use deadpool::{async_trait, managed};
 use lapin::{ConnectionProperties, Error};
 
-pub use deadpool::{managed::PoolConfig, Runtime};
+pub use deadpool::managed::reexports::*;
 pub use lapin;
 
 pub use self::config::{BuildError, Config};
