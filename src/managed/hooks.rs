@@ -4,7 +4,10 @@ use std::fmt;
 
 use async_trait::async_trait;
 
-use super::{metrics::Metrics, Manager};
+use super::{
+    metrics::{Metrics, WithMetrics},
+    PoolError,
+};
 
 /// Error structure which which can abort the creation and recycling
 /// of objects.
@@ -64,64 +67,92 @@ impl<E: std::error::Error + 'static> std::error::Error for HookError<E> {
     }
 }
 
-/// Abstraction of `post_create` hooks.
+/// Abstraction of `post_recycle` hooks.
 #[async_trait]
-pub trait PostCreate<M: Manager>: Sync + Send {
-    /// The hook method which is called after creating a new [`Object`].
+pub trait HookCallback<T, E>: Sync + Send {
+    /// The hook method which is called after recycling an existing [`Object`].
     ///
     /// [`Object`]: super::Object
-    async fn post_create(&self, obj: &mut M::Type) -> Result<(), HookError<M::Error>>;
+    async fn call(&self, obj: &mut T, metrics: &Metrics) -> Result<(), HookError<E>>;
 }
 
-impl<M: Manager> fmt::Debug for dyn PostCreate<M> {
+impl<T, E> fmt::Debug for dyn HookCallback<T, E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:p}", self)
     }
 }
 
-/// Abstraction of `post_recycle` hooks.
-#[async_trait]
-pub trait PostRecycle<M: Manager>: Sync + Send {
-    /// The hook method which is called after recycling an existing [`Object`].
-    ///
-    /// [`Object`]: super::Object
-    async fn post_recycle(
-        &self,
-        obj: &mut M::Type,
-        metrics: &Metrics,
-    ) -> Result<(), HookError<M::Error>>;
+pub(crate) struct HookCallbacks<T, E> {
+    callbacks: Vec<Box<dyn HookCallback<T, E>>>,
 }
 
-impl<M: Manager> fmt::Debug for dyn PostRecycle<M> {
+// Implemented manually to avoid unnecessary trait bound on `M` type parameter.
+impl<T, E> fmt::Debug for HookCallbacks<T, E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:p}", self)
+        f.debug_struct("Hooks")
+            .field("callbacks", &self.callbacks)
+            .finish()
+    }
+}
+
+// Implemented manually to avoid unnecessary trait bound on `M` type parameter.
+impl<T, E> Default for HookCallbacks<T, E> {
+    fn default() -> Self {
+        Self {
+            callbacks: Vec::new(),
+        }
+    }
+}
+
+impl<T, E> HookCallbacks<T, E> {
+    pub(crate) async fn apply(
+        &self,
+        obj: &mut WithMetrics<T>,
+        error: fn(e: HookError<E>) -> PoolError<E>,
+    ) -> Result<Option<HookError<E>>, PoolError<E>> {
+        for hook in &self.callbacks {
+            match hook.call(&mut obj.obj, &obj.metrics).await {
+                Ok(()) => {}
+                Err(e) => match e {
+                    HookError::Continue(_) => return Ok(Some(e)),
+                    HookError::Abort(_) => return Err(error(e)),
+                },
+            }
+        }
+        Ok(None)
+    }
+    pub(crate) fn push(&mut self, callback: impl HookCallback<T, E> + 'static) {
+        self.callbacks.push(Box::new(callback));
     }
 }
 
 /// Collection of all the hooks that can be configured for a [`Pool`].
 ///
 /// [`Pool`]: super::Pool
-pub struct Hooks<M: Manager> {
-    pub(crate) post_create: Vec<Box<dyn PostCreate<M>>>,
-    pub(crate) post_recycle: Vec<Box<dyn PostRecycle<M>>>,
+pub struct Hooks<T, E> {
+    pub(crate) post_create: HookCallbacks<T, E>,
+    pub(crate) pre_recycle: HookCallbacks<T, E>,
+    pub(crate) post_recycle: HookCallbacks<T, E>,
 }
 
 // Implemented manually to avoid unnecessary trait bound on `M` type parameter.
-impl<M: Manager> fmt::Debug for Hooks<M> {
+impl<T, E> fmt::Debug for Hooks<T, E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Hooks")
             .field("post_create", &self.post_create)
+            .field("pre_recycle", &self.post_recycle)
             .field("post_recycle", &self.post_recycle)
             .finish()
     }
 }
 
 // Implemented manually to avoid unnecessary trait bound on `M` type parameter.
-impl<M: Manager> Default for Hooks<M> {
+impl<T, E> Default for Hooks<T, E> {
     fn default() -> Self {
         Self {
-            post_create: Vec::new(),
-            post_recycle: Vec::new(),
+            pre_recycle: HookCallbacks::default(),
+            post_create: HookCallbacks::default(),
+            post_recycle: HookCallbacks::default(),
         }
     }
 }

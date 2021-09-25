@@ -65,7 +65,7 @@ where
     pub(crate) manager: M,
     pub(crate) config: PoolConfig,
     pub(crate) runtime: Option<Runtime>,
-    pub(crate) hooks: Hooks<M>,
+    pub(crate) hooks: Hooks<M::Type, M::Error>,
     _wrapper: PhantomData<fn() -> W>,
 }
 
@@ -158,8 +158,23 @@ where
     ///
     /// The given `hook` will be called each time right after a new [`Object`]
     /// has been created.
-    pub fn post_create(mut self, hook: impl hooks::PostCreate<M> + 'static) -> Self {
-        self.hooks.post_create.push(Box::new(hook));
+    pub fn post_create(
+        mut self,
+        hook: impl hooks::HookCallback<M::Type, M::Error> + 'static,
+    ) -> Self {
+        self.hooks.post_create.push(hook);
+        self
+    }
+
+    /// Attaches a `pre_recycle` hook.
+    ///
+    /// The given `hook` will be called each time right before an [`Object`] will
+    /// be recycled.
+    pub fn pre_recycle(
+        mut self,
+        hook: impl hooks::HookCallback<M::Type, M::Error> + 'static,
+    ) -> Self {
+        self.hooks.pre_recycle.push(hook);
         self
     }
 
@@ -167,8 +182,11 @@ where
     ///
     /// The given `hook` will be called each time right after an [`Object`] has
     /// been recycled.
-    pub fn post_recycle(mut self, hook: impl hooks::PostRecycle<M> + 'static) -> Self {
-        self.hooks.post_recycle.push(Box::new(hook));
+    pub fn post_recycle(
+        mut self,
+        hook: impl hooks::HookCallback<M::Type, M::Error> + 'static,
+    ) -> Self {
+        self.hooks.post_recycle.push(hook);
         self
     }
 

@@ -337,6 +337,17 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                         let _ = self.inner.size.fetch_sub(1, Ordering::SeqCst);
                     });
 
+                    // Apply post_recycle hooks
+                    if let Some(_e) = self
+                        .inner
+                        .hooks
+                        .pre_recycle
+                        .apply(&mut with_metrics, PoolError::PreRecycleHook)
+                        .await?
+                    {
+                        continue;
+                    }
+
                     if apply_timeout(
                         self.inner.runtime,
                         TimeoutType::Recycle,
@@ -348,12 +359,18 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     {
                         continue;
                     }
+
                     // Apply post_recycle hooks
-                    for hook in &self.inner.hooks.post_recycle {
-                        hook.post_recycle(&mut with_metrics.obj, &with_metrics.metrics)
-                            .await
-                            .map_err(PoolError::PostRecycleHook)?;
+                    if let Some(_e) = self
+                        .inner
+                        .hooks
+                        .post_recycle
+                        .apply(&mut with_metrics, PoolError::PostRecycleHook)
+                        .await?
+                    {
+                        continue;
                     }
+
                     with_metrics.metrics.recycle_count += 1;
                     with_metrics.metrics.recycled = Some(Instant::now());
 
@@ -375,10 +392,14 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     };
 
                     // Apply post_create hooks
-                    for hook in &self.inner.hooks.post_create {
-                        hook.post_create(&mut with_metrics.obj)
-                            .await
-                            .map_err(PoolError::PostCreateHook)?;
+                    if let Some(_e) = self
+                        .inner
+                        .hooks
+                        .post_create
+                        .apply(&mut with_metrics, PoolError::PostCreateHook)
+                        .await?
+                    {
+                        continue;
                     }
 
                     let _ = self.inner.available.fetch_add(1, Ordering::Relaxed);
@@ -445,7 +466,7 @@ struct PoolInner<M: Manager> {
     semaphore: Semaphore,
     config: PoolConfig,
     runtime: Option<Runtime>,
-    hooks: hooks::Hooks<M>,
+    hooks: hooks::Hooks<M::Type, M::Error>,
 }
 
 // Implemented manually to avoid unnecessary trait bound on the struct.
