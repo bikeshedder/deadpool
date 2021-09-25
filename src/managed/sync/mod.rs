@@ -1,6 +1,8 @@
 //! Helpers for writing pools for objects that don't support async and need to
 //! be run inside a thread.
 
+pub mod reexports;
+
 use std::{
     any::Any,
     fmt,

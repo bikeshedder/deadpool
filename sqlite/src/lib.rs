@@ -29,10 +29,8 @@ use deadpool::{
     managed::{self, sync::SyncWrapper, RecycleError},
 };
 
-pub use deadpool::{
-    managed::{sync::InteractError, PoolConfig},
-    Runtime,
-};
+pub use deadpool::managed::sync::reexports::*;
+pub use rusqlite;
 
 pub use self::config::Config;
 
