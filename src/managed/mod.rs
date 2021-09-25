@@ -52,6 +52,7 @@
 
 mod builder;
 mod config;
+mod dropguard;
 mod errors;
 pub mod hooks;
 mod metrics;
@@ -80,6 +81,7 @@ use metrics::WithMetrics;
 
 pub use crate::Status;
 
+use self::dropguard::DropGuard;
 pub use self::{
     builder::{BuildError, PoolBuilder},
     config::{PoolConfig, Timeouts},
@@ -117,17 +119,6 @@ pub trait Manager: Sync + Send {
     fn detach(&self, _obj: &mut Self::Type) {}
 }
 
-#[derive(Debug)]
-enum ObjectState {
-    Waiting,
-    Receiving,
-    Creating,
-    Recycling,
-    Ready,
-    Taken,
-    Dropped,
-}
-
 /// Wrapper around the actual pooled object which implements [`Deref`],
 /// [`DerefMut`] and [`Drop`] traits.
 ///
@@ -139,9 +130,6 @@ pub struct Object<M: Manager> {
     /// Actual pooled object.
     obj: Option<WithMetrics<M::Type>>,
 
-    /// Current state of the object.
-    state: ObjectState,
-
     /// Pool to return the pooled object to.
     pool: Weak<PoolInner<M>>,
 }
@@ -151,7 +139,6 @@ impl<M: Manager> Object<M> {
     /// size of the [`Pool`].
     #[must_use]
     pub fn take(mut this: Self) -> M::Type {
-        this.state = ObjectState::Taken;
         if let Some(pool) = this.pool.upgrade() {
             pool.manager.detach(&mut this);
         }
@@ -178,38 +165,19 @@ impl<M: Manager> Object<M> {
 impl<M: Manager> Drop for Object<M> {
     fn drop(&mut self) {
         if let Some(pool) = self.pool.upgrade() {
-            match self.state {
-                ObjectState::Waiting => {
-                    let _ = pool.available.fetch_add(1, Ordering::Relaxed);
-                }
-                ObjectState::Receiving => {
-                    let _ = pool.available.fetch_add(1, Ordering::Relaxed);
-                    pool.semaphore.add_permits(1);
-                }
-                ObjectState::Creating | ObjectState::Taken => {
-                    let _ = pool.size.fetch_sub(1, Ordering::Relaxed);
-                    pool.semaphore.add_permits(1);
-                }
-                ObjectState::Recycling | ObjectState::Ready => {
-                    let _ = pool.available.fetch_add(1, Ordering::Relaxed);
-                    let obj = self.obj.take().unwrap();
-                    {
-                        let mut queue = pool.queue.lock().unwrap();
-                        queue.push_back(obj);
-                    }
-                    pool.semaphore.add_permits(1);
-                    // The pool might have been closed in the mean time.
-                    // Hand over control to the `_cleanup` method which
-                    // takes care of this.
-                    pool.clean_up();
-                }
-                ObjectState::Dropped => {
-                    // The object has already been dropped.
-                }
+            if let Some(obj) = self.obj.take() {
+                let _ = pool.available.fetch_add(1, Ordering::Relaxed);
+                let mut queue = pool.queue.lock().unwrap();
+                queue.push_back(obj);
+            } else {
+                let _ = pool.size.fetch_sub(1, Ordering::Relaxed);
             }
+            pool.semaphore.add_permits(1);
+            // The pool might have been closed in the mean time.
+            // Hand over control to the `_cleanup` method which
+            // takes care of this.
+            pool.clean_up();
         }
-        self.obj = None;
-        self.state = ObjectState::Dropped;
     }
 }
 
@@ -326,12 +294,9 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     /// See [`PoolError`] for details.
     pub async fn timeout_get(&self, timeouts: &Timeouts) -> Result<W, PoolError<M::Error>> {
         let _ = self.inner.available.fetch_sub(1, Ordering::Relaxed);
-
-        let mut obj = Object {
-            obj: None,
-            state: ObjectState::Waiting,
-            pool: Arc::downgrade(&self.inner),
-        };
+        let available_guard = DropGuard(|| {
+            let _ = self.inner.available.fetch_add(1, Ordering::Relaxed);
+        });
 
         let non_blocking = match timeouts.wait {
             Some(t) => t.as_nanos() == 0,
@@ -359,52 +324,46 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             .await?
         };
 
-        permit.forget();
-
-        loop {
-            obj.state = ObjectState::Receiving;
-            let inner_obj = {
+        let with_metrics = loop {
+            let queue_obj = {
                 let mut queue = self.inner.queue.lock().unwrap();
                 queue.pop_front()
             };
-            match inner_obj {
-                Some(inner_obj) => {
+            match queue_obj {
+                Some(mut with_metrics) => {
                     // Recycle existing object
-                    obj.state = ObjectState::Recycling;
-                    obj.obj = Some(inner_obj);
-                    match apply_timeout(
+                    let recycle_guard = DropGuard(|| {
+                        let _ = self.inner.available.fetch_sub(1, Ordering::Relaxed);
+                        let _ = self.inner.size.fetch_sub(1, Ordering::SeqCst);
+                    });
+
+                    if apply_timeout(
                         self.inner.runtime,
                         TimeoutType::Recycle,
                         self.inner.config.timeouts.recycle,
-                        self.inner.manager.recycle(&mut obj),
+                        self.inner.manager.recycle(&mut with_metrics.obj),
                     )
                     .await
+                    .is_err()
                     {
-                        Ok(_) => {
-                            // Apply post_recycle hooks
-                            let with_metrics = obj.obj.as_mut().unwrap();
-                            for hook in &self.inner.hooks.post_recycle {
-                                hook.post_recycle(&mut with_metrics.obj, &with_metrics.metrics)
-                                    .await
-                                    .map_err(PoolError::PostRecycleHook)?;
-                            }
-                            with_metrics.metrics.recycle_count += 1;
-                            with_metrics.metrics.recycled = Some(Instant::now());
-                            break;
-                        }
-                        Err(_) => {
-                            let _ = self.inner.available.fetch_sub(1, Ordering::Relaxed);
-                            let _ = self.inner.size.fetch_sub(1, Ordering::Relaxed);
-                            continue;
-                        }
+                        continue;
                     }
+                    // Apply post_recycle hooks
+                    for hook in &self.inner.hooks.post_recycle {
+                        hook.post_recycle(&mut with_metrics.obj, &with_metrics.metrics)
+                            .await
+                            .map_err(PoolError::PostRecycleHook)?;
+                    }
+                    with_metrics.metrics.recycle_count += 1;
+                    with_metrics.metrics.recycled = Some(Instant::now());
+
+                    recycle_guard.disarm();
+
+                    break with_metrics;
                 }
                 None => {
                     // Create new object
-                    obj.state = ObjectState::Creating;
-                    let _ = self.inner.available.fetch_add(1, Ordering::Relaxed);
-                    let _ = self.inner.size.fetch_add(1, Ordering::Relaxed);
-                    obj.obj = Some(WithMetrics {
+                    let mut with_metrics = WithMetrics {
                         obj: apply_timeout(
                             self.inner.runtime,
                             TimeoutType::Create,
@@ -413,20 +372,30 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                         )
                         .await?,
                         metrics: Metrics::default(),
-                    });
+                    };
+
                     // Apply post_create hooks
                     for hook in &self.inner.hooks.post_create {
-                        let with_metrics = obj.obj.as_mut().unwrap();
                         hook.post_create(&mut with_metrics.obj)
                             .await
                             .map_err(PoolError::PostCreateHook)?;
                     }
-                    break;
+
+                    let _ = self.inner.available.fetch_add(1, Ordering::Relaxed);
+                    let _ = self.inner.size.fetch_add(1, Ordering::Relaxed);
+
+                    break with_metrics;
                 }
             }
-        }
+        };
 
-        obj.state = ObjectState::Ready;
+        available_guard.disarm();
+        permit.forget();
+
+        let obj = Object {
+            obj: Some(with_metrics),
+            pool: Arc::downgrade(&self.inner),
+        };
 
         Ok(obj.into())
     }
