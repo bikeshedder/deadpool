@@ -411,7 +411,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
 
     /// Indicates whether this [`Pool`] has been closed.
     pub fn is_closed(&self) -> bool {
-        self.inner.is_closed()
+        self.inner.semaphore.is_closed()
     }
 
     /// Retrieves [`Status`] of this [`Pool`].
@@ -475,7 +475,7 @@ impl<M: Manager> PoolInner<M> {
     /// [`Object`] is returned to the [`Pool`] and makes sure closed [`Pool`]s
     /// don't contain any [`Object`]s.
     fn clean_up(&self) {
-        if self.is_closed() {
+        if self.semaphore.is_closed() {
             self.clear();
         }
     }
@@ -488,14 +488,6 @@ impl<M: Manager> PoolInner<M> {
             .available
             .fetch_sub(queue.len() as isize, Ordering::Relaxed);
         queue.clear();
-    }
-
-    /// Indicates whether this [`Pool`] has been closed.
-    fn is_closed(&self) -> bool {
-        matches!(
-            self.semaphore.try_acquire_many(0),
-            Err(TryAcquireError::Closed)
-        )
     }
 }
 

@@ -10,6 +10,7 @@
 * Remove `Pool::new` method
 * Add `Pool::builder` method and `PoolBuilder` struct
 * Add `Object::metrics` method and `Metrics` struct
+* Update `tokio` dependency to version `1.5.0`
 
 ## v0.8.2
 
