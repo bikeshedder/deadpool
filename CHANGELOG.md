@@ -11,6 +11,7 @@
 * Add `Pool::builder` method and `PoolBuilder` struct
 * Add `Object::metrics` method and `Metrics` struct
 * Update `tokio` dependency to version `1.5.0`
+* Add `post_create`, `pre_recycle` and `post_recycle` hooks
 
 ## v0.8.2
 
