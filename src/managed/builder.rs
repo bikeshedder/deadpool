@@ -3,7 +3,7 @@ use std::{fmt, marker::PhantomData, time::Duration};
 use crate::Runtime;
 
 use super::{
-    hooks::{self, Hooks},
+    hooks::{Hook, Hooks},
     Manager, Object, Pool, PoolConfig, Timeouts,
 };
 
@@ -146,10 +146,7 @@ where
     ///
     /// The given `hook` will be called each time right after a new [`Object`]
     /// has been created.
-    pub fn post_create(
-        mut self,
-        hook: impl hooks::HookCallback<M::Type, M::Error> + 'static,
-    ) -> Self {
+    pub fn post_create(mut self, hook: impl Into<Hook<M::Type, M::Error>>) -> Self {
         self.hooks.post_create.push(hook);
         self
     }
@@ -158,10 +155,7 @@ where
     ///
     /// The given `hook` will be called each time right before an [`Object`] will
     /// be recycled.
-    pub fn pre_recycle(
-        mut self,
-        hook: impl hooks::HookCallback<M::Type, M::Error> + 'static,
-    ) -> Self {
+    pub fn pre_recycle(mut self, hook: impl Into<Hook<M::Type, M::Error>>) -> Self {
         self.hooks.pre_recycle.push(hook);
         self
     }
@@ -170,10 +164,7 @@ where
     ///
     /// The given `hook` will be called each time right after an [`Object`] has
     /// been recycled.
-    pub fn post_recycle(
-        mut self,
-        hook: impl hooks::HookCallback<M::Type, M::Error> + 'static,
-    ) -> Self {
+    pub fn post_recycle(mut self, hook: impl Into<Hook<M::Type, M::Error>>) -> Self {
         self.hooks.post_recycle.push(hook);
         self
     }

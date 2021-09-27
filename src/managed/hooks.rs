@@ -1,24 +1,73 @@
 //! Hooks allowing to run code when creating and/or recycling objects.
 
-use std::fmt;
-
-use async_trait::async_trait;
+use std::{fmt, future::Future, pin::Pin};
 
 use super::{
     metrics::{Metrics, WithMetrics},
     PoolError,
 };
 
+/// The result returned by hooks
+pub type HookResult<E> = Result<(), HookError<E>>;
+
+/// The boxed future that should be returned by async hooks
+pub type HookFuture<'a, E> = Pin<Box<dyn Future<Output = HookResult<E>> + Send + 'a>>;
+
+/// Wrapper for hook functions
+pub enum Hook<T, E> {
+    /// Use a plain function (non-async) as a hook
+    Fn(Box<dyn Fn(&mut T, &Metrics) -> HookResult<E> + Sync + Send>),
+    /// Use an async function as a hook
+    AsyncFn(Box<dyn for<'a> Fn(&'a mut T, &'a Metrics) -> HookFuture<'a, E> + Sync + Send>),
+}
+
+impl<T, E> Hook<T, E> {
+    /// Create Hook from sync function
+    pub fn sync_fn(f: impl Fn(&mut T, &Metrics) -> HookResult<E> + Sync + Send + 'static) -> Self {
+        Self::Fn(Box::new(f))
+    }
+    /// Create Hook from async function
+    pub fn async_fn(
+        f: impl for<'a> Fn(&'a mut T, &'a Metrics) -> HookFuture<'a, E> + Sync + Send + 'static,
+    ) -> Self {
+        Self::AsyncFn(Box::new(f))
+    }
+}
+
+impl<T, E> fmt::Debug for Hook<T, E> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Fn(_) => f
+                .debug_tuple("Fn")
+                //.field(arg0)
+                .finish(),
+            Self::AsyncFn(_) => f
+                .debug_tuple("AsyncFn")
+                //.field(arg0)
+                .finish(),
+        }
+    }
+}
+
 /// Error structure which which can abort the creation and recycling
 /// of objects.
+///
+/// There are two variants [`HookError::Continue`] tells the pool
+/// to continue the running [`Pool`] operation ([`get`],
+/// [`timeout_get`] or [`try_get`]) while [`HookError::Abort`] does abort
+/// that operation with an error.
+///
+/// [`Pool`]: crate::managed::Pool
+/// [`get`]: crate::managed::Pool::get
+/// [`timeout_get`]: crate::managed::Pool::timeout_get
+/// [`try_get`]: crate::managed::Pool::try_get
 #[derive(Debug)]
 pub enum HookError<E> {
-    /// This field is used by the pool to know wether to abort the entire
-    /// operation (typically `Pool::get` or `Pool::get_timeout`) should
-    /// be aborted.
+    /// This variant can be returned by hooks if the object should be
+    /// discarded but the operation should be continued.
     Continue(Option<HookErrorCause<E>>),
-    /// This is the optional cause of the error as hooks might just want to
-    /// discard an object (abort=false) and not abort.
+    /// This variant causes the object to be discarded and aborts the
+    /// operation.
     Abort(HookErrorCause<E>),
 }
 
@@ -67,51 +116,39 @@ impl<E: std::error::Error + 'static> std::error::Error for HookError<E> {
     }
 }
 
-/// Abstraction of `post_recycle` hooks.
-#[async_trait]
-pub trait HookCallback<T, E>: Sync + Send {
-    /// The hook method which is called after recycling an existing [`Object`].
-    ///
-    /// [`Object`]: super::Object
-    async fn call(&self, obj: &mut T, metrics: &Metrics) -> Result<(), HookError<E>>;
-}
-
-impl<T, E> fmt::Debug for dyn HookCallback<T, E> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:p}", self)
-    }
-}
-
-pub(crate) struct HookCallbacks<T, E> {
-    callbacks: Vec<Box<dyn HookCallback<T, E>>>,
+pub(crate) struct HookVec<T, E> {
+    vec: Vec<Hook<T, E>>,
 }
 
 // Implemented manually to avoid unnecessary trait bound on `M` type parameter.
-impl<T, E> fmt::Debug for HookCallbacks<T, E> {
+impl<T, E> fmt::Debug for HookVec<T, E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Hooks")
-            .field("callbacks", &self.callbacks)
+            // FIXME
+            //.field("fns", &self.fns)
             .finish()
     }
 }
 
 // Implemented manually to avoid unnecessary trait bound on `M` type parameter.
-impl<T, E> Default for HookCallbacks<T, E> {
+impl<T, E> Default for HookVec<T, E> {
     fn default() -> Self {
-        Self {
-            callbacks: Vec::new(),
-        }
+        Self { vec: Vec::new() }
     }
 }
 
-impl<T, E> HookCallbacks<T, E> {
+impl<T, E> HookVec<T, E> {
     pub(crate) async fn apply(
         &self,
         obj: &mut WithMetrics<T>,
         error: fn(e: HookError<E>) -> PoolError<E>,
     ) -> Result<Option<HookError<E>>, PoolError<E>> {
-        for hook in &self.callbacks {
-            match hook.call(&mut obj.obj, &obj.metrics).await {
+        for hook in &self.vec {
+            let result = match hook {
+                Hook::Fn(f) => f(&mut obj.obj, &obj.metrics),
+                Hook::AsyncFn(f) => f(&mut obj.obj, &obj.metrics).await,
+            };
+            match result {
                 Ok(()) => {}
                 Err(e) => match e {
                     HookError::Continue(_) => return Ok(Some(e)),
@@ -121,8 +158,8 @@ impl<T, E> HookCallbacks<T, E> {
         }
         Ok(None)
     }
-    pub(crate) fn push(&mut self, callback: impl HookCallback<T, E> + 'static) {
-        self.callbacks.push(Box::new(callback));
+    pub(crate) fn push(&mut self, hook: impl Into<Hook<T, E>>) {
+        self.vec.push(hook.into());
     }
 }
 
@@ -130,9 +167,9 @@ impl<T, E> HookCallbacks<T, E> {
 ///
 /// [`Pool`]: super::Pool
 pub struct Hooks<T, E> {
-    pub(crate) post_create: HookCallbacks<T, E>,
-    pub(crate) pre_recycle: HookCallbacks<T, E>,
-    pub(crate) post_recycle: HookCallbacks<T, E>,
+    pub(crate) post_create: HookVec<T, E>,
+    pub(crate) pre_recycle: HookVec<T, E>,
+    pub(crate) post_recycle: HookVec<T, E>,
 }
 
 // Implemented manually to avoid unnecessary trait bound on `M` type parameter.
@@ -150,9 +187,9 @@ impl<T, E> fmt::Debug for Hooks<T, E> {
 impl<T, E> Default for Hooks<T, E> {
     fn default() -> Self {
         Self {
-            pre_recycle: HookCallbacks::default(),
-            post_create: HookCallbacks::default(),
-            post_recycle: HookCallbacks::default(),
+            pre_recycle: HookVec::default(),
+            post_create: HookVec::default(),
+            post_recycle: HookVec::default(),
         }
     }
 }
