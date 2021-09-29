@@ -62,7 +62,6 @@ pub mod sync;
 use std::{
     collections::VecDeque,
     fmt,
-    future::Future,
     marker::PhantomData,
     ops::{Deref, DerefMut},
     sync::{
@@ -229,6 +228,46 @@ impl<M: Manager, W: From<Object<M>>> Clone for Pool<M, W> {
     }
 }
 
+/*
+The following function was replaced by a macro because Rust does not
+support inlining of async functions:
+https://rust-lang.github.io/async-fundamentals-initiative/evaluation/design/inline_async_fn.html
+
+#[inline]
+async fn apply_timeout<O, E>(
+    runtime: Option<Runtime>,
+    timeout_type: TimeoutType,
+    duration: Option<Duration>,
+    future: impl Future<Output = Result<O, impl Into<PoolError<E>>>>,
+) -> Result<O, PoolError<E>> {
+    match (runtime, duration) {
+        (_, None) => future.await.map_err(Into::into),
+        (Some(runtime), Some(duration)) => runtime
+            .timeout(duration, future)
+            .await
+            .ok_or(PoolError::Timeout(timeout_type))?
+            .map_err(Into::into),
+        (None, Some(_)) => Err(PoolError::NoRuntimeSpecified),
+    }
+}
+*/
+
+macro_rules! apply_timeout {
+    ($runtime:expr, $timeout_type:expr, $duration:expr, $future:expr $(,)?) => {
+        {
+            match ($runtime, $duration) {
+                (_, None) => $future.await.map_err(Into::into),
+                (Some(runtime), Some(duration)) => runtime
+                    .timeout(duration, $future)
+                    .await
+                    .ok_or(PoolError::Timeout($timeout_type))?
+                    .map_err(Into::into),
+                (None, Some(_)) => Err(PoolError::NoRuntimeSpecified),
+            }
+        }
+    }
+}
+
 impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     /// Instantiates a builder for a new [`Pool`].
     ///
@@ -302,7 +341,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                 TryAcquireError::NoPermits => PoolError::Timeout(TimeoutType::Wait),
             })?
         } else {
-            apply_timeout(
+            apply_timeout!(
                 self.inner.runtime,
                 TimeoutType::Wait,
                 self.inner.config.timeouts.wait,
@@ -313,8 +352,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                         .await
                         .map_err(|_| PoolError::Closed)
                 },
-            )
-            .await?
+            )?
         };
 
         let with_metrics = loop {
@@ -341,13 +379,12 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                         continue;
                     }
 
-                    if apply_timeout(
+                    if apply_timeout!(
                         self.inner.runtime,
                         TimeoutType::Recycle,
                         self.inner.config.timeouts.recycle,
                         self.inner.manager.recycle(&mut with_metrics.obj),
                     )
-                    .await
                     .is_err()
                     {
                         continue;
@@ -374,13 +411,12 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                 None => {
                     // Create new object
                     let mut with_metrics = WithMetrics {
-                        obj: apply_timeout(
+                        obj: apply_timeout!(
                             self.inner.runtime,
                             TimeoutType::Create,
                             self.inner.config.timeouts.create,
                             self.inner.manager.create(),
-                        )
-                        .await?,
+                        )?,
                         metrics: Metrics::default(),
                     };
 
@@ -543,22 +579,5 @@ impl<M: Manager> PoolInner<M> {
         } else {
             slots.size -= 1;
         }
-    }
-}
-
-async fn apply_timeout<O, E>(
-    runtime: Option<Runtime>,
-    timeout_type: TimeoutType,
-    duration: Option<Duration>,
-    future: impl Future<Output = Result<O, impl Into<PoolError<E>>>>,
-) -> Result<O, PoolError<E>> {
-    match (runtime, duration) {
-        (_, None) => future.await.map_err(Into::into),
-        (Some(runtime), Some(duration)) => runtime
-            .timeout(duration, future)
-            .await
-            .ok_or(PoolError::Timeout(timeout_type))?
-            .map_err(Into::into),
-        (None, Some(_)) => Err(PoolError::NoRuntimeSpecified),
     }
 }
