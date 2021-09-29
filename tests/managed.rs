@@ -93,6 +93,16 @@ async fn closing() {
     assert_eq!(pool.status().available, 0);
 }
 
+#[tokio::test]
+async fn close_resize() {
+    let mgr = Manager {};
+    let pool = Pool::builder(mgr).max_size(1).build().unwrap();
+    pool.close();
+    pool.resize(16);
+    assert_eq!(pool.status().size, 0);
+    assert_eq!(pool.status().max_size, 0);
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn concurrent() {
     let mgr = Manager {};
@@ -161,4 +171,85 @@ async fn object_take() {
     let status = pool.status();
     assert_eq!(status.size, 2);
     assert_eq!(status.available, 2);
+}
+
+#[tokio::test]
+async fn resize_pool_shrink() {
+    let mgr = Manager {};
+    let pool = Pool::builder(mgr).max_size(2).build().unwrap();
+    let obj0 = pool.get().await.unwrap();
+    let obj1 = pool.get().await.unwrap();
+    pool.resize(1);
+    assert_eq!(pool.status().max_size, 1);
+    assert_eq!(pool.status().size, 2);
+    drop(obj1);
+    assert_eq!(pool.status().max_size, 1);
+    assert_eq!(pool.status().size, 1);
+    drop(obj0);
+    assert_eq!(pool.status().max_size, 1);
+    assert_eq!(pool.status().size, 1);
+}
+
+#[tokio::test]
+async fn resize_pool_grow() {
+    let mgr = Manager {};
+    let pool = Pool::builder(mgr).max_size(1).build().unwrap();
+    let obj0 = pool.get().await.unwrap();
+    pool.resize(2);
+    assert_eq!(pool.status().max_size, 2);
+    assert_eq!(pool.status().size, 1);
+    let obj1 = pool.get().await.unwrap();
+    assert_eq!(pool.status().max_size, 2);
+    assert_eq!(pool.status().size, 2);
+    drop(obj1);
+    assert_eq!(pool.status().max_size, 2);
+    assert_eq!(pool.status().size, 2);
+    drop(obj0);
+    assert_eq!(pool.status().max_size, 2);
+    assert_eq!(pool.status().size, 2);
+}
+
+#[tokio::test]
+async fn resize_pool_shrink_grow() {
+    let mgr = Manager {};
+    let pool = Pool::builder(mgr).max_size(1).build().unwrap();
+    let obj0 = pool.get().await.unwrap();
+    pool.resize(2);
+    pool.resize(0);
+    pool.resize(5);
+    assert_eq!(pool.status().max_size, 5);
+    assert_eq!(pool.status().size, 1);
+    drop(obj0);
+    assert_eq!(pool.status().max_size, 5);
+    assert_eq!(pool.status().size, 1);
+}
+
+#[tokio::test]
+async fn resize_pool_grow_concurrent() {
+    let mgr = Manager {};
+    let pool = Pool::builder(mgr).max_size(0).build().unwrap();
+    let join_handle = {
+        let pool = pool.clone();
+        tokio::spawn(async move { pool.get().await })
+    };
+    tokio::task::yield_now().await;
+    assert_eq!(pool.status().max_size, 0);
+    assert_eq!(pool.status().size, 0);
+    assert_eq!(pool.status().available, -1);
+    pool.resize(1);
+    assert_eq!(pool.status().max_size, 1);
+    assert_eq!(pool.status().size, 0);
+    assert_eq!(pool.status().available, -1);
+    tokio::task::yield_now().await;
+    assert_eq!(pool.status().max_size, 1);
+    assert_eq!(pool.status().size, 1);
+    assert_eq!(pool.status().available, 0);
+    let obj0 = join_handle.await.unwrap().unwrap();
+    assert_eq!(pool.status().max_size, 1);
+    assert_eq!(pool.status().size, 1);
+    assert_eq!(pool.status().available, 0);
+    drop(obj0);
+    assert_eq!(pool.status().max_size, 1);
+    assert_eq!(pool.status().size, 1);
+    assert_eq!(pool.status().available, 1);
 }

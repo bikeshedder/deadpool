@@ -66,7 +66,7 @@ use std::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
     sync::{
-        atomic::{AtomicIsize, AtomicUsize, Ordering},
+        atomic::{AtomicIsize, Ordering},
         Arc, Mutex, Weak,
     },
     time::{Duration, Instant},
@@ -166,18 +166,7 @@ impl<M: Manager> Object<M> {
 impl<M: Manager> Drop for Object<M> {
     fn drop(&mut self) {
         if let Some(pool) = self.pool.upgrade() {
-            if let Some(obj) = self.obj.take() {
-                let _ = pool.available.fetch_add(1, Ordering::Relaxed);
-                let mut queue = pool.queue.lock().unwrap();
-                queue.push_back(obj);
-            } else {
-                let _ = pool.size.fetch_sub(1, Ordering::Relaxed);
-            }
-            pool.semaphore.add_permits(1);
-            // The pool might have been closed in the mean time.
-            // Hand over control to the `_cleanup` method which
-            // takes care of this.
-            pool.clean_up();
+            pool.return_object(self.obj.take());
         }
     }
 }
@@ -252,8 +241,11 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         Self {
             inner: Arc::new(PoolInner {
                 manager: Box::new(builder.manager),
-                queue: Mutex::new(VecDeque::with_capacity(builder.config.max_size)),
-                size: AtomicUsize::new(0),
+                slots: Mutex::new(Slots {
+                    vec: VecDeque::with_capacity(builder.config.max_size),
+                    size: 0,
+                    max_size: builder.config.max_size,
+                }),
                 available: AtomicIsize::new(0),
                 semaphore: Semaphore::new(builder.config.max_size),
                 config: builder.config,
@@ -327,15 +319,15 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
 
         let with_metrics = loop {
             let queue_obj = {
-                let mut queue = self.inner.queue.lock().unwrap();
-                queue.pop_front()
+                let mut slots = self.inner.slots.lock().unwrap();
+                slots.vec.pop_front()
             };
             match queue_obj {
                 Some(mut with_metrics) => {
                     // Recycle existing object
                     let recycle_guard = DropGuard(|| {
                         let _ = self.inner.available.fetch_sub(1, Ordering::Relaxed);
-                        let _ = self.inner.size.fetch_sub(1, Ordering::SeqCst);
+                        self.inner.slots.lock().unwrap().size -= 1;
                     });
 
                     // Apply post_recycle hooks
@@ -404,7 +396,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     }
 
                     let _ = self.inner.available.fetch_add(1, Ordering::Relaxed);
-                    let _ = self.inner.size.fetch_add(1, Ordering::Relaxed);
+                    self.inner.slots.lock().unwrap().size += 1;
 
                     break with_metrics;
                 }
@@ -422,13 +414,56 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         Ok(obj.into())
     }
 
+    /**
+     * Resize the pool. This change the `max_size` of the pool dropping
+     * excess objects and/or making space for new ones.
+     *
+     * If the pool is closed this method does nothing. The [`Pool::status`] method
+     * always reports a `max_size` of 0 for closed pools.
+     */
+    pub fn resize(&self, max_size: usize) {
+        if self.inner.semaphore.is_closed() {
+            return;
+        }
+        let mut slots = self.inner.slots.lock().unwrap();
+        let old_max_size = slots.max_size;
+        slots.max_size = max_size;
+        // shrink pool
+        if max_size < old_max_size {
+            while slots.size > slots.max_size {
+                if let Ok(permit) = self.inner.semaphore.try_acquire() {
+                    permit.forget();
+                    if slots.vec.pop_front().is_some() {
+                        slots.size -= 1;
+                    }
+                } else {
+                    break;
+                }
+            }
+            // Create a new VecDeque with a smaller capacity
+            let mut vec = VecDeque::with_capacity(max_size);
+            for obj in slots.vec.drain(..) {
+                vec.push_back(obj);
+            }
+            slots.vec = vec;
+        }
+        // grow pool
+        if max_size > old_max_size {
+            let additional = slots.max_size - slots.size;
+            slots.vec.reserve_exact(additional);
+            self.inner.semaphore.add_permits(additional);
+        }
+    }
+
     /// Closes this [`Pool`].
     ///
     /// All current and future tasks waiting for [`Object`]s will return
     /// [`PoolError::Closed`] immediately.
+    ///
+    /// This operation resizes the pool to 0.
     pub fn close(&self) {
+        self.resize(0);
         self.inner.semaphore.close();
-        self.inner.clean_up();
     }
 
     /// Indicates whether this [`Pool`] has been closed.
@@ -439,12 +474,11 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     /// Retrieves [`Status`] of this [`Pool`].
     #[must_use]
     pub fn status(&self) -> Status {
-        let max_size = self.inner.config.max_size;
-        let size = self.inner.size.load(Ordering::Relaxed);
+        let slots = self.inner.slots.lock().unwrap();
         let available = self.inner.available.load(Ordering::Relaxed);
         Status {
-            max_size,
-            size,
+            max_size: slots.max_size,
+            size: slots.size,
             available,
         }
     }
@@ -458,8 +492,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
 
 struct PoolInner<M: Manager> {
     manager: Box<M>,
-    queue: Mutex<VecDeque<WithMetrics<M::Type>>>,
-    size: AtomicUsize,
+    slots: Mutex<Slots<WithMetrics<M::Type>>>,
     /// Number of available [`Object`]s in the [`Pool`]. If there are no
     /// [`Object`]s in the [`Pool`] this number can become negative and store
     /// the number of [`Future`]s waiting for an [`Object`].
@@ -468,6 +501,13 @@ struct PoolInner<M: Manager> {
     config: PoolConfig,
     runtime: Option<Runtime>,
     hooks: hooks::Hooks<M::Type, M::Error>,
+}
+
+#[derive(Debug)]
+struct Slots<T> {
+    vec: VecDeque<T>,
+    size: usize,
+    max_size: usize,
 }
 
 // Implemented manually to avoid unnecessary trait bound on the struct.
@@ -479,8 +519,7 @@ where
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("PoolInner")
             .field("manager", &self.manager)
-            .field("queue", &self.queue)
-            .field("size", &self.size)
+            .field("slots", &self.slots)
             .field("available", &self.available)
             .field("semaphore", &self.semaphore)
             .field("config", &self.config)
@@ -491,25 +530,19 @@ where
 }
 
 impl<M: Manager> PoolInner<M> {
-    /// Cleans up internals of this [`Pool`].
-    ///
-    /// This method is called after closing the [`Pool`] and whenever an
-    /// [`Object`] is returned to the [`Pool`] and makes sure closed [`Pool`]s
-    /// don't contain any [`Object`]s.
-    fn clean_up(&self) {
-        if self.semaphore.is_closed() {
-            self.clear();
+    fn return_object(&self, obj: Option<WithMetrics<M::Type>>) {
+        let mut slots = self.slots.lock().unwrap();
+        if slots.size <= slots.max_size {
+            if let Some(obj) = obj {
+                slots.vec.push_back(obj);
+                let _ = self.available.fetch_add(1, Ordering::Relaxed);
+            } else {
+                slots.size -= 1;
+            }
+            self.semaphore.add_permits(1);
+        } else {
+            slots.size -= 1;
         }
-    }
-
-    /// Removes all the [`Object`]s which are currently part of this [`Pool`].
-    fn clear(&self) {
-        let mut queue = self.queue.lock().unwrap();
-        let _ = self.size.fetch_sub(queue.len(), Ordering::Relaxed);
-        let _ = self
-            .available
-            .fetch_sub(queue.len() as isize, Ordering::Relaxed);
-        queue.clear();
     }
 }
 
