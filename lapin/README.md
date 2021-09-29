@@ -30,7 +30,7 @@ use tokio_amqp::LapinTokioExt as _;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cfg = Config::default();
     cfg.url = Some("amqp://127.0.0.1:5672/%2f".into());
-    let pool = cfg.create_pool(Runtime::Tokio1)?;
+    let pool = cfg.create_pool(Some(Runtime::Tokio1))?;
     for _ in 1..10 {
         let mut connection = pool.get().await?;
         let channel = connection.create_channel().await?;
@@ -78,7 +78,7 @@ impl Config {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
     let mut cfg = Config::from_env().unwrap();
-    let pool = cfg.amqp.create_pool(Runtime::Tokio1).unwrap();
+    let pool = cfg.amqp.create_pool(Some(Runtime::Tokio1)).unwrap();
     for _ in 1..10 {
         let mut connection = pool.get().await?;
         let channel = connection.create_channel().await?;

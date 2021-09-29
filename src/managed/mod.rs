@@ -85,7 +85,7 @@ pub use crate::Status;
 use self::dropguard::DropGuard;
 pub use self::{
     builder::{BuildError, PoolBuilder},
-    config::{PoolConfig, Timeouts},
+    config::{CreatePoolError, PoolConfig, Timeouts},
     errors::{PoolError, RecycleError, TimeoutType},
 };
 

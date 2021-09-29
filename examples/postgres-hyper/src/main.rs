@@ -75,7 +75,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let addr: SocketAddr = config.listen.parse()?;
         let pool = config
             .pg
-            .create_pool(Runtime::Tokio1, tokio_postgres::NoTls)?;
+            .create_pool(Some(Runtime::Tokio1), tokio_postgres::NoTls)?;
 
         let make_svc = make_service_fn(|_conn| {
             let pool = pool.clone();

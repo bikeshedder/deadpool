@@ -1,8 +1,7 @@
 //! Configuration used for [`Pool`] creation.
 
-use std::{env, time::Duration};
+use std::{env, fmt, time::Duration};
 
-use deadpool::managed;
 #[cfg(feature = "serde")]
 use serde_1 as serde;
 use tokio_postgres::{
@@ -14,11 +13,9 @@ use tokio_postgres::{
     Socket,
 };
 
-use super::{Pool, PoolConfig, Runtime};
+use crate::{CreatePoolError, PoolBuilder, Runtime};
 
-/// Error returned by [`Config::create_pool()`] method if something is wrong
-/// with the configuration.
-pub type BuildError = managed::BuildError<tokio_postgres::Error>;
+use super::{Pool, PoolConfig};
 
 /// Configuration object.
 ///
@@ -109,6 +106,29 @@ pub struct Config {
     pub pool: Option<PoolConfig>,
 }
 
+/// This error is returned if there is something wrong with the configuration
+#[derive(Copy, Clone, Debug)]
+pub enum ConfigError {
+    /// This variant is returned if the `dbname` is missing from the config
+    DbnameMissing,
+    /// This variant is returned if the `dbname` contains an empty string
+    DbnameEmpty,
+}
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::DbnameMissing => write!(f, "configuration property \"dbname\" not found"),
+            Self::DbnameEmpty => write!(
+                f,
+                "configuration property \"dbname\" contains an empty string",
+            ),
+        }
+    }
+}
+
+impl std::error::Error for ConfigError {}
+
 impl Config {
     /// Create a new [`Config`] instance with default values. This function is
     /// identical to [`Config::default()`].
@@ -121,10 +141,27 @@ impl Config {
     ///
     /// # Errors
     ///
-    /// See [`BuildError`] and [`tokio_postgres::Error`] for details.
+    /// See [`CreatePoolError`] for details.
+    pub fn create_pool<T>(&self, runtime: Option<Runtime>, tls: T) -> Result<Pool, CreatePoolError>
+    where
+        T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
+        T::Stream: Sync + Send,
+        T::TlsConnect: Sync + Send,
+        <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
+    {
+        let mut builder = self.builder(tls).map_err(CreatePoolError::Config)?;
+        if let Some(runtime) = runtime {
+            builder = builder.runtime(runtime);
+        }
+        builder.build().map_err(CreatePoolError::Build)
+    }
+
+    /// Creates a new [`PoolBuilder`] using this [`Config`].
     ///
-    /// [`BuildError`]: managed::BuildError
-    pub fn create_pool<T>(&self, runtime: Runtime, tls: T) -> Result<Pool, BuildError>
+    /// # Errors
+    ///
+    /// See [`ConfigError`] and [`tokio_postgres::Error`] for details.
+    pub fn builder<T>(&self, tls: T) -> Result<PoolBuilder, ConfigError>
     where
         T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
         T::Stream: Sync + Send,
@@ -135,16 +172,13 @@ impl Config {
         let manager_config = self.get_manager_config();
         let manager = crate::Manager::from_config(pg_config, tls, manager_config);
         let pool_config = self.get_pool_config();
-        Pool::builder(manager)
-            .config(pool_config)
-            .runtime(runtime)
-            .build()
+        Ok(Pool::builder(manager).config(pool_config))
     }
 
     /// Returns [`tokio_postgres::Config`] which can be used to connect to
     /// the database.
     #[allow(unused_results)]
-    pub fn get_pg_config(&self) -> Result<tokio_postgres::Config, BuildError> {
+    pub fn get_pg_config(&self) -> Result<tokio_postgres::Config, ConfigError> {
         let mut cfg = tokio_postgres::Config::new();
         if let Some(user) = &self.user {
             cfg.user(user.as_str());
@@ -156,18 +190,10 @@ impl Config {
         }
         match &self.dbname {
             Some(dbname) => match dbname.as_str() {
-                "" => {
-                    return Err(BuildError::Config(
-                        "configuration property \"dbname\" not found".into(),
-                    ))
-                }
+                "" => return Err(ConfigError::DbnameMissing),
                 dbname => cfg.dbname(dbname),
             },
-            None => {
-                return Err(BuildError::Config(
-                    "configuration property \"dbname\" contains an empty string".into(),
-                ))
-            }
+            None => return Err(ConfigError::DbnameEmpty),
         };
         if let Some(options) = &self.options {
             cfg.options(options.as_str());

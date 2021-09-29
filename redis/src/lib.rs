@@ -36,13 +36,22 @@ use redis::{
 pub use deadpool::managed::reexports::*;
 pub use redis;
 
-pub use self::config::{Config, CreatePoolError};
+pub use self::config::{Config, ConfigError};
 
 /// Type alias for using [`deadpool::managed::Pool`] with [`redis`].
 pub type Pool = managed::Pool<Manager, Connection>;
 
+/// Type alias for using [`deadpool::managed::Pool`] with [`redis`].
+pub type PoolBuilder = managed::PoolBuilder<Manager, Connection>;
+
 /// Type alias for using [`deadpool::managed::PoolError`] with [`redis`].
 pub type PoolError = managed::PoolError<RedisError>;
+
+/// Type alias for using [`deadpool::managed::BuildError`] with [`redis`].
+pub type BuildError = managed::BuildError<RedisError>;
+
+/// Type alias for using [`deadpool::managed::CreatePoolError`] with [`redis`].
+pub type CreatePoolError = managed::CreatePoolError<ConfigError, RedisError>;
 
 /// Type alias for using [`deadpool::managed::Object`] with [`redis`].
 type Object = managed::Object<Manager>;

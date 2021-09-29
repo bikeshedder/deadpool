@@ -22,7 +22,7 @@ use deadpool_redis::{redis::{cmd, FromRedisValue}, Config, Runtime};
 #[tokio::main]
 async fn main() {
     let mut cfg = Config::from_url("redis://127.0.0.1/");
-    let pool = cfg.create_pool(Runtime::Tokio1).unwrap();
+    let pool = cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
     {
         let mut conn = pool.get().await.unwrap();
         cmd("SET")
@@ -67,7 +67,7 @@ impl Config {
 async fn main() {
     dotenv().ok();
     let cfg = Config::from_env().unwrap();
-    let pool = cfg.redis.create_pool(Runtime::Tokio1).unwrap();
+    let pool = cfg.redis.create_pool(Some(Runtime::Tokio1)).unwrap();
     {
         let mut conn = pool.get().await.unwrap();
         cmd("SET")

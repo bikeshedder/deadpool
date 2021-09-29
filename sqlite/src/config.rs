@@ -1,11 +1,6 @@
-use std::path::PathBuf;
+use std::{convert::Infallible, path::PathBuf};
 
-use deadpool::{
-    managed::{BuildError, PoolConfig},
-    Runtime,
-};
-
-use crate::{Manager, Pool};
+use crate::{CreatePoolError, Manager, Pool, PoolBuilder, PoolConfig, Runtime};
 
 /// Configuration object.
 ///
@@ -60,15 +55,29 @@ impl Config {
     ///
     /// # Errors
     ///
-    /// See [`BuildError`] and [`rusqlite::Error`] for details.
+    /// See [`CreatePoolError`] for details.
     ///
     /// [`RedisError`]: redis::RedisError
-    pub fn create_pool(&self, runtime: Runtime) -> Result<Pool, BuildError<rusqlite::Error>> {
-        let manager = Manager::from_config(self, runtime);
-        Pool::builder(manager)
-            .config(self.get_pool_config())
+    pub fn create_pool(&self, runtime: Runtime) -> Result<Pool, CreatePoolError> {
+        self.builder(runtime)
+            .map_err(CreatePoolError::Config)?
             .runtime(runtime)
             .build()
+            .map_err(CreatePoolError::Build)
+    }
+
+    /// Creates a new [`PoolBuilder`] using this [`Config`].
+    ///
+    /// # Errors
+    ///
+    /// See [`ConfigError`] for details.
+    ///
+    /// [`RedisError`]: redis::RedisError
+    pub fn builder(&self, runtime: Runtime) -> Result<PoolBuilder, ConfigError> {
+        let manager = Manager::from_config(self, runtime);
+        Ok(Pool::builder(manager)
+            .config(self.get_pool_config())
+            .runtime(runtime))
     }
 
     /// Returns [`deadpool::managed::PoolConfig`] which can be used to construct
@@ -78,3 +87,9 @@ impl Config {
         self.pool.unwrap_or_default()
     }
 }
+
+/// This error is returned if there is something wrong with the SQLite configuration.
+///
+/// This is just a type alias to [`Infallible`] at the moment as there
+/// is no validation happening at the configuration phase.
+pub type ConfigError = Infallible;

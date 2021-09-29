@@ -29,7 +29,7 @@ async fn index(redis_pool: web::Data<Pool>) -> Result<HttpResponse, Error> {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let redis_config = RedisConfig::from_url(redis_uri());
-    let redis_pool = redis_config.create_pool(Runtime::Tokio1).unwrap();
+    let redis_pool = redis_config.create_pool(Some(Runtime::Tokio1)).unwrap();
     let server_url = "127.0.0.1:8080";
 
     let server = HttpServer::new(move || {

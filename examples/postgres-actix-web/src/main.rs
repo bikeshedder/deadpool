@@ -58,7 +58,7 @@ async fn main() -> std::io::Result<()> {
     let config = Config::from_env().unwrap();
     let pool = config
         .pg
-        .create_pool(Runtime::Tokio1, tokio_postgres::NoTls)
+        .create_pool(Some(Runtime::Tokio1), tokio_postgres::NoTls)
         .unwrap();
     let server = HttpServer::new(move || {
         App::new()

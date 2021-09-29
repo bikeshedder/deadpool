@@ -28,10 +28,19 @@ use lapin::{ConnectionProperties, Error};
 pub use deadpool::managed::reexports::*;
 pub use lapin;
 
-pub use self::config::{BuildError, Config};
+pub use self::config::{Config, ConfigError};
 
 /// Type alias for using [`deadpool::managed::Pool`] with [`lapin`].
 pub type Pool = managed::Pool<Manager>;
+
+/// Type alias for using [`deadpool::managed::PoolBuilder`] with [`lapin`].
+pub type PoolBuilder = managed::PoolBuilder<Manager>;
+
+/// Type alias for using [`deadpool::managed::BuildError`] with [`lapin`].
+pub type BuildError = managed::BuildError<Error>;
+
+/// Type alias for using [`deadpool::managed::CreatePoolError`] with [`lapin`].
+pub type CreatePoolError = managed::CreatePoolError<ConfigError, Error>;
 
 /// Type alias for using [`deadpool::managed::PoolError`] with [`lapin`].
 pub type PoolError = managed::PoolError<Error>;

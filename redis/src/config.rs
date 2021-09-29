@@ -1,10 +1,10 @@
 use std::{fmt, path::PathBuf};
 
-use deadpool::{managed::BuildError, Runtime};
+use redis::RedisError;
 #[cfg(feature = "serde")]
 use serde_1::Deserialize;
 
-use crate::{Pool, PoolConfig, RedisResult};
+use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime};
 
 /// Configuration object.
 ///
@@ -56,25 +56,29 @@ impl Config {
     ///
     /// # Errors
     ///
-    /// See [`BuildError`] and [`RedisError`] for details.
+    /// See [`CreatePoolError`] for details.
+    pub fn create_pool(&self, runtime: Option<Runtime>) -> Result<Pool, CreatePoolError> {
+        let mut builder = self.builder().map_err(CreatePoolError::Config)?;
+        if let Some(runtime) = runtime {
+            builder = builder.runtime(runtime);
+        }
+        builder.build().map_err(CreatePoolError::Build)
+    }
+
+    /// Creates a new [`PoolBuilder`] using this [`Config`].
     ///
-    /// [`RedisError`]: redis::RedisError
-    pub fn create_pool(&self, runtime: Runtime) -> Result<Pool, BuildError<redis::RedisError>> {
+    /// # Errors
+    ///
+    /// See [`ConfigError`] for details.
+    pub fn builder(&self) -> Result<PoolBuilder, ConfigError> {
         let manager = match (&self.url, &self.connection) {
             (Some(url), None) => crate::Manager::new(url.as_str())?,
             (None, Some(connection)) => crate::Manager::new(connection.clone())?,
             (None, None) => crate::Manager::new(ConnectionInfo::default())?,
-            (Some(_), Some(_)) => {
-                return Err(BuildError::Config(
-                    "url and connection must not be specified at the same time.".into(),
-                ))
-            }
+            (Some(_), Some(_)) => return Err(ConfigError::UrlAndConnectionSpecified),
         };
         let pool_config = self.get_pool_config();
-        Pool::builder(manager)
-            .config(pool_config)
-            .runtime(runtime)
-            .build()
+        Ok(Pool::builder(manager).config(pool_config))
     }
 
     /// Returns [`deadpool::managed::PoolConfig`] which can be used to construct
@@ -257,36 +261,31 @@ impl From<redis::RedisConnectionInfo> for RedisConnectionInfo {
     }
 }
 
-/// Possible errors returned when [`Pool`] creation fails.
+/// This error is returned if the configuration contains an error
 #[derive(Debug)]
-pub enum CreatePoolError {
-    /// [`PoolConfig`] contained invalid options.
-    Config(String),
-
-    /// Redis returned an error while creating the [`Pool`].
-    Redis(redis::RedisError),
+pub enum ConfigError {
+    /// Both url and connection were specified in the config
+    UrlAndConnectionSpecified,
+    /// The [`redis`] crate returned an error when parsing the config
+    Redis(RedisError),
 }
 
-impl From<redis::RedisError> for CreatePoolError {
-    fn from(error: redis::RedisError) -> Self {
-        Self::Redis(error)
+impl From<RedisError> for ConfigError {
+    fn from(e: RedisError) -> Self {
+        Self::Redis(e)
     }
 }
 
-impl fmt::Display for CreatePoolError {
+impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Config(msg) => write!(f, "Config error: {}", msg),
-            Self::Redis(err) => write!(f, "Config error: {}", err),
+            Self::UrlAndConnectionSpecified => write!(
+                f,
+                "url and connection must not be specified at the same time."
+            ),
+            Self::Redis(e) => write!(f, "Redis: {}", e),
         }
     }
 }
 
-impl std::error::Error for CreatePoolError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Config(_) => None,
-            Self::Redis(err) => Some(err),
-        }
-    }
-}
+impl std::error::Error for ConfigError {}
