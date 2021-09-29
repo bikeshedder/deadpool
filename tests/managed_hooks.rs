@@ -41,7 +41,7 @@ struct CreateErrContinueHook {}
 
 #[async_trait]
 impl HookCallback<usize, ()> for CreateErrContinueHook {
-    async fn call(&self, obj: &mut usize, _: &Metrics) -> Result<(), HookError<()>> {
+    async fn call(&self, obj: &mut usize, _: &Option<Metrics>) -> Result<(), HookError<()>> {
         if *obj % 2 != 0 {
             Err(HookError::Continue(None))
         } else {
@@ -56,7 +56,7 @@ struct CreateErrAbortHook {}
 
 #[async_trait]
 impl HookCallback<usize, ()> for CreateErrAbortHook {
-    async fn call(&self, obj: &mut usize, _: &Metrics) -> Result<(), HookError<()>> {
+    async fn call(&self, obj: &mut usize, _: &Option<Metrics>) -> Result<(), HookError<()>> {
         if *obj % 2 != 0 {
             Err(HookError::Abort(HookErrorCause::StaticMessage("fail!")))
         } else {
@@ -69,7 +69,7 @@ struct IncrementHook {}
 
 #[async_trait]
 impl HookCallback<usize, ()> for IncrementHook {
-    async fn call(&self, obj: &mut usize, _: &Metrics) -> Result<(), HookError<()>> {
+    async fn call(&self, obj: &mut usize, _: &Option<Metrics>) -> Result<(), HookError<()>> {
         *obj += 1;
         Ok(())
     }
@@ -80,8 +80,8 @@ struct RecycleErrContinueHook {}
 
 #[async_trait]
 impl HookCallback<usize, ()> for RecycleErrContinueHook {
-    async fn call(&self, _: &mut usize, metrics: &Metrics) -> Result<(), HookError<()>> {
-        if metrics.recycle_count > 0 {
+    async fn call(&self, _: &mut usize, metrics: &Option<Metrics>) -> Result<(), HookError<()>> {
+        if metrics.unwrap().recycle_count > 0 {
             return Err(HookError::Continue(None));
         } else {
             Ok(())
@@ -95,8 +95,8 @@ struct RecycleErrAbortHook {}
 
 #[async_trait]
 impl HookCallback<usize, ()> for RecycleErrAbortHook {
-    async fn call(&self, _: &mut usize, metrics: &Metrics) -> Result<(), HookError<()>> {
-        if metrics.recycle_count > 0 {
+    async fn call(&self, _: &mut usize, metrics: &Option<Metrics>) -> Result<(), HookError<()>> {
+        if metrics.unwrap().recycle_count > 0 {
             return Err(HookError::Abort(HookErrorCause::StaticMessage("fail!")));
         } else {
             Ok(())
@@ -168,6 +168,7 @@ async fn pre_recycle_err_continue() {
     let manager = Computer::new(0);
     let pool = Pool::<Computer>::builder(manager)
         .max_size(1)
+        .metrics(true)
         .pre_recycle(RecycleErrContinueHook {})
         .build()
         .unwrap();
@@ -196,6 +197,7 @@ async fn pre_recycle_err_abort() {
     let manager = Computer::new(0);
     let pool = Pool::<Computer>::builder(manager)
         .max_size(1)
+        .metrics(true)
         .pre_recycle(RecycleErrAbortHook {})
         .build()
         .unwrap();

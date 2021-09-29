@@ -118,6 +118,14 @@ where
         self
     }
 
+    /// Enable/Disable object [`Metrics`]
+    ///
+    /// [`Metrics`]: deadpool::managed::Metrics
+    pub fn metrics(mut self, value: bool) -> Self {
+        self.config.metrics = value;
+        self
+    }
+
     /// Sets the [`PoolConfig::timeouts`].
     pub fn timeouts(mut self, value: Timeouts) -> Self {
         self.config.timeouts = value;

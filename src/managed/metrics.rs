@@ -39,5 +39,5 @@ pub(crate) struct WithMetrics<T> {
     /// The object
     pub(crate) obj: T,
     /// The metrics of the object
-    pub(crate) metrics: Metrics,
+    pub(crate) metrics: Option<Metrics>,
 }

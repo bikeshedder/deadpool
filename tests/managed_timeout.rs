@@ -46,6 +46,7 @@ async fn test_managed_timeout(runtime: Runtime) {
     let mgr = Manager {};
     let cfg = PoolConfig {
         max_size: 16,
+        metrics: false,
         timeouts: Timeouts {
             create: Some(Duration::from_millis(0)),
             wait: Some(Duration::from_millis(0)),

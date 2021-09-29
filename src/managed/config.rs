@@ -13,6 +13,12 @@ pub struct PoolConfig {
     /// [`Pool`]: super::Pool
     pub max_size: usize,
 
+    /// Enable object metrics.
+    ///
+    /// This feature doesn't come free as for every object
+    /// creation and recycle a `Instant::now` call is made.
+    pub metrics: bool,
+
     /// Timeouts of the [`Pool`].
     ///
     /// [`Pool`]: super::Pool
@@ -27,6 +33,7 @@ impl PoolConfig {
     pub fn new(max_size: usize) -> Self {
         Self {
             max_size,
+            metrics: false,
             timeouts: Timeouts::default(),
         }
     }

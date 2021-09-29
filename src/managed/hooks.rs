@@ -73,7 +73,7 @@ pub trait HookCallback<T, E>: Sync + Send {
     /// The hook method which is called after recycling an existing [`Object`].
     ///
     /// [`Object`]: super::Object
-    async fn call(&self, obj: &mut T, metrics: &Metrics) -> Result<(), HookError<E>>;
+    async fn call(&self, obj: &mut T, metrics: &Option<Metrics>) -> Result<(), HookError<E>>;
 }
 
 impl<T, E> fmt::Debug for dyn HookCallback<T, E> {

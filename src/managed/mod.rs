@@ -147,7 +147,7 @@ impl<M: Manager> Object<M> {
     }
 
     /// Get object statistics
-    pub fn statistics(this: &Self) -> Metrics {
+    pub fn metrics(this: &Self) -> Option<Metrics> {
         this.obj.as_ref().unwrap().metrics
     }
 
@@ -364,8 +364,10 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                         continue;
                     }
 
-                    with_metrics.metrics.recycle_count += 1;
-                    with_metrics.metrics.recycled = Some(Instant::now());
+                    if let Some(mut metrics) = with_metrics.metrics {
+                        metrics.recycle_count += 1;
+                        metrics.recycled = Some(Instant::now());
+                    }
 
                     recycle_guard.disarm();
 
@@ -381,7 +383,11 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                             self.inner.manager.create(),
                         )
                         .await?,
-                        metrics: Metrics::default(),
+                        metrics: if self.inner.config.metrics {
+                            Some(Metrics::default())
+                        } else {
+                            None
+                        }
                     };
 
                     // Apply post_create hooks
