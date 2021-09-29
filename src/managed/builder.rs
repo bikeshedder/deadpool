@@ -11,29 +11,17 @@ use super::{
 /// [`Pool`].
 #[derive(Debug)]
 pub enum BuildError<E> {
-    /// Something is wrong with the configuration.
-    /// See message string for details.
-    Config(String),
-
     /// Backend reported an error when creating a [`Pool`].
+    // FIXME remove this?
     Backend(E),
 
     /// [`Runtime`] is required.
     NoRuntimeSpecified(String),
 }
 
-impl<E> From<E> for BuildError<E> {
-    fn from(e: E) -> Self {
-        Self::Backend(e)
-    }
-}
-
 impl<E: std::fmt::Display> fmt::Display for BuildError<E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Config(msg) => {
-                write!(f, "Error occurred while building the pool: Config: {}", msg)
-            }
             Self::Backend(e) => write!(f, "Error occurred while building the pool: Backend: {}", e),
             Self::NoRuntimeSpecified(msg) => write!(
                 f,
@@ -47,8 +35,8 @@ impl<E: std::fmt::Display> fmt::Display for BuildError<E> {
 impl<E: std::error::Error + 'static> std::error::Error for BuildError<E> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::Config(_) | Self::NoRuntimeSpecified(_) => None,
             Self::Backend(e) => Some(e),
+            Self::NoRuntimeSpecified(_) => None,
         }
     }
 }

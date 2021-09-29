@@ -1,4 +1,6 @@
-use std::time::Duration;
+use std::{fmt, time::Duration};
+
+use super::BuildError;
 
 /// [`Pool`] configuration.
 ///
@@ -84,4 +86,34 @@ impl Default for Timeouts {
             recycle: None,
         }
     }
+}
+
+/// This error is used when building pools via the config `create_pool`
+/// methods.
+#[derive(Debug)]
+pub enum CreatePoolError<C, B> {
+    /// This variant is used for configuration errors
+    Config(C),
+    /// This variant is used for errors while building the pool
+    Build(BuildError<B>),
+}
+
+impl<C, B> fmt::Display for CreatePoolError<C, B>
+where
+    C: fmt::Display,
+    B: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Config(e) => write!(f, "Config: {}", e),
+            Self::Build(e) => write!(f, "Build: {}", e),
+        }
+    }
+}
+
+impl<C, B> std::error::Error for CreatePoolError<C, B>
+where
+    C: std::error::Error,
+    B: std::error::Error,
+{
 }

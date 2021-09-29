@@ -50,7 +50,7 @@ async fn without_pool(config: &Config) -> Duration {
 async fn with_deadpool(config: &Config) -> Duration {
     let pool = config
         .pg
-        .create_pool(Runtime::Tokio1, tokio_postgres::NoTls)
+        .create_pool(Some(Runtime::Tokio1), tokio_postgres::NoTls)
         .unwrap();
     let now = Instant::now();
     let (tx, mut rx) = mpsc::channel::<usize>(16);

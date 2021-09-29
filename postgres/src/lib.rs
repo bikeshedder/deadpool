@@ -20,7 +20,7 @@
     unused_results
 )]
 
-pub mod config;
+mod config;
 
 use std::{
     borrow::Cow,
@@ -43,10 +43,19 @@ use tokio_postgres::{
 pub use deadpool::managed::reexports::*;
 pub use tokio_postgres;
 
-pub use self::config::{Config, ManagerConfig, RecyclingMethod};
+pub use self::config::{Config, ConfigError, ManagerConfig, RecyclingMethod};
 
 /// Type alias for using [`deadpool::managed::Pool`] with [`tokio_postgres`].
 pub type Pool = managed::Pool<Manager>;
+
+/// Type alias for using [`deadpool::managed::Pool`] with [`tokio_postgres`].
+pub type PoolBuilder = managed::PoolBuilder<Manager, Client>;
+
+/// Type alias for using [`deadpool::managed::BuildError`] with [`tokio_postgres`].
+pub type BuildError = managed::BuildError<Error>;
+
+/// Type alias for using [`deadpool::managed::BuildError`] with [`tokio_postgres`].
+pub type CreatePoolError = managed::CreatePoolError<ConfigError, Error>;
 
 /// Type alias for using [`deadpool::managed::PoolError`] with
 /// [`tokio_postgres`].

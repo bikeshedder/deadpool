@@ -1,13 +1,11 @@
+use std::convert::Infallible;
+
 #[cfg(feature = "rt_async-std_1")]
 use async_amqp::LapinAsyncStdExt as _;
-use deadpool::{managed, Runtime};
 #[cfg(feature = "rt_tokio_1")]
 use tokio_amqp::LapinTokioExt as _;
 
-use crate::{Manager, Pool, PoolConfig};
-
-/// Error of building a [`Pool`].
-pub type BuildError = managed::BuildError<lapin::Error>;
+use crate::{CreatePoolError, Manager, Pool, PoolBuilder, PoolConfig, Runtime};
 
 /// Configuration object.
 ///
@@ -58,25 +56,34 @@ impl Config {
     ///
     /// # Errors
     ///
-    /// See [`BuildError`] and [`lapin::Error`] for details.
-    ///
-    /// [`BuildError`]: managed::BuildError
-    pub fn create_pool(&self, runtime: Runtime) -> Result<Pool, BuildError> {
+    /// See [`CreatePoolError`] for details.
+    pub fn create_pool(&self, runtime: Option<Runtime>) -> Result<Pool, CreatePoolError> {
+        self.builder(runtime)
+            .build()
+            .map_err(CreatePoolError::Build)
+    }
+
+    /// Creates a new [`PoolBuilder`] using this [`Config`].
+    pub fn builder(&self, runtime: Option<Runtime>) -> PoolBuilder {
         let url = self.get_url().to_string();
         let pool_config = self.get_pool_config();
 
         let conn_props = self.connection_properties.clone();
         let conn_props = match runtime {
+            None => conn_props,
             #[cfg(feature = "rt_tokio_1")]
-            Runtime::Tokio1 => conn_props.with_tokio(),
+            Some(Runtime::Tokio1) => conn_props.with_tokio(),
             #[cfg(feature = "rt_async-std_1")]
-            Runtime::AsyncStd1 => conn_props.with_async_std(),
+            Some(Runtime::AsyncStd1) => conn_props.with_async_std(),
         };
 
-        Pool::builder(Manager::new(url, conn_props))
-            .config(pool_config)
-            .runtime(runtime)
-            .build()
+        let mut builder = Pool::builder(Manager::new(url, conn_props)).config(pool_config);
+
+        if let Some(runtime) = runtime {
+            builder = builder.runtime(runtime)
+        }
+
+        builder
     }
 
     /// Returns URL which can be used to connect to the database.
@@ -91,3 +98,9 @@ impl Config {
         self.pool.unwrap_or_default()
     }
 }
+
+/// This error is returned if there is something wrong with the lapin configuration.
+///
+/// This is just a type alias to [`Infallible`] at the moment as there
+/// is no validation happening at the configuration phase.
+pub type ConfigError = Infallible;

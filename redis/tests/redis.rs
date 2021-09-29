@@ -23,7 +23,7 @@ impl Config {
 
 fn create_pool() -> deadpool_redis::Pool {
     let cfg = Config::from_env();
-    cfg.redis.create_pool(Runtime::Tokio1).unwrap()
+    cfg.redis.create_pool(Some(Runtime::Tokio1)).unwrap()
 }
 
 #[tokio::test]

@@ -36,7 +36,7 @@ impl Config {
 fn create_pool() -> Pool {
     let cfg = Config::from_env();
     cfg.pg
-        .create_pool(Runtime::Tokio1, tokio_postgres::NoTls)
+        .create_pool(Some(Runtime::Tokio1), tokio_postgres::NoTls)
         .unwrap()
 }
 
@@ -165,7 +165,7 @@ async fn recycling_methods() {
         cfg.pg.manager = Some(ManagerConfig { recycling_method });
         let pool = cfg
             .pg
-            .create_pool(Runtime::Tokio1, tokio_postgres::NoTls)
+            .create_pool(Some(Runtime::Tokio1), tokio_postgres::NoTls)
             .unwrap();
         for _ in 0usize..20usize {
             let client = pool.get().await.unwrap();

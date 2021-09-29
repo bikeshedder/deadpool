@@ -32,7 +32,7 @@ async fn main() {
     let mut cfg = Config::new();
     cfg.dbname = Some("deadpool".to_string());
     cfg.manager = Some(ManagerConfig { recycling_method: RecyclingMethod::Fast });
-    let pool = cfg.create_pool(Runtime::Tokio1, NoTls).unwrap();
+    let pool = cfg.create_pool(Some(Runtime::Tokio1), NoTls).unwrap();
     for i in 1..10 {
         let mut client = pool.get().await.unwrap();
         let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
@@ -74,7 +74,7 @@ impl Config {
 async fn main() {
     dotenv().ok();
     let mut cfg = Config::from_env().unwrap();
-    let pool = cfg.pg.create_pool(Runtime::Tokio1, NoTls).unwrap();
+    let pool = cfg.pg.create_pool(Some(Runtime::Tokio1), NoTls).unwrap();
     for i in 1..10 {
         let mut client = pool.get().await.unwrap();
         let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
