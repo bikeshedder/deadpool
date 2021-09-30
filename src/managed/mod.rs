@@ -532,9 +532,11 @@ impl<M: Manager> PoolInner<M> {
         if slots.size <= slots.max_size {
             if let Some(obj) = obj {
                 slots.vec.push_back(obj);
+                drop(slots);
                 let _ = self.available.fetch_add(1, Ordering::Relaxed);
             } else {
                 slots.size -= 1;
+                drop(slots);
             }
             self.semaphore.add_permits(1);
         } else {
