@@ -318,10 +318,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         };
 
         let with_metrics = loop {
-            let queue_obj = {
-                let mut slots = self.inner.slots.lock().unwrap();
-                slots.vec.pop_front()
-            };
+            let queue_obj = self.inner.slots.lock().unwrap().vec.pop_front();
             match queue_obj {
                 Some(mut with_metrics) => {
                     // Recycle existing object
