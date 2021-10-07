@@ -89,6 +89,7 @@ jobs:
       fail-fast: false
       matrix:
         crate:
+          - arangodb
           - diesel
           - lapin
           - postgres
@@ -136,6 +137,7 @@ jobs:
           #       `nom = 6.0.0`. Try re-enable it on next `lapin` major version
           #        upgrade.
           #- { crate: deadpool-lapin, msrv: '1.54.0' }
+          - { crate: deadpool-arangodb, msrv: '1.54.0' }
           - { crate: deadpool-postgres, msrv: '1.54.0' }
           - { crate: deadpool-redis, msrv: '1.54.0' }
           - { crate: deadpool-sqlite, msrv: '1.54.0' }
@@ -165,6 +167,7 @@ jobs:
       matrix:
         crate:
           - deadpool
+          - deadpool-arangodb
           - deadpool-diesel
           - deadpool-lapin
           - deadpool-postgres
@@ -172,6 +175,13 @@ jobs:
           - deadpool-sqlite
     runs-on: ubuntu-latest
     services:
+      arangodb:
+        image: arangodb
+        ports:
+          - 8529:8529
+        env:
+          ARANGO_ROOT_PASSWORD: deadpool
+          ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY: 500M
       postgres:
         image: postgres
         ports:
@@ -207,6 +217,10 @@ jobs:
 
       - run: cargo test -p ${{ matrix.crate }} --all-features
         env:
+          ARANGODB__URL: http://127.0.0.1:8529
+          ARANGODB__USERNAME: root
+          ARANGODB__PASSWORD: deadpool
+          ARANGODB__USE_JWT: "true"
           PG__HOST: 127.0.0.1
           PG__PORT: 5432
           PG__USER: deadpool
@@ -231,6 +245,7 @@ jobs:
       matrix:
         crate:
           - deadpool
+          - deadpool-arangodb
           - deadpool-diesel
           - deadpool-lapin
           - deadpool-postgres
