@@ -43,7 +43,7 @@ use tokio_postgres::{
 pub use deadpool::managed::reexports::*;
 pub use tokio_postgres;
 
-pub use self::config::{Config, ConfigError, ManagerConfig, RecyclingMethod};
+pub use self::config::{Config, ConfigError, ManagerConfig, RecyclingMethod, SslMode};
 
 /// Type alias for using [`deadpool::managed::Pool`] with [`tokio_postgres`].
 pub type Pool = managed::Pool<Manager>;
