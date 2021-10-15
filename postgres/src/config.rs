@@ -238,7 +238,7 @@ impl Config {
         if let Some(keepalives_idle) = &self.keepalives_idle {
             cfg.keepalives_idle(*keepalives_idle);
         }
-        if let Some(mode) = &self.ssl_mode {
+        if let Some(mode) = self.ssl_mode.clone() {
             cfg.ssl_mode(mode.into());
         }
         Ok(cfg)
