@@ -9,4 +9,4 @@ publish = false
 [dependencies]
 actix-web = "4.0.0-beta.8"
 deadpool-redis = { version = "0.10.0-pre", path = "../../redis" }
-redis = { version = "0.19", features = ["tokio-comp"] }
+redis = { version = "0.21", features = ["tokio-comp"] }
