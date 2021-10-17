@@ -359,6 +359,9 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             if obj.inner.is_some() {
                 // Recycle existing object
                 let recycle_guard = DropGuard(|| {
+                    // This guard is dropped either if the future is cancelled,
+                    // the `Manager::recycle` method returns an error or the
+                    // `pre_recycle`/`post_recycle` hooks return an error.
                     let _ = self.inner.available.fetch_sub(1, Ordering::Relaxed);
                 });
 
