@@ -1,3 +1,7 @@
+## v0.4.0 (unreleased)
+
+* Update `rusqlite` dependency to version `0.26`
+
 ## v0.3.0
 
 * __Breaking:__ Replace `deadpool::managed::sync` by
