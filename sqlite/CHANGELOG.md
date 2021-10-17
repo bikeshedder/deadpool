@@ -5,7 +5,6 @@
 * Fix panic handling inside the `interact` method
 * Wrap blocking drop method of connections inside `spawn_blocking`
 * Remove unused `futures`, `tokio` and `log` dependencies
-* Update `rusqlite` dependency to version `0.26`
 
 ## v0.1.0
 
