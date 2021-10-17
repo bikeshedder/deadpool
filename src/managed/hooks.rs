@@ -13,12 +13,18 @@ pub type HookResult<E> = Result<(), HookError<E>>;
 /// The boxed future that should be returned by async hooks
 pub type HookFuture<'a, E> = Pin<Box<dyn Future<Output = HookResult<E>> + Send + 'a>>;
 
+/// Function signature for sync callbacks
+pub type SyncFn<T, E> = dyn Fn(&mut T, &Metrics) -> HookResult<E> + Sync + Send;
+
+/// Function siganture for async callbacks
+pub type AsyncFn<T, E> = dyn for<'a> Fn(&'a mut T, &'a Metrics) -> HookFuture<'a, E> + Sync + Send;
+
 /// Wrapper for hook functions
 pub enum Hook<T, E> {
     /// Use a plain function (non-async) as a hook
-    Fn(Box<dyn Fn(&mut T, &Metrics) -> HookResult<E> + Sync + Send>),
+    Fn(Box<SyncFn<T, E>>),
     /// Use an async function as a hook
-    AsyncFn(Box<dyn for<'a> Fn(&'a mut T, &'a Metrics) -> HookFuture<'a, E> + Sync + Send>),
+    AsyncFn(Box<AsyncFn<T, E>>),
 }
 
 impl<T, E> Hook<T, E> {
