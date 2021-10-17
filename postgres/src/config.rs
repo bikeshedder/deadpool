@@ -221,22 +221,22 @@ impl Config {
             #[cfg(not(unix))]
             cfg.host("127.0.0.1");
         }
-        if let Some(port) = &self.port {
-            cfg.port(*port);
+        if let Some(port) = self.port {
+            cfg.port(port);
         }
         if let Some(ports) = &self.ports {
             for port in ports.iter() {
                 cfg.port(*port);
             }
         }
-        if let Some(connect_timeout) = &self.connect_timeout {
-            cfg.connect_timeout(*connect_timeout);
+        if let Some(connect_timeout) = self.connect_timeout {
+            cfg.connect_timeout(connect_timeout);
         }
-        if let Some(keepalives) = &self.keepalives {
-            cfg.keepalives(*keepalives);
+        if let Some(keepalives) = self.keepalives {
+            cfg.keepalives(keepalives);
         }
-        if let Some(keepalives_idle) = &self.keepalives_idle {
-            cfg.keepalives_idle(*keepalives_idle);
+        if let Some(keepalives_idle) = self.keepalives_idle {
+            cfg.keepalives_idle(keepalives_idle);
         }
         if let Some(mode) = self.ssl_mode {
             cfg.ssl_mode(mode.into());
