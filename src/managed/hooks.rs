@@ -2,10 +2,7 @@
 
 use std::{fmt, future::Future, pin::Pin};
 
-use super::{
-    metrics::{Metrics, WithMetrics},
-    PoolError,
-};
+use super::{Manager, Metrics, ObjectInner, PoolError};
 
 /// The result returned by hooks
 pub type HookResult<E> = Result<(), HookError<E>>;
@@ -14,33 +11,41 @@ pub type HookResult<E> = Result<(), HookError<E>>;
 pub type HookFuture<'a, E> = Pin<Box<dyn Future<Output = HookResult<E>> + Send + 'a>>;
 
 /// Function signature for sync callbacks
-pub type SyncFn<T, E> = dyn Fn(&mut T, &Metrics) -> HookResult<E> + Sync + Send;
+pub type SyncFn<M> =
+    dyn Fn(&mut <M as Manager>::Type, &Metrics) -> HookResult<<M as Manager>::Error> + Sync + Send;
 
 /// Function siganture for async callbacks
-pub type AsyncFn<T, E> = dyn for<'a> Fn(&'a mut T, &'a Metrics) -> HookFuture<'a, E> + Sync + Send;
+pub type AsyncFn<M> = dyn for<'a> Fn(&'a mut <M as Manager>::Type, &Metrics) -> HookFuture<'a, <M as Manager>::Error>
+    + Sync
+    + Send;
 
 /// Wrapper for hook functions
-pub enum Hook<T, E> {
+pub enum Hook<M: Manager> {
     /// Use a plain function (non-async) as a hook
-    Fn(Box<SyncFn<T, E>>),
+    Fn(Box<SyncFn<M>>),
     /// Use an async function as a hook
-    AsyncFn(Box<AsyncFn<T, E>>),
+    AsyncFn(Box<AsyncFn<M>>),
 }
 
-impl<T, E> Hook<T, E> {
+impl<M: Manager> Hook<M> {
     /// Create Hook from sync function
-    pub fn sync_fn(f: impl Fn(&mut T, &Metrics) -> HookResult<E> + Sync + Send + 'static) -> Self {
+    pub fn sync_fn(
+        f: impl Fn(&mut M::Type, &Metrics) -> HookResult<M::Error> + Sync + Send + 'static,
+    ) -> Self {
         Self::Fn(Box::new(f))
     }
     /// Create Hook from async function
     pub fn async_fn(
-        f: impl for<'a> Fn(&'a mut T, &'a Metrics) -> HookFuture<'a, E> + Sync + Send + 'static,
+        f: impl for<'a> Fn(&'a mut M::Type, &Metrics) -> HookFuture<'a, M::Error>
+            + Sync
+            + Send
+            + 'static,
     ) -> Self {
         Self::AsyncFn(Box::new(f))
     }
 }
 
-impl<T, E> fmt::Debug for Hook<T, E> {
+impl<M: Manager> fmt::Debug for Hook<M> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Fn(_) => f
@@ -122,14 +127,14 @@ impl<E: std::error::Error + 'static> std::error::Error for HookError<E> {
     }
 }
 
-pub(crate) struct HookVec<T, E> {
-    vec: Vec<Hook<T, E>>,
+pub(crate) struct HookVec<M: Manager> {
+    vec: Vec<Hook<M>>,
 }
 
 // Implemented manually to avoid unnecessary trait bound on `M` type parameter.
-impl<T, E> fmt::Debug for HookVec<T, E> {
+impl<M: Manager> fmt::Debug for HookVec<M> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Hooks")
+        f.debug_struct("HookVec")
             // FIXME
             //.field("fns", &self.fns)
             .finish()
@@ -137,22 +142,22 @@ impl<T, E> fmt::Debug for HookVec<T, E> {
 }
 
 // Implemented manually to avoid unnecessary trait bound on `M` type parameter.
-impl<T, E> Default for HookVec<T, E> {
+impl<M: Manager> Default for HookVec<M> {
     fn default() -> Self {
         Self { vec: Vec::new() }
     }
 }
 
-impl<T, E> HookVec<T, E> {
+impl<M: Manager> HookVec<M> {
     pub(crate) async fn apply(
         &self,
-        obj: &mut WithMetrics<T>,
-        error: fn(e: HookError<E>) -> PoolError<E>,
-    ) -> Result<Option<HookError<E>>, PoolError<E>> {
+        inner: &mut ObjectInner<M>,
+        error: fn(e: HookError<M::Error>) -> PoolError<M::Error>,
+    ) -> Result<Option<HookError<M::Error>>, PoolError<M::Error>> {
         for hook in &self.vec {
             let result = match hook {
-                Hook::Fn(f) => f(&mut obj.obj, &obj.metrics),
-                Hook::AsyncFn(f) => f(&mut obj.obj, &obj.metrics).await,
+                Hook::Fn(f) => f(&mut inner.obj, &inner.metrics),
+                Hook::AsyncFn(f) => f(&mut inner.obj, &inner.metrics).await,
             };
             match result {
                 Ok(()) => {}
@@ -164,22 +169,22 @@ impl<T, E> HookVec<T, E> {
         }
         Ok(None)
     }
-    pub(crate) fn push(&mut self, hook: impl Into<Hook<T, E>>) {
-        self.vec.push(hook.into());
+    pub(crate) fn push(&mut self, hook: Hook<M>) {
+        self.vec.push(hook);
     }
 }
 
 /// Collection of all the hooks that can be configured for a [`Pool`].
 ///
 /// [`Pool`]: super::Pool
-pub struct Hooks<T, E> {
-    pub(crate) post_create: HookVec<T, E>,
-    pub(crate) pre_recycle: HookVec<T, E>,
-    pub(crate) post_recycle: HookVec<T, E>,
+pub struct Hooks<M: Manager> {
+    pub(crate) post_create: HookVec<M>,
+    pub(crate) pre_recycle: HookVec<M>,
+    pub(crate) post_recycle: HookVec<M>,
 }
 
 // Implemented manually to avoid unnecessary trait bound on `M` type parameter.
-impl<T, E> fmt::Debug for Hooks<T, E> {
+impl<M: Manager> fmt::Debug for Hooks<M> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Hooks")
             .field("post_create", &self.post_create)
@@ -190,7 +195,7 @@ impl<T, E> fmt::Debug for Hooks<T, E> {
 }
 
 // Implemented manually to avoid unnecessary trait bound on `M` type parameter.
-impl<T, E> Default for Hooks<T, E> {
+impl<M: Manager> Default for Hooks<M> {
     fn default() -> Self {
         Self {
             pre_recycle: HookVec::default(),

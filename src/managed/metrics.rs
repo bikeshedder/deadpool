@@ -32,12 +32,3 @@ impl Default for Metrics {
         }
     }
 }
-
-/// The combination of an object and its metrics
-#[derive(Debug)]
-pub(crate) struct WithMetrics<T> {
-    /// The object
-    pub(crate) obj: T,
-    /// The metrics of the object
-    pub(crate) metrics: Metrics,
-}
