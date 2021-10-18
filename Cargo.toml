@@ -49,6 +49,7 @@ members = [
     "diesel",
     "lapin",
     "postgres",
+    "r2d2",
     "redis",
     "sqlite",
     "examples/*"

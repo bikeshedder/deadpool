@@ -1,0 +1,31 @@
+[package]
+name = "deadpool-r2d2"
+version = "0.1.0-pre"
+edition = "2018"
+resolver = "2"
+authors = ["Michael P. Jung <michael.jung@terreon.de>"]
+description = "Dead simple async pool for r2d2 managers"
+keywords = ["async", "database", "pool", "r2d2"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/bikeshedder/deadpool"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = ["rt_tokio_1"]
+rt_tokio_1 = ["deadpool/rt_tokio_1"]
+rt_async-std_1 = ["deadpool/rt_async-std_1"]
+serde = ["deadpool/serde"]
+
+[dependencies]
+deadpool = { path = "../", version = "0.9.0-pre", default-features = false, features = ["managed"] }
+r2d2 = { version = "0.8.9", default-features = false }
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["macros", "rt", "rt-multi-thread"] }
+deadpool = { path = "../", version = "0.9.0-pre", features = ["rt_tokio_1"]}
+r2d2_postgres = "0.18"
+
