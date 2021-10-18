@@ -12,6 +12,13 @@ pub mod reexports {
     //! Crates based on `deadpool::managed::sync` should include this line:
     //! ```rust
     //! pub use deadpool::managed::sync::reexports::*;
+    //! deadpool::managed_reexports!(
+    //!     "name_of_crate",
+    //!     Manager,
+    //!     Object<Manager>,
+    //!     Error,
+    //!     ConfigError
+    //! );
     //! ```
 
     pub use super::super::reexports::*;

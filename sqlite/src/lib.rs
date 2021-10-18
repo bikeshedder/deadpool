@@ -32,25 +32,18 @@ use deadpool::{
 pub use deadpool::managed::sync::reexports::*;
 pub use rusqlite;
 
+deadpool::managed_reexports!(
+    "rusqlite",
+    Manager,
+    deadpool::managed::Object<Manager>,
+    rusqlite::Error,
+    ConfigError
+);
+
 pub use self::config::{Config, ConfigError};
 
-/// Type alias for using [`deadpool::managed::Pool`] with [`rusqlite`].
-pub type Pool = managed::Pool<Manager>;
-
-/// Type alias for using [`deadpool::managed::PoolBuilder`] with [`rusqlite`].
-pub type PoolBuilder = managed::PoolBuilder<Manager>;
-
-/// Type alias for using [`deadpool::managed::PoolBuilder`] with [`rusqlite`].
-pub type BuildError = managed::BuildError<rusqlite::Error>;
-
-/// Type alias for using [`deadpool::managed::PoolBuilder`] with [`rusqlite`].
-pub type CreatePoolError = managed::CreatePoolError<ConfigError, rusqlite::Error>;
-
-/// Type alias for using [`deadpool::managed::PoolError`] with [`rusqlite`].
-pub type PoolError = managed::PoolError<rusqlite::Error>;
-
-/// Type alias for using [`deadpool::managed::Object`] with [`rusqlite`].
-pub type Connection = managed::Object<Manager>;
+/// Type alias for [`Object`]
+pub type Connection = Object;
 
 /// [`Manager`] for creating and recycling SQLite [`Connection`]s.
 ///

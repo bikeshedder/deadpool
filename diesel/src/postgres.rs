@@ -1,10 +1,15 @@
 //! Type aliases for using `deadpool-diesel` with PostgreSQL.
 
-/// Connection which is returned by the PostgreSQL [`Pool`].
-pub type Connection = crate::Connection<diesel::PgConnection>;
+/// Manager for PostgreSQL connections
+pub type Manager = crate::Manager<diesel::PgConnection>;
 
-/// Manager which is used to create [`diesel::PgConnection`]s.
-pub type Manager = crate::manager::Manager<diesel::PgConnection>;
+deadpool::managed_reexports!(
+    "diesel",
+    Manager,
+    deadpool::managed::Object<Manager>,
+    diesel::ConnectionError,
+    std::convert::Infallible
+);
 
-/// Pool for using `deadpool-diesel` with PostgreSQL.
-pub type Pool = deadpool::managed::Pool<Manager>;
+/// Type alias for [`Object`]
+pub type Connection = Object;

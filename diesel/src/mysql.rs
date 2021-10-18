@@ -1,10 +1,15 @@
 //! Type aliases for using `deadpool-diesel` with MySQL.
 
-/// Connection which is returned by the MySQL [`Pool`].
-pub type Connection = crate::Connection<diesel::MysqlConnection>;
+/// Manager for MySQL connections
+pub type Manager = crate::Manager<diesel::MysqlConnection>;
 
-/// Manager which is used to create [`diesel::MysqlConnection`]s.
-pub type Manager = crate::manager::Manager<diesel::MysqlConnection>;
+deadpool::managed_reexports!(
+    "diesel",
+    Manager,
+    deadpool::managed::Object<Manager>,
+    diesel::ConnectionError,
+    std::convert::Infallible
+);
 
-/// Pool for using `deadpool-diesel` with MySQL.
-pub type Pool = deadpool::managed::Pool<Manager>;
+/// Type alias for [`Object`]
+pub type Connection = Object;

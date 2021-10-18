@@ -20,7 +20,7 @@ manager for [`diesel`](https://crates.io/crates/diesel) connections.
 ## Example
 
 ```rust
-use deadpool_diesel::{Runtime, sqlite::{Manager, Pool}};
+use deadpool_diesel::sqlite::{Runtime, Manager, Pool};
 use diesel::{prelude::*, select, sql_types::Text};
 
 #[tokio::main]

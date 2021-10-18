@@ -6,7 +6,7 @@ use deadpool::{
     Runtime,
 };
 
-/// [`Connection`] [`Manager`] for use with [`r2d2`] managers.
+/// [`Manager`] for use with [`r2d2`] [managers](r2d2::ManageConnection).
 ///
 /// See the [`deadpool` documentation](deadpool) for usage examples.
 ///
@@ -30,8 +30,7 @@ where
 }
 
 impl<M: r2d2::ManageConnection> Manager<M> {
-    /// Creates a new [`Manager`] which establishes [`Connection`]s to the given
-    /// `database_url`.
+    /// Creates a new [`Manager`] using the given [`r2d2`] [manager](r2d2::ManageConnection)
     #[must_use]
     pub fn new(r2d2_manager: M, runtime: Runtime) -> Self {
         Manager {

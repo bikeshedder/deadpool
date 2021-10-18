@@ -40,29 +40,21 @@ use tokio_postgres::{
     TransactionBuilder as PgTransactionBuilder,
 };
 
-pub use deadpool::managed::reexports::*;
 pub use tokio_postgres;
 
 pub use self::config::{Config, ConfigError, ManagerConfig, RecyclingMethod, SslMode};
 
-/// Type alias for using [`deadpool::managed::Pool`] with [`tokio_postgres`].
-pub type Pool = managed::Pool<Manager>;
+pub use deadpool::managed::reexports::*;
+deadpool::managed_reexports!(
+    "tokio_postgres",
+    Manager,
+    deadpool::managed::Object<Manager>,
+    Error,
+    ConfigError
+);
 
-/// Type alias for using [`deadpool::managed::Pool`] with [`tokio_postgres`].
-pub type PoolBuilder = managed::PoolBuilder<Manager, Client>;
-
-/// Type alias for using [`deadpool::managed::BuildError`] with [`tokio_postgres`].
-pub type BuildError = managed::BuildError<Error>;
-
-/// Type alias for using [`deadpool::managed::BuildError`] with [`tokio_postgres`].
-pub type CreatePoolError = managed::CreatePoolError<ConfigError, Error>;
-
-/// Type alias for using [`deadpool::managed::PoolError`] with
-/// [`tokio_postgres`].
-pub type PoolError = managed::PoolError<Error>;
-
-/// Type alias for using [`deadpool::managed::Object`] with [`tokio_postgres`].
-pub type Client = managed::Object<Manager>;
+/// Type alias for [`Object`]
+pub type Client = Object;
 
 type RecycleResult = deadpool::managed::RecycleResult<Error>;
 type RecycleError = deadpool::managed::RecycleError<Error>;

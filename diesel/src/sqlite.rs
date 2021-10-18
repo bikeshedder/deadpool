@@ -1,10 +1,16 @@
 //! Type aliases for using `deadpool-diesel` with SQLite.
 
-/// Connection which is returned by the SQLite [`Pool`].
-pub type Connection = crate::Connection<diesel::SqliteConnection>;
+/// Manager for SQLite connections
+pub type Manager = crate::Manager<diesel::SqliteConnection>;
 
-/// Manager which is used to create [`diesel::SqliteConnection`]s.
-pub type Manager = crate::manager::Manager<diesel::SqliteConnection>;
+pub use deadpool::managed::sync::reexports::*;
+deadpool::managed_reexports!(
+    "diesel",
+    Manager,
+    deadpool::managed::Object<Manager>,
+    diesel::ConnectionError,
+    std::convert::Infallible
+);
 
-/// Pool for using `deadpool-diesel` with SQLite.
-pub type Pool = deadpool::managed::Pool<Manager>;
+/// Type alias for [`Object`]
+pub type Connection = Object;

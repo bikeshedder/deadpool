@@ -82,7 +82,7 @@ pub enum HookError<E> {
     Abort(HookErrorCause<E>),
 }
 
-/// Possible errors returned by [`Hooks`]
+/// Possible errors returned by hooks
 #[derive(Debug)]
 pub enum HookErrorCause<E> {
     /// Hook failed for some other reason.

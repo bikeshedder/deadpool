@@ -25,27 +25,20 @@ mod config;
 use deadpool::{async_trait, managed};
 use lapin::{ConnectionProperties, Error};
 
-pub use deadpool::managed::reexports::*;
 pub use lapin;
 
 pub use self::config::{Config, ConfigError};
 
-/// Type alias for using [`deadpool::managed::Pool`] with [`lapin`].
-pub type Pool = managed::Pool<Manager>;
+pub use deadpool::managed::reexports::*;
+deadpool::managed_reexports!(
+    "lapin",
+    Manager,
+    deadpool::managed::Object<Manager>,
+    Error,
+    ConfigError
+);
 
-/// Type alias for using [`deadpool::managed::PoolBuilder`] with [`lapin`].
-pub type PoolBuilder = managed::PoolBuilder<Manager>;
-
-/// Type alias for using [`deadpool::managed::BuildError`] with [`lapin`].
-pub type BuildError = managed::BuildError<Error>;
-
-/// Type alias for using [`deadpool::managed::CreatePoolError`] with [`lapin`].
-pub type CreatePoolError = managed::CreatePoolError<ConfigError, Error>;
-
-/// Type alias for using [`deadpool::managed::PoolError`] with [`lapin`].
-pub type PoolError = managed::PoolError<Error>;
-
-/// Type alias for using [`deadpool::managed::Object`] with [`lapin`].
+/// Type alias for ['Object']
 pub type Connection = managed::Object<Manager>;
 
 type RecycleResult = managed::RecycleResult<Error>;
