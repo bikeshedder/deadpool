@@ -1,4 +1,4 @@
-## v0.2.0 (unreleased)
+## v0.2.0
 
 * __Breaking:__ Replace `config` feature with `serde` (opted out by default)
 * Add support for multiple runtimes

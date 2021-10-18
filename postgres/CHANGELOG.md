@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.10.0 (unreleased)
+## v0.10.0
 
 * __Breaking:__ Replace `config` feature with `serde` (opted out by default)
 * Re-export `deadpool::managed::Timeouts`

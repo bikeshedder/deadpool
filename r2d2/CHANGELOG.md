@@ -1,5 +1,5 @@
 # Change Log
 
-## v0.1.0 (unreleased)
+## v0.1.0
 
 * First release

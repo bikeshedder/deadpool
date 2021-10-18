@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.9.0 (unreleased)
+## v0.9.0
 
 * __Breaking:__ Replace `config` feature with `serde` (opted out by default)
 * Remove unused `futures` and `log` dependencies

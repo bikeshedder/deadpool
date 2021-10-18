@@ -1,6 +1,6 @@
 [package]
 name = "deadpool"
-version = "0.9.0-pre"
+version = "0.9.0"
 edition = "2018"
 resolver = "2"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
