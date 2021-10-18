@@ -12,7 +12,6 @@ use super::{
 #[derive(Debug)]
 pub enum BuildError<E> {
     /// Backend reported an error when creating a [`Pool`].
-    // FIXME remove this?
     Backend(E),
 
     /// [`Runtime`] is required.
