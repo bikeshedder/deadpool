@@ -4,10 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use async_trait::async_trait;
 
-use deadpool::managed::{
-    hooks::{Hook, HookError, HookErrorCause},
-    Manager, Pool, PoolError, RecycleResult,
-};
+use deadpool::managed::{Hook, HookError, HookErrorCause, Manager, Pool, PoolError, RecycleResult};
 
 struct Computer {
     next_id: AtomicUsize,

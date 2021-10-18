@@ -54,7 +54,7 @@ mod builder;
 mod config;
 mod dropguard;
 mod errors;
-pub mod hooks;
+mod hooks;
 mod metrics;
 pub mod reexports;
 pub mod sync;
@@ -77,6 +77,7 @@ use tokio::sync::{Semaphore, TryAcquireError};
 
 use crate::runtime::Runtime;
 
+pub use hooks::{Hook, HookError, HookErrorCause};
 pub use metrics::Metrics;
 
 pub use crate::Status;

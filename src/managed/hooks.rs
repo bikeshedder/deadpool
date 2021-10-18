@@ -176,7 +176,7 @@ impl<M: Manager> HookVec<M> {
 /// Collection of all the hooks that can be configured for a [`Pool`].
 ///
 /// [`Pool`]: super::Pool
-pub struct Hooks<M: Manager> {
+pub(crate) struct Hooks<M: Manager> {
     pub(crate) post_create: HookVec<M>,
     pub(crate) pre_recycle: HookVec<M>,
     pub(crate) post_recycle: HookVec<M>,
