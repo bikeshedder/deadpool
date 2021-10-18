@@ -61,8 +61,8 @@ where
 
     async fn recycle(&self, obj: &mut Self::Type) -> RecycleResult<Self::Error> {
         if obj.is_mutex_poisoned() {
-            return Err(RecycleError::Message(
-                "Mutex is poisoned. Connection is considered unusable.".into(),
+            return Err(RecycleError::StaticMessage(
+                "Mutex is poisoned. Connection is considered unusable.",
             ));
         }
         obj.interact(|conn| conn.execute("SELECT 1").map_err(Error::Ping))

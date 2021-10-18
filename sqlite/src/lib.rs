@@ -99,7 +99,7 @@ impl managed::Manager for Manager {
         if n == recycle_count {
             Ok(())
         } else {
-            Err(RecycleError::Message("Recycle count mismatch".into()))
+            Err(RecycleError::StaticMessage("Recycle count mismatch"))
         }
     }
 }

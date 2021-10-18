@@ -173,8 +173,8 @@ impl managed::Manager for Manager {
         if n == ping_number {
             Ok(())
         } else {
-            Err(managed::RecycleError::Message(
-                "Invalid PING response".into(),
+            Err(managed::RecycleError::StaticMessage(
+                "Invalid PING response",
             ))
         }
     }
