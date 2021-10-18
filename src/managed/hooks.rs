@@ -15,7 +15,7 @@ pub type SyncFn<M> =
     dyn Fn(&mut <M as Manager>::Type, &Metrics) -> HookResult<<M as Manager>::Error> + Sync + Send;
 
 /// Function siganture for async callbacks
-pub type AsyncFn<M> = dyn for<'a> Fn(&'a mut <M as Manager>::Type, &Metrics) -> HookFuture<'a, <M as Manager>::Error>
+pub type AsyncFn<M> = dyn for<'a> Fn(&'a mut <M as Manager>::Type, &'a Metrics) -> HookFuture<'a, <M as Manager>::Error>
     + Sync
     + Send;
 
@@ -36,7 +36,7 @@ impl<M: Manager> Hook<M> {
     }
     /// Create Hook from async function
     pub fn async_fn(
-        f: impl for<'a> Fn(&'a mut M::Type, &Metrics) -> HookFuture<'a, M::Error>
+        f: impl for<'a> Fn(&'a mut M::Type, &'a Metrics) -> HookFuture<'a, M::Error>
             + Sync
             + Send
             + 'static,
