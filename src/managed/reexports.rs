@@ -8,10 +8,6 @@
 //! ```
 
 pub use crate::{
-    managed::{
-        hooks::{Hook, HookError, HookErrorCause},
-        metrics::Metrics,
-        PoolConfig, Timeouts,
-    },
+    managed::{Metrics, PoolConfig, Timeouts},
     Runtime,
 };

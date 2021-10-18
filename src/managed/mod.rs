@@ -77,9 +77,6 @@ use tokio::sync::{Semaphore, TryAcquireError};
 
 use crate::runtime::Runtime;
 
-pub use hooks::{Hook, HookError, HookErrorCause};
-pub use metrics::Metrics;
-
 pub use crate::Status;
 
 use self::dropguard::DropGuard;
@@ -87,6 +84,8 @@ pub use self::{
     builder::{BuildError, PoolBuilder},
     config::{CreatePoolError, PoolConfig, Timeouts},
     errors::{PoolError, RecycleError, TimeoutType},
+    hooks::{Hook, HookError, HookErrorCause, HookFuture, HookResult},
+    metrics::Metrics,
 };
 
 /// Result type of the [`Manager::recycle()`] method.

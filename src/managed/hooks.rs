@@ -11,11 +11,11 @@ pub type HookResult<E> = Result<(), HookError<E>>;
 pub type HookFuture<'a, E> = Pin<Box<dyn Future<Output = HookResult<E>> + Send + 'a>>;
 
 /// Function signature for sync callbacks
-pub type SyncFn<M> =
+type SyncFn<M> =
     dyn Fn(&mut <M as Manager>::Type, &Metrics) -> HookResult<<M as Manager>::Error> + Sync + Send;
 
 /// Function siganture for async callbacks
-pub type AsyncFn<M> = dyn for<'a> Fn(&'a mut <M as Manager>::Type, &'a Metrics) -> HookFuture<'a, <M as Manager>::Error>
+type AsyncFn<M> = dyn for<'a> Fn(&'a mut <M as Manager>::Type, &'a Metrics) -> HookFuture<'a, <M as Manager>::Error>
     + Sync
     + Send;
 
