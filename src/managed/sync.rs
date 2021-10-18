@@ -10,7 +10,7 @@ pub mod reexports {
     //! backends.
     //!
     //! Crates based on `deadpool::managed::sync` should include this line:
-    //! ```rust
+    //! ```rust,ignore
     //! pub use deadpool::managed::sync::reexports::*;
     //! deadpool::managed_reexports!(
     //!     "name_of_crate",

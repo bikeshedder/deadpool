@@ -3,7 +3,7 @@
 //! on the `deadpool` crate itself.
 //!
 //! Crates based on `deadpool::managed` should include this line:
-//! ```rust
+//! ```rust,ignore
 //! pub use deadpool::managed::reexports::*;
 //! deadpool::managed_reexports!(
 //!     "name_of_crate",
