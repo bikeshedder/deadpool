@@ -97,6 +97,7 @@ Backend | Crate | Latest Version |
 [async-memcached](https://crates.io/crates/async-memcached) | [deadpool-memcached](https://crates.io/crates/deadpool-memcached) | [![Latest Version](https://img.shields.io/crates/v/deadpool-memcached.svg)](https://crates.io/crates/deadpool-memcached) |
 [rusqlite](https://crates.io/crates/rusqlite) | [deadpool-sqlite](https://crates.io/crates/deadpool-sqlite) | [![Latest Version](https://img.shields.io/crates/v/deadpool-sqlite.svg)](https://crates.io/crates/deadpool-sqlite) |
 [diesel](https://crates.io/crates/diesel) | [deadpool-diesel](https://crates.io/crates/deadpool-diesel) | [![Latest Version](https://img.shields.io/crates/v/deadpool-diesel.svg)](https://crates.io/crates/deadpool-diesel) |
+[r2d2](https://crates.io/crates/r2d2) | [deadpool-r2d2](https://crates.io/crates/deadpool-r2d2) | [![Latest Version](https://img.shields.io/crates/v/deadpool-r2d2.svg)](https://crates.io/crates/deadpool-r2d2) |
 
 ### Reasons for yet another connection pool
 
@@ -135,6 +136,9 @@ things a little different and that is the main reason for it to exist:
 
 - [`r2d2`](https://crates.io/crates/r2d2) provides a lot more configuration
   options but only provides a synchroneous interface.
+  
+  **Note:** [deadpool-r2d2](https://crates.io/crates/deadpool-r2d2) enables
+  you to use `r2d2` managers with `deadpool`.
 
 - [`bb8`](https://crates.io/crates/bb8) provides an `async/.await` based
   interface and provides the same configuration options as `r2d2`. It
