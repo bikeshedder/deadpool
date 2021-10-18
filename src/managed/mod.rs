@@ -578,13 +578,11 @@ impl<M: Manager> PoolInner<M> {
     }
     fn detach_object(&self, obj: &mut M::Type) {
         let mut slots = self.slots.lock().unwrap();
-        if slots.size <= slots.max_size {
-            slots.size -= 1;
-            drop(slots);
+        let add_permits = slots.size <= slots.max_size;
+        slots.size -= 1;
+        drop(slots);
+        if add_permits {
             self.semaphore.add_permits(1);
-        } else {
-            slots.size -= 1;
-            drop(slots);
         }
         self.manager.detach(obj);
     }
