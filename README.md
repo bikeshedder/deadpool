@@ -132,21 +132,17 @@ things a little different and that is the main reason for it to exist:
   The actual code is barely 100 lines of code and lives in the two functions
   `Pool::get` and `Object::drop`.
 
-### Differences to other connection pool implementations
+- **Deadpool is extensible.** By using `post_create`, `pre_recycle` and
+  `post_recycle` hooks you can customize object creation and recycling
+  to fit your needs.
 
-- [`r2d2`](https://crates.io/crates/r2d2) provides a lot more configuration
-  options but only provides a synchroneous interface.
-  
-  **Note:** [deadpool-r2d2](https://crates.io/crates/deadpool-r2d2) enables
-  you to use `r2d2` managers with `deadpool`.
+- **Deadpool provides insights.** All objects track `Metrics` and the pool
+  provides a `status` method that can be used to find out details about
+  the inner workings.
 
-- [`bb8`](https://crates.io/crates/bb8) provides an `async/.await` based
-  interface and provides the same configuration options as `r2d2`. It
-  depends on the tokio executor though and the code is more complex.
+- **Deadpool is resizable.** You can grow and shrink the pool at runtime
+  without requiring an application restart.
 
-- [`mobc`](https://crates.io/crates/mobc) provides an `async/.await` based
-  interface and provides a lot more configuration options. It requires an
-  executor though and the code is a lot more complex.
 
 ## Unmanaged pool
 
