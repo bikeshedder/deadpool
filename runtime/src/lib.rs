@@ -25,13 +25,13 @@ use std::{any::Any, fmt, future::Future, time::Duration};
 /// Enumeration for picking a runtime implementation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Runtime {
-    #[cfg(feature = "rt_tokio_1")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "rt_tokio_1")))]
+    #[cfg(feature = "tokio_1")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "tokio_1")))]
     /// [`tokio` 1.0](tokio) runtime.
     Tokio1,
 
-    #[cfg(feature = "rt_async-std_1")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "rt_async-std_1")))]
+    #[cfg(feature = "async-std_1")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "async-std_1")))]
     /// [`async-std` 1.0](async_std) runtime.
     AsyncStd1,
 }
@@ -49,10 +49,10 @@ impl Runtime {
         F: Future,
     {
         match self {
-            #[cfg(feature = "rt_tokio_1")]
-            Self::Tokio1 => tokio::time::timeout(duration, future).await.ok(),
-            #[cfg(feature = "rt_async-std_1")]
-            Self::AsyncStd1 => async_std::future::timeout(duration, future).await.ok(),
+            #[cfg(feature = "tokio_1")]
+            Self::Tokio1 => tokio_1::time::timeout(duration, future).await.ok(),
+            #[cfg(feature = "async-std_1")]
+            Self::AsyncStd1 => async_std_1::future::timeout(duration, future).await.ok(),
             #[allow(unreachable_patterns)]
             _ => unreachable!(),
         }
@@ -70,12 +70,12 @@ impl Runtime {
         R: Send + 'static,
     {
         match self {
-            #[cfg(feature = "rt_tokio_1")]
-            Self::Tokio1 => tokio::task::spawn_blocking(f)
+            #[cfg(feature = "tokio_1")]
+            Self::Tokio1 => tokio_1::task::spawn_blocking(f)
                 .await
                 .map_err(|e| SpawnBlockingError::Panic(e.into_panic())),
-            #[cfg(feature = "rt_async-std_1")]
-            Self::AsyncStd1 => Ok(async_std::task::spawn_blocking(f).await),
+            #[cfg(feature = "async-std_1")]
+            Self::AsyncStd1 => Ok(async_std_1::task::spawn_blocking(f).await),
             #[allow(unreachable_patterns)]
             _ => unreachable!(),
         }
@@ -95,14 +95,14 @@ impl Runtime {
         F: FnOnce() + Send + 'static,
     {
         match self {
-            #[cfg(feature = "rt_tokio_1")]
+            #[cfg(feature = "tokio_1")]
             Self::Tokio1 => {
-                drop(tokio::task::spawn_blocking(f));
+                drop(tokio_1::task::spawn_blocking(f));
                 Ok(())
             }
-            #[cfg(feature = "rt_async-std_1")]
+            #[cfg(feature = "async-std_1")]
             Self::AsyncStd1 => {
-                drop(async_std::task::spawn_blocking(f));
+                drop(async_std_1::task::spawn_blocking(f));
                 Ok(())
             }
             #[allow(unreachable_patterns)]

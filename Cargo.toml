@@ -18,8 +18,8 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["managed", "unmanaged"]
 managed = ["async-trait"]
 unmanaged = []
-rt_tokio_1 = ["deadpool-runtime/rt_tokio_1"]
-rt_async-std_1 = ["deadpool-runtime/rt_async-std_1"]
+rt_tokio_1 = ["deadpool-runtime/tokio_1"]
+rt_async-std_1 = ["deadpool-runtime/async-std_1"]
 
 [dependencies]
 num_cpus = "1.11.1"
