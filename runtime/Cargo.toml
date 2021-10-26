@@ -13,9 +13,5 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# `rt_async-std_1` feature
 async-std_1 = { package = "async-std", version = "1.0", features = ["unstable"], optional = true }
-# The dependency of tokio::sync is non-optional. Deadpool depends on
-# `tokio::sync::Semaphore`. No other features of `tokio` are enabled or used
-# unless the `rt_tokio_1` feature is enabled.
 tokio_1 = { package = "tokio", version = "1.0", features = ["time", "rt"], optional = true }

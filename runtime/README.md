@@ -16,8 +16,8 @@ reexports by the crates using it.
 
 | Feature | Description | Extra dependencies | Default |
 | ------- | ----------- | ------------------ | ------- |
-| `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `tokio/time` | no |
-| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `async-std` | no |
+| `tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `tokio/time` | no |
+| `async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `async-std` | no |
 
 ## License
 
