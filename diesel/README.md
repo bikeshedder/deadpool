@@ -34,8 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let result = conn.interact(|conn| {
         let query = select("Hello world!".into_sql::<Text>());
         query.get_result::<String>(conn)
-            .map_err(Into::into)
-    }).await.unwrap();
+    }).await??;
     assert!(result == "Hello world!");
     Ok(())
 }

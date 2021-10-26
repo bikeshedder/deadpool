@@ -2,17 +2,14 @@
 
 use tokio::sync::mpsc;
 
-use deadpool_diesel::{Manager, Pool, Runtime};
+use deadpool_diesel::{
+    sqlite::{Manager, Pool, Runtime},
+    InteractError,
+};
 
-type SqliteManager = Manager<diesel::SqliteConnection>;
-type SqlitePool = Pool<SqliteManager>;
-
-fn create_pool(max_size: usize) -> SqlitePool {
-    let manager = SqliteManager::new(":memory:", Runtime::Tokio1);
-    let pool = SqlitePool::builder(manager)
-        .max_size(max_size)
-        .build()
-        .unwrap();
+fn create_pool(max_size: usize) -> Pool {
+    let manager = Manager::new(":memory:", Runtime::Tokio1);
+    let pool = Pool::builder(manager).max_size(max_size).build().unwrap();
     pool
 }
 
@@ -53,14 +50,13 @@ async fn pooled_connection_impls_connection() {
 
     let pool = create_pool(1);
     let conn = pool.get().await.unwrap();
-    let result = conn
+    let result: Result<Result<String, diesel::result::Error>, InteractError> = conn
         .interact(|conn| {
             let query = select("foo".into_sql::<Text>());
-            query.get_result::<String>(conn).map_err(Into::into)
+            query.get_result::<String>(conn)
         })
-        .await
-        .unwrap();
-    assert_eq!("foo", &result);
+        .await;
+    assert_eq!("foo", &result.unwrap().unwrap());
 }
 
 #[tokio::test]

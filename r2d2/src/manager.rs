@@ -2,9 +2,10 @@ use std::{fmt, sync::Arc};
 
 use deadpool::{
     async_trait,
-    managed::{self, sync::SyncWrapper, RecycleError, RecycleResult},
+    managed::{self, RecycleError, RecycleResult},
     Runtime,
 };
+use deadpool_sync::SyncWrapper;
 
 /// [`Manager`] for use with [`r2d2`] [managers](r2d2::ManageConnection).
 ///
@@ -45,7 +46,7 @@ impl<M: r2d2::ManageConnection> managed::Manager for Manager<M>
 where
     M::Error: Send,
 {
-    type Type = SyncWrapper<M::Connection, M::Error>;
+    type Type = SyncWrapper<M::Connection>;
     type Error = M::Error;
 
     async fn create(&self) -> Result<Self::Type, Self::Error> {
@@ -62,9 +63,9 @@ where
         let r2d2_manager = self.r2d2_manager.clone();
         obj.interact::<_, RecycleResult<Self::Error>>(move |obj| {
             if r2d2_manager.has_broken(obj) {
-                Ok(Err(RecycleError::StaticMessage("Connection is broken")))
+                Err(RecycleError::StaticMessage("Connection is broken"))
             } else {
-                Ok(r2d2_manager.is_valid(obj).map_err(RecycleError::Backend))
+                r2d2_manager.is_valid(obj).map_err(RecycleError::Backend)
             }
         })
         .await
