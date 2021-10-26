@@ -1,0 +1,12 @@
+# Deadpool for synchroneous code [![Latest Version](https://img.shields.io/crates/v/deadpool-sync.svg)](https://crates.io/crates/deadpool-sync) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.54+](https://img.shields.io/badge/rustc-1.54+-lightgray.svg "Rust 1.54+")](https://blog.rust-lang.org/2021/07/29/Rust-1.54.0.html)
+
+Deadpool is a dead simple async pool for connections and objects
+of any type.
+
+This crates provides helpers for writing pools for objects that don't
+support async and need to be run inside a thread.
+
+**Note:** This crate is intended for making the development of
+`deadpool-*` crates easier. Other libraries and binary projects
+normally should not use this directly and use some provided
+reexports by the crates using it.

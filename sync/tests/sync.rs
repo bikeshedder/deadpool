@@ -2,10 +2,9 @@
 
 use async_trait::async_trait;
 
-use deadpool::{
-    managed::{sync::SyncWrapper, Manager, Pool, RecycleResult},
-    Runtime,
-};
+use deadpool::{Manager, Pool, RecycleResult};
+use deadpool_runtime::Runtime;
+use deadpool_sync::SyncWrapper;
 
 struct Computer {
     pub answer: usize,
@@ -15,7 +14,7 @@ struct ComputerManager {}
 
 #[async_trait]
 impl Manager for ComputerManager {
-    type Type = SyncWrapper<Computer, ()>;
+    type Type = SyncWrapper<Computer>;
     type Error = ();
 
     async fn create(&self) -> Result<Self::Type, Self::Error> {
@@ -35,10 +34,7 @@ async fn post_recycle() {
         .build()
         .unwrap();
     let obj = pool.get().await.unwrap();
-    assert_eq!(
-        obj.interact(|computer| Ok(computer.answer)).await.unwrap(),
-        42
-    );
+    assert_eq!(obj.interact(|computer| computer.answer).await.unwrap(), 42);
     let guard = obj.lock().unwrap();
     assert_eq!(guard.answer, 42);
 }
