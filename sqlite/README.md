@@ -22,7 +22,7 @@ inside a separate thread.
 use deadpool_sqlite::{Config, Runtime};
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cfg = Config::new("db.sqlite3");
     let pool = cfg.create_pool(Runtime::Tokio1).unwrap();
     let conn = pool.get().await.unwrap();
@@ -33,9 +33,9 @@ async fn main() {
             let row = rows.next()?.unwrap();
             row.get(0)
         })
-        .await
-        .unwrap();
+        .await??;
     assert_eq!(result, 1);
+    Ok(())
 }
 ```
 

@@ -35,7 +35,8 @@ pub mod sqlite;
 
 use deadpool::managed;
 
-pub use deadpool::managed::sync::reexports::*;
+pub use deadpool::managed::reexports::*;
+pub use deadpool_sync::reexports::*;
 // Normally backend implementations don't export the generic `Pool`
 // type. `deadpool-diesel` is different in that regards as it is
 // generic itself.
@@ -47,4 +48,4 @@ pub use self::{error::Error, manager::Manager};
 pub type PoolError = managed::PoolError<Error>;
 
 /// Connection which is returned by the [`Pool`].
-pub type Connection<C> = managed::sync::SyncWrapper<C, Error>;
+pub type Connection<C> = deadpool_sync::SyncWrapper<C>;

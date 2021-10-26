@@ -20,21 +20,22 @@ manager for [`r2d2`](https://crates.io/crates/r2d2) managers.
 use std::env;
 
 use deadpool_r2d2::Runtime;
+use r2d2_postgres::postgres::Error as PgError;
 
-type PostgresManager = deadpool_r2d2::Manager<
+type PgManager = deadpool_r2d2::Manager<
     r2d2_postgres::PostgresConnectionManager<r2d2_postgres::postgres::NoTls>,
 >;
-type PostgresPool = deadpool_r2d2::Pool<PostgresManager>;
+type PgPool = deadpool_r2d2::Pool<PgManager>;
 
-fn create_pool(max_size: usize) -> PostgresPool {
+fn create_pool(max_size: usize) -> PgPool {
     let mut pg_config = r2d2_postgres::postgres::Config::new();
     pg_config.host_path("/run/postgresql");
     pg_config.user(&env::var("USER").unwrap());
     pg_config.dbname("deadpool");
     let r2d2_manager =
         r2d2_postgres::PostgresConnectionManager::new(pg_config, r2d2_postgres::postgres::NoTls);
-    let manager = PostgresManager::new(r2d2_manager, Runtime::Tokio1);
-    let pool = PostgresPool::builder(manager)
+    let manager = PgManager::new(r2d2_manager, Runtime::Tokio1);
+    let pool = PgPool::builder(manager)
         .max_size(max_size)
         .build()
         .unwrap();
@@ -42,17 +43,14 @@ fn create_pool(max_size: usize) -> PostgresPool {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = create_pool(2);
     let client = pool.get().await.unwrap();
     let answer: i32 = client
-        .interact(|client| {
-            let row = client.query_one("SELECT 42", &[])?;
-            Ok(row.get(0))
-        })
-        .await
-        .unwrap();
+        .interact(|client| client.query_one("SELECT 42", &[]).map(|row| row.get(0)))
+        .await??;
     assert_eq!(answer, 42);
+    Ok(())
 }
 ```
 

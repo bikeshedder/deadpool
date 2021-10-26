@@ -20,6 +20,7 @@ async fn basic() {
             row.get(0)
         })
         .await
+        .unwrap()
         .unwrap();
     assert_eq!(result, 1);
 }
@@ -46,6 +47,7 @@ async fn panic() {
             row.get(0)
         })
         .await
+        .unwrap()
         .unwrap();
     assert_eq!(result, 1);
 }

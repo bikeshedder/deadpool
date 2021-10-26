@@ -2,9 +2,10 @@ use std::{fmt, marker::PhantomData};
 
 use deadpool::{
     async_trait,
-    managed::{self, sync::SyncWrapper, RecycleError, RecycleResult},
+    managed::{self, RecycleError, RecycleResult},
     Runtime,
 };
+use deadpool_sync::SyncWrapper;
 
 use crate::{Connection, Error};
 
@@ -54,7 +55,7 @@ where
     async fn create(&self) -> Result<Self::Type, Self::Error> {
         let database_url = self.database_url.clone();
         SyncWrapper::new(self.runtime, move || {
-            C::establish(&database_url).map_err(Error::Connection)
+            C::establish(&database_url).map_err(Into::into)
         })
         .await
     }

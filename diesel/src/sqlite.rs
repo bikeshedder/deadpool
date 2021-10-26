@@ -3,7 +3,8 @@
 /// Manager for SQLite connections
 pub type Manager = crate::Manager<diesel::SqliteConnection>;
 
-pub use deadpool::managed::sync::reexports::*;
+pub use deadpool::managed::reexports::*;
+pub use deadpool_sync::reexports::*;
 deadpool::managed_reexports!(
     "diesel",
     Manager,
