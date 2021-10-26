@@ -1,4 +1,4 @@
-## v0.3.0 (unreleased)
+## v0.3.0
 
 * __Breaking:__ Replace `deadpool::managed::sync` by
   `deadpool-sync::SyncWrapper` which fixes the return type
