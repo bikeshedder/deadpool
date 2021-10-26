@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-r2d2"
-version = "0.2.0-pre"
+version = "0.2.0"
 edition = "2018"
 resolver = "2"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
