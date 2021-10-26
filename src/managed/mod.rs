@@ -57,6 +57,11 @@ mod errors;
 mod hooks;
 mod metrics;
 pub mod reexports;
+
+#[deprecated(
+    since = "0.9.1",
+    note = "This module has been deprecated in favor of the dedicated `deadpool-sync` utility crate."
+)]
 pub mod sync;
 
 use std::{
@@ -73,9 +78,8 @@ use std::{
 };
 
 use async_trait::async_trait;
+use deadpool_runtime::Runtime;
 use tokio::sync::{Semaphore, TryAcquireError};
-
-use crate::runtime::Runtime;
 
 pub use crate::Status;
 

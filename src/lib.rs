@@ -20,8 +20,6 @@
     unused_results
 )]
 
-mod runtime;
-
 #[cfg(feature = "managed")]
 #[cfg_attr(docsrs, doc(cfg(feature = "managed")))]
 pub mod managed;
@@ -35,7 +33,7 @@ pub mod unmanaged;
 #[doc(hidden)]
 pub use async_trait::async_trait;
 
-pub use self::runtime::{Runtime, SpawnBlockingError};
+pub use deadpool_runtime::{Runtime, SpawnBlockingError};
 
 /// The current pool status.
 #[derive(Clone, Copy, Debug)]

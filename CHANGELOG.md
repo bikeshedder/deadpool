@@ -1,5 +1,10 @@
 # Change Log
 
+## v0.9.1 (unreleased)
+
+* Deprecate `managed::sync` module in favor of `deadpool-sync` crate
+* Extract `runtime` module as separate `deadpool-runtime` crate
+
 ## v0.9.0
 
 * __Breaking:__ Replace `config` feature with `serde` (opted out by default)

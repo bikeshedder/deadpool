@@ -1,71 +1,56 @@
-//! Helpers for writing pools for objects that don't support async and need to
-//! be run inside a thread.
+#![doc = include_str!("../README.md")]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![deny(
+    nonstandard_style,
+    rust_2018_idioms,
+    rustdoc::broken_intra_doc_links,
+    rustdoc::private_intra_doc_links
+)]
+#![forbid(non_ascii_idents, unsafe_code)]
+#![warn(
+    deprecated_in_future,
+    missing_copy_implementations,
+    missing_debug_implementations,
+    missing_docs,
+    unreachable_pub,
+    unused_import_braces,
+    unused_labels,
+    unused_lifetimes,
+    unused_qualifications,
+    unused_results
+)]
 
-pub mod reexports {
-    //! This module contains all things that should be reexported
-    //! by backend implementations in order to avoid direct
-    //! dependencies on the `deadpool` crate itself.
-    //!
-    //! This module is the variant that should be used by *sync*
-    //! backends.
-    //!
-    //! Crates based on `deadpool::managed::sync` should include this line:
-    //! ```rust,ignore
-    //! pub use deadpool::managed::sync::reexports::*;
-    //! deadpool::managed_reexports!(
-    //!     "name_of_crate",
-    //!     Manager,
-    //!     Object<Manager>,
-    //!     Error,
-    //!     ConfigError
-    //! );
-    //! ```
-
-    pub use super::super::reexports::*;
-    pub use super::{InteractError, SyncGuard};
-}
+pub mod reexports;
 
 use std::{
     any::Any,
     fmt,
-    marker::PhantomData,
     ops::{Deref, DerefMut},
     sync::{Arc, Mutex, MutexGuard, PoisonError, TryLockError},
 };
 
-use crate::{Runtime, SpawnBlockingError};
+use deadpool::{Runtime, SpawnBlockingError};
 
 /// Possible errors returned when [`SyncWrapper::interact()`] fails.
 #[derive(Debug)]
-pub enum InteractError<E> {
+pub enum InteractError {
     /// Provided callback has panicked.
     Panic(Box<dyn Any + Send + 'static>),
 
     /// Callback was aborted.
     Aborted,
-
-    /// Backend returned an error.
-    Backend(E),
 }
 
-impl<E: fmt::Display> fmt::Display for InteractError<E> {
+impl fmt::Display for InteractError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Panic(_) => write!(f, "Panic"),
             Self::Aborted => write!(f, "Aborted"),
-            Self::Backend(e) => write!(f, "Backend error: {}", e),
         }
     }
 }
 
-impl<E: std::error::Error + 'static> std::error::Error for InteractError<E> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Panic(_) | Self::Aborted => None,
-            Self::Backend(e) => Some(e),
-        }
-    }
-}
+impl std::error::Error for InteractError {}
 
 /// Wrapper for objects which only provides blocking functions that need to be
 /// called on a separate thread.
@@ -73,40 +58,36 @@ impl<E: std::error::Error + 'static> std::error::Error for InteractError<E> {
 /// Access to the wrapped object is provided via the [`SyncWrapper::interact()`]
 /// method.
 #[must_use]
-pub struct SyncWrapper<T, E>
+pub struct SyncWrapper<T>
 where
     T: Send + 'static,
-    E: Send + 'static,
 {
     obj: Arc<Mutex<Option<T>>>,
     runtime: Runtime,
-    _error: PhantomData<fn() -> E>,
 }
 
 // Implemented manually to avoid unnecessary trait bound on `E` type parameter.
-impl<T, E> fmt::Debug for SyncWrapper<T, E>
+impl<T> fmt::Debug for SyncWrapper<T>
 where
     T: fmt::Debug + Send + 'static,
-    E: Send + 'static,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("SyncWrapper")
             .field("obj", &self.obj)
             .field("runtime", &self.runtime)
-            .field("_error", &self._error)
             .finish()
     }
 }
 
-impl<T, E> SyncWrapper<T, E>
+impl<T> SyncWrapper<T>
 where
     T: Send + 'static,
-    E: Send + 'static,
 {
     /// Creates a new wrapped object.
-    pub async fn new<F>(runtime: Runtime, f: F) -> Result<Self, E>
+    pub async fn new<F, E>(runtime: Runtime, f: F) -> Result<Self, E>
     where
         F: FnOnce() -> Result<T, E> + Send + 'static,
+        E: Send + 'static,
     {
         let result = match runtime.spawn_blocking(move || f()).await {
             // FIXME: Panicking when the creation panics is not nice.
@@ -119,7 +100,6 @@ where
         result.map(|obj| Self {
             obj: Arc::new(Mutex::new(Some(obj))),
             runtime,
-            _error: PhantomData::default(),
         })
     }
 
@@ -128,9 +108,9 @@ where
     /// Expects a closure that takes the object as its parameter.
     /// The closure is executed in a separate thread so that the async runtime
     /// is not blocked.
-    pub async fn interact<F, R>(&self, f: F) -> Result<R, InteractError<E>>
+    pub async fn interact<F, R>(&self, f: F) -> Result<R, InteractError>
     where
-        F: FnOnce(&mut T) -> Result<R, E> + Send + 'static,
+        F: FnOnce(&mut T) -> R + Send + 'static,
         R: Send + 'static,
     {
         let arc = self.obj.clone();
@@ -143,8 +123,7 @@ where
             .await
             .map_err(|e| match e {
                 SpawnBlockingError::Panic(p) => InteractError::Panic(p),
-            })?
-            .map_err(InteractError::Backend)
+            })
     }
 
     /// Indicates whether the underlying [`Mutex`] has been poisoned.
@@ -167,10 +146,9 @@ where
     }
 }
 
-impl<T, E> Drop for SyncWrapper<T, E>
+impl<T> Drop for SyncWrapper<T>
 where
     T: Send + 'static,
-    E: Send + 'static,
 {
     fn drop(&mut self) {
         let arc = self.obj.clone();

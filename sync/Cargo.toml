@@ -1,0 +1,16 @@
+[package]
+name = "deadpool-sync"
+version = "0.1.0"
+edition = "2018"
+resolver = "2"
+authors = ["Michael P. Jung <michael.jung@terreon.de>"]
+description = "Dead simple async pool utitities for sync managers"
+keywords = ["async", "database", "pool", "sync", "utils"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/bikeshedder/deadpool"
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+deadpool = { version = "0.9.0", path = "../" }

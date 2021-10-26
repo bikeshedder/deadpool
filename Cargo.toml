@@ -1,6 +1,6 @@
 [package]
 name = "deadpool"
-version = "0.9.0"
+version = "0.9.1"
 edition = "2018"
 resolver = "2"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
@@ -18,8 +18,8 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["managed", "unmanaged"]
 managed = ["async-trait"]
 unmanaged = []
-rt_tokio_1 = ["tokio/time", "tokio/rt"]
-rt_async-std_1 = ["async-std"]
+rt_tokio_1 = ["deadpool-runtime/rt_tokio_1"]
+rt_async-std_1 = ["deadpool-runtime/rt_async-std_1"]
 
 [dependencies]
 num_cpus = "1.11.1"
@@ -28,7 +28,7 @@ async-trait = { version = "0.1.17", optional = true }
 # `serde` feature
 serde = { version = "1.0.103", features = ["derive"], optional = true }
 # `rt_async-std_1` feature
-async-std = { version = "1.0", features = ["unstable"], optional = true }
+deadpool-runtime = { version = "0.1", path = "./runtime" }
 # The dependency of tokio::sync is non-optional. Deadpool depends on
 # `tokio::sync::Semaphore`. No other features of `tokio` are enabled or used
 # unless the `rt_tokio_1` feature is enabled.
@@ -51,6 +51,8 @@ members = [
     "postgres",
     "r2d2",
     "redis",
+    "runtime",
     "sqlite",
+    "sync",
     "examples/*"
 ]
