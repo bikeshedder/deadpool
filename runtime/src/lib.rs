@@ -27,12 +27,12 @@ use std::{any::Any, fmt, future::Future, time::Duration};
 pub enum Runtime {
     #[cfg(feature = "tokio_1")]
     #[cfg_attr(docsrs, doc(cfg(feature = "tokio_1")))]
-    /// [`tokio` 1.0](tokio) runtime.
+    /// [`tokio` 1.0](tokio_1) runtime.
     Tokio1,
 
     #[cfg(feature = "async-std_1")]
     #[cfg_attr(docsrs, doc(cfg(feature = "async-std_1")))]
-    /// [`async-std` 1.0](async_std) runtime.
+    /// [`async-std` 1.0](async_std_1) runtime.
     AsyncStd1,
 }
 
