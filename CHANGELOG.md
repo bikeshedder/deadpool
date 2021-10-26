@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.9.1 (unreleased)
+## v0.9.1
 
 * Deprecate `managed::sync` module in favor of `deadpool-sync` crate
 * Extract `runtime` module as separate `deadpool-runtime` crate
