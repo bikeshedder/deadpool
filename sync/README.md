@@ -10,3 +10,12 @@ support async and need to be run inside a thread.
 `deadpool-*` crates easier. Other libraries and binary projects
 normally should not use this directly and use some provided
 reexports by the crates using it.
+
+## License
+
+Licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0)>
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT)>
+
+at your option.
