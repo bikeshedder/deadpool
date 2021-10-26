@@ -1,4 +1,4 @@
-## v0.1.2 (unreleased)
+## v0.1.2
 
 * Fix links to tokio and async-std in documentation
 
