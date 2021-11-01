@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-diesel"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2018"
 resolver = "2"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
@@ -31,4 +31,3 @@ diesel = { version = "1.4.7", default-features = false }
 [dev-dependencies]
 diesel = { version = "1.4.3", features = ["sqlite"] }
 tokio = { version = "1.0", features = ["macros", "rt", "rt-multi-thread"] }
-
