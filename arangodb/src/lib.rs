@@ -22,29 +22,27 @@
 
 mod config;
 
-use std::ops::{Deref, DerefMut};
+use std::{convert::Infallible, ops::{Deref, DerefMut}};
 
 use arangors::{
     Connection as ArangoConnection,
     ClientError, uclient::ClientExt,
 };
 use deadpool::{async_trait, managed};
-
-pub use arangors;
-pub use deadpool::managed::reexports::*;
-pub use deadpool::managed::BuildError;
 use url::Url;
 
-pub use self::config::Config;
+pub use arangors;
 
-/// Type alias for using [`deadpool::managed::Pool`] with [`arangors`].
-pub type Pool = managed::Pool<Manager, Connection>;
+pub use self::config::{Config};
 
-/// Type alias for using [`deadpool::managed::PoolError`] with [`arangors`].
-pub type PoolError = managed::PoolError<ClientError>;
-
-/// Type alias for using [`deadpool::managed::Object`] with [`arangors`].
-type Object = managed::Object<Manager>;
+pub use deadpool::managed::reexports::*;
+deadpool::managed_reexports!(
+    "arangors",
+    Manager,
+    deadpool::managed::Object<Manager>,
+    ClientError,
+    Infallible
+);
 
 /// Type alias for using [`deadpool::managed::RecycleResult`] with [`arangors`].
 type RecycleResult = managed::RecycleResult<ClientError>;
@@ -123,7 +121,7 @@ impl Manager {
     }
 
     /// Creates a new [`Manager`] with the given params.
-    pub fn from_config(config: Config) -> Result<Self, BuildError<ClientError>> {
+    pub fn from_config(config: Config) -> Result<Self, BuildError> {
         Ok(Self {
             url: config.url.ok_or(BuildError::Config("url must be specified.".into()))?,
             username: config.username.ok_or(BuildError::Config("username must be specified.".into()))?,
