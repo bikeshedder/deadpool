@@ -1,9 +1,11 @@
-use deadpool::{managed::BuildError, Runtime};
+use std::fmt;
+
+use deadpool::Runtime;
 #[cfg(feature = "serde")]
 use serde_1::Deserialize;
 use url::Url;
 
-use crate::{Pool, PoolConfig};
+use crate::{CreatePoolError, Pool, PoolConfig};
 
 /// Configuration object.
 ///
@@ -67,30 +69,35 @@ impl Config {
     /// Creates a new [`Config`] from the given URL.
     ///
     /// Url format is: `http://username:password@localhost:8529/?use_jwt=true`. If `use_jwt` is missing, then it defaults to `true`.
-    pub fn from_url<U: Into<String>>(url: U) -> Result<Self, BuildError<()>> {
+    pub fn from_url<U: Into<String>>(url: U) -> Result<Self, ConfigError> {
         let url = url.into();
-        let url = Url::parse(&url)
-            .map_err(|e| BuildError::Config(format!("Could not extract a valid config from url: `{}` - Error: {}", url, e)))?;
+        let url = Url::parse(&url).map_err(|e| ConfigError::InvalidUrl(url, e))?;
 
-        let use_jwt = url.query_pairs()
+        let use_jwt = url
+            .query_pairs()
             .filter(|(name, _)| name == "use_jwt")
             .map(|(_, value)| value.to_string())
             .next();
         let use_jwt = match use_jwt {
-            Some(use_jwt) => use_jwt.parse()
-                .map_err(|e| BuildError::Config(format!("Could not parse `use_jwt` value: `{}` - Error: {}", use_jwt, e)))?,
+            Some(use_jwt) => use_jwt
+                .parse()
+                .map_err(|e| ConfigError::InvalidUseJwt(use_jwt, e))?,
             None => true,
         };
 
         Ok(Config {
-            url: Some(format!("{}://{}:{}", url.scheme(), url.host_str().unwrap(), url.port_or_known_default().unwrap())),
+            url: Some(format!(
+                "{}://{}:{}",
+                url.scheme(),
+                url.host_str().unwrap(),
+                url.port_or_known_default().unwrap()
+            )),
             username: Some(url.username().to_string()),
             password: url.password().map(ToString::to_string),
             use_jwt,
             pool: None,
         })
     }
-
 
     /// Creates a new [`Pool`] using this [`Config`].
     ///
@@ -99,19 +106,14 @@ impl Config {
     /// See [`BuildError`] and [`ClientError`] for details.
     ///
     /// [`ClientError`]: arangors::ClientError
-    pub fn create_pool(&self, runtime: Runtime) -> Result<Pool, BuildError<arangors::ClientError>> {
-        let manager = match (&self.url, &self.username, &self.password) {
-            (Some(_), Some(_), Some(_)) => crate::Manager::from_config(self.clone())?,
-            _ => {
-                return Err(BuildError::Config("url, username and password must be specified.".into()))
-            }
-        };
-
+    pub fn create_pool(&self, runtime: Runtime) -> Result<Pool, CreatePoolError> {
+        let manager = crate::Manager::from_config(self.clone())?;
         let pool_config = self.get_pool_config();
         Pool::builder(manager)
             .config(pool_config)
             .runtime(runtime)
             .build()
+            .map_err(CreatePoolError::Build)
     }
 
     /// Returns [`deadpool::managed::PoolConfig`] which can be used to construct
@@ -130,6 +132,47 @@ impl Default for Config {
             password: None,
             use_jwt: true,
             pool: None,
+        }
+    }
+}
+
+/// This error is returned if the configuration contains an error
+#[derive(Debug)]
+pub enum ConfigError {
+    /// The `url` is invalid
+    InvalidUrl(String, url::ParseError),
+    /// The `use_jwt` part of the URL is invalid
+    InvalidUseJwt(String, std::str::ParseBoolError),
+    /// The `use` is `None`
+    MissingUrl,
+    /// The `username` is `None`
+    MissingUsername,
+    /// The `password` is None
+    MissingPassword,
+}
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidUrl(url, e) => write!(f, "InvalidUrl: {} - Error: {}", url, e),
+            Self::InvalidUseJwt(use_jwt, e) => write!(
+                f,
+                "Could not parse `use_jwt` value: `{}` - Error: {}",
+                use_jwt, e
+            ),
+            Self::MissingUrl => write!(f, "Missing URL"),
+            Self::MissingUsername => write!(f, "Missing username"),
+            Self::MissingPassword => write!(f, "Missing password"),
+        }
+    }
+}
+
+impl std::error::Error for ConfigError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::InvalidUrl(_, e) => Some(e),
+            Self::InvalidUseJwt(_, e) => Some(e),
+            _ => None,
         }
     }
 }

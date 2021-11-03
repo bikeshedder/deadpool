@@ -22,18 +22,18 @@
 
 mod config;
 
-use std::{convert::Infallible, ops::{Deref, DerefMut}};
-
-use arangors::{
-    Connection as ArangoConnection,
-    ClientError, uclient::ClientExt,
+use std::{
+    convert::Infallible,
+    ops::{Deref, DerefMut},
 };
+
+use arangors::{uclient::ClientExt, ClientError, Connection as ArangoConnection};
 use deadpool::{async_trait, managed};
 use url::Url;
 
 pub use arangors;
 
-pub use self::config::{Config};
+pub use self::config::{Config, ConfigError};
 
 pub use deadpool::managed::reexports::*;
 deadpool::managed_reexports!(
@@ -41,7 +41,7 @@ deadpool::managed_reexports!(
     Manager,
     deadpool::managed::Object<Manager>,
     ClientError,
-    Infallible
+    ConfigError
 );
 
 /// Type alias for using [`deadpool::managed::RecycleResult`] with [`arangors`].
@@ -121,11 +121,17 @@ impl Manager {
     }
 
     /// Creates a new [`Manager`] with the given params.
-    pub fn from_config(config: Config) -> Result<Self, BuildError> {
+    pub fn from_config(config: Config) -> Result<Self, CreatePoolError> {
         Ok(Self {
-            url: config.url.ok_or(BuildError::Config("url must be specified.".into()))?,
-            username: config.username.ok_or(BuildError::Config("username must be specified.".into()))?,
-            password: config.password.ok_or(BuildError::Config("password must be specified.".into()))?,
+            url: config
+                .url
+                .ok_or(CreatePoolError::Config(ConfigError::MissingUrl))?,
+            username: config
+                .username
+                .ok_or(CreatePoolError::Config(ConfigError::MissingUsername))?,
+            password: config
+                .password
+                .ok_or(CreatePoolError::Config(ConfigError::MissingPassword))?,
             use_jwt: config.use_jwt,
         })
     }
@@ -138,8 +144,7 @@ impl managed::Manager for Manager {
 
     async fn create(&self) -> Result<Self::Type, Self::Error> {
         let conn = if self.use_jwt {
-            ArangoConnection::establish_jwt(&self.url, &self.username, &self.password)
-                .await?
+            ArangoConnection::establish_jwt(&self.url, &self.username, &self.password).await?
         } else {
             ArangoConnection::establish_basic_auth(&self.url, &self.username, &self.password)
                 .await?

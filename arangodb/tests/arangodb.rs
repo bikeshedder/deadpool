@@ -1,19 +1,17 @@
 use serde_1::Deserialize;
 
-use deadpool_arangodb::{Pool, Runtime};
-
+use deadpool_arangodb::Runtime;
 
 fn default_dbname() -> String {
     "deadpool".to_string()
 }
-
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
     arango: deadpool_arangodb::Config,
-    #[serde(default="default_dbname")]
+    #[serde(default = "default_dbname")]
     dbname: String,
 }
 
@@ -23,7 +21,9 @@ impl Config {
         cfg.merge(config::Environment::new().separator("__"))
             .unwrap();
         let mut cfg = cfg.try_into::<Self>().unwrap();
-        cfg.arango.url.get_or_insert("http://localhost:8529".to_string());
+        cfg.arango
+            .url
+            .get_or_insert("http://localhost:8529".to_string());
         cfg
     }
 }
