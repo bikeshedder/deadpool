@@ -22,10 +22,7 @@
 
 mod config;
 
-use std::{
-    convert::Infallible,
-    ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 use arangors::{uclient::ClientExt, ClientError, Connection as ArangoConnection};
 use deadpool::{async_trait, managed};

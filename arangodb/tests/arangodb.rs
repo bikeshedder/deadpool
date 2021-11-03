@@ -1,4 +1,4 @@
-use serde_1::Deserialize;
+use serde::Deserialize;
 
 use deadpool_arangodb::Runtime;
 
@@ -7,7 +7,6 @@ fn default_dbname() -> String {
 }
 
 #[derive(Debug, Default, Deserialize)]
-#[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
     arango: deadpool_arangodb::Config,

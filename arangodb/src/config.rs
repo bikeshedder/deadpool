@@ -1,8 +1,7 @@
 use std::fmt;
 
 use deadpool::Runtime;
-#[cfg(feature = "serde")]
-use serde_1::Deserialize;
+use serde::Deserialize;
 use url::Url;
 
 use crate::{CreatePoolError, Pool, PoolConfig};
@@ -23,10 +22,9 @@ use crate::{CreatePoolError, Pool, PoolConfig};
 /// ARANGODB__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
-/// # use serde_1 as serde;
+/// # use serde;
 /// #
 /// #[derive(serde::Deserialize)]
-/// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     arango: deadpool_arangodb::Config,
 /// }
@@ -39,9 +37,7 @@ use crate::{CreatePoolError, Pool, PoolConfig};
 ///     }
 /// }
 /// ```
-#[derive(Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(serde_1::Deserialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     /// ArangoDB URL.
     ///
