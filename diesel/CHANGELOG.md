@@ -1,7 +1,8 @@
 # Change Log
 
 ## v0.3.1
-* Expose the reexports from deadpool and deadpool_sync for mysql and postgres
+
+* Add missing reexports from the `mysql` and `postgres` modules.
 
 ## v0.3.0
 
