@@ -106,6 +106,9 @@ jobs:
             feature: postgres
           - crate: diesel
             feature: sqlite
+        exclude:
+          - crate: arangodb
+            feature: serde
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
