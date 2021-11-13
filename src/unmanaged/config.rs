@@ -4,7 +4,7 @@ use crate::Runtime;
 
 /// Pool configuration.
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct PoolConfig {
     /// Maximum size of the pool.
     pub max_size: usize,

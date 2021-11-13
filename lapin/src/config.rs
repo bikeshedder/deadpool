@@ -37,7 +37,7 @@ use crate::{CreatePoolError, Manager, Pool, PoolBuilder, PoolConfig, Runtime};
 /// }
 /// ```
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(serde_1::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde_1::Deserialize, serde_1::Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct Config {
     /// AMQP server URL.

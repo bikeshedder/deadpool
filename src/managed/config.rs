@@ -6,7 +6,7 @@ use super::BuildError;
 ///
 /// [`Pool`]: super::Pool
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct PoolConfig {
     /// Maximum size of the [`Pool`].
     ///
@@ -45,7 +45,7 @@ impl Default for PoolConfig {
 /// [`Object`]: super::Object
 /// [`Pool`]: super::Pool
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct Timeouts {
     /// Timeout when waiting for a slot to become available.
     pub wait: Option<Duration>,

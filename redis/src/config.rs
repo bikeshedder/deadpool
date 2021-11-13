@@ -2,7 +2,7 @@ use std::{fmt, path::PathBuf};
 
 use redis::RedisError;
 #[cfg(feature = "serde")]
-use serde_1::Deserialize;
+use serde_1::{Deserialize, Serialize};
 
 use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime};
 
@@ -36,7 +36,7 @@ use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime
 /// }
 /// ```
 #[derive(Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(serde_1::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde_1::Deserialize, serde_1::Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct Config {
     /// Redis URL.
@@ -114,7 +114,7 @@ impl Default for Config {
 /// This is duplicated here in order to add support for the
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub enum ConnectionAddr {
     /// Format for this is `(host, port)`.
@@ -189,7 +189,7 @@ impl From<redis::ConnectionAddr> for ConnectionAddr {
 /// This is duplicated here in order to add support for the
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct ConnectionInfo {
     /// A connection address for where to connect to.
@@ -228,7 +228,7 @@ impl redis::IntoConnectionInfo for ConnectionInfo {
 /// This is duplicated here in order to add support for the
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(Deserialize))]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct RedisConnectionInfo {
     /// The database number to use. This is usually `0`.

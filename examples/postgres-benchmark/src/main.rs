@@ -2,13 +2,13 @@ use std::time::{Duration, Instant};
 
 use deadpool_postgres::Runtime;
 use dotenv::dotenv;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 
 const WORKERS: usize = 16;
 const ITERATIONS: usize = 1000;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct Config {
     #[serde(default)]
     pg: deadpool_postgres::Config,

@@ -3,9 +3,9 @@
 use deadpool_redis::Runtime;
 use futures::FutureExt;
 use redis::cmd;
-use serde_1::Deserialize;
+use serde_1::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
