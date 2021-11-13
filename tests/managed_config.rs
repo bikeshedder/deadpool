@@ -3,7 +3,7 @@
 use std::{collections::HashMap, env, time::Duration};
 
 use config::Config;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use deadpool::managed::PoolConfig;
 
@@ -34,7 +34,7 @@ impl Drop for Env {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct TestConfig {
     pool: PoolConfig,
 }

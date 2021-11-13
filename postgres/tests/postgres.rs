@@ -1,12 +1,12 @@
 use std::{collections::HashMap, env, time::Duration};
 
 use futures::future;
-use serde_1::Deserialize;
+use serde_1::{Deserialize, Serialize};
 use tokio_postgres::{types::Type, IsolationLevel};
 
 use deadpool_postgres::{ManagerConfig, Pool, RecyclingMethod, Runtime};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
