@@ -1,3 +1,7 @@
+## v0.3.1
+
+* Config structs now implement `Serialize`
+
 ## v0.3.0
 
 * __Breaking:__ Replace `deadpool::managed::sync` by

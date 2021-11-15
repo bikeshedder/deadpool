@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.10.1
+
+* Config structs now implement `Serialize`
+
 ## v0.10.0
 
 * __Breaking:__ Replace `config` feature with `serde` (opted out by default)

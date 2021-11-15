@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.9.2
+
+* `PoolConfig` now implements `Serialize`
+
 ## v0.9.1
 
 * Deprecate `managed::sync` module in favor of `deadpool-sync` crate
