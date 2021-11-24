@@ -91,6 +91,7 @@ currently supported:
 
 Backend | Crate | Latest Version |
 ------- | ----- | -------------- |
+[bolt-client](https://crates.io/crates/bolt-client) | [deadpool-bolt](https://crates.io/crates/deadpool-bolt) | [![Latest Version](https://img.shields.io/crates/v/deadpool-bolt.svg)](https://crates.io/crates/deadpool-bolt) |
 [tokio-postgres](https://crates.io/crates/tokio-postgres) | [deadpool-postgres](https://crates.io/crates/deadpool-postgres) | [![Latest Version](https://img.shields.io/crates/v/deadpool-postgres.svg)](https://crates.io/crates/deadpool-postgres) |
 [lapin](https://crates.io/crates/lapin) (AMQP) | [deadpool-lapin](https://crates.io/crates/deadpool-lapin) | [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin) |
 [redis](https://crates.io/crates/redis) | [deadpool-redis](https://crates.io/crates/deadpool-redis) | [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis) |
