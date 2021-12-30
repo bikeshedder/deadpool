@@ -57,6 +57,7 @@ async fn test_high_level_commands() {
 #[tokio::test]
 async fn test_aborted_command() {
     let pool = create_pool();
+
     {
         let mut conn = pool.get().await.unwrap();
         // Poll the future once. This does execute the query but does not
@@ -78,5 +79,35 @@ async fn test_aborted_command() {
             .await
             .unwrap();
         assert_eq!(value, "right");
+    }
+}
+
+#[tokio::test]
+async fn test_recycled() {
+    let pool = create_pool();
+
+    let client_id = {
+        let mut conn = pool.get().await.unwrap();
+
+        cmd("CLIENT")
+            .arg("ID")
+            .query_async::<_, i64>(&mut conn)
+            .await
+            .unwrap()
+    };
+
+    {
+        let mut conn = pool.get().await.unwrap();
+
+        let new_client_id = cmd("CLIENT")
+            .arg("ID")
+            .query_async::<_, i64>(&mut conn)
+            .await
+            .unwrap();
+        
+        assert_eq!(
+            client_id, new_client_id,
+            "the redis connection was not recycled"
+        );
     }
 }

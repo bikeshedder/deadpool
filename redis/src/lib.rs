@@ -151,7 +151,8 @@ impl managed::Manager for Manager {
 
     async fn recycle(&self, conn: &mut RedisConnection) -> RecycleResult {
         let ping_number = self.ping_number.fetch_add(1, Ordering::Relaxed).to_string();
-        let n = redis::cmd(&format!("PING {}", ping_number))
+        let n = redis::cmd("PING")
+            .arg(&ping_number)
             .query_async::<_, String>(conn)
             .await?;
         if n == ping_number {
