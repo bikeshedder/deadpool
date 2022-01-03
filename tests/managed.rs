@@ -150,12 +150,12 @@ async fn object_take() {
     assert_eq!(status.size, 2);
     assert_eq!(status.available, 0);
 
-    drop(Object::take(obj0));
+    let _ = Object::take(obj0);
     let status = pool.status();
     assert_eq!(status.size, 1);
     assert_eq!(status.available, 0);
 
-    drop(Object::take(obj1));
+    let _ = Object::take(obj1);
     let status = pool.status();
     assert_eq!(status.size, 0);
     assert_eq!(status.available, 0);

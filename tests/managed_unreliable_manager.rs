@@ -44,20 +44,17 @@ async fn create() {
 
     let pool = Pool::builder(manager).max_size(16).build().unwrap();
     {
-        assert_eq!(pool.get().await.is_ok(), false);
+        assert!(!pool.get().await.is_ok());
     }
 
     let status = pool.status();
     assert_eq!(status.available, 0);
     assert_eq!(status.size, 0);
     {
-        assert_eq!(
-            time::timeout(Duration::from_millis(10), pool.get())
-                .await
-                .unwrap()
-                .is_ok(),
-            false
-        );
+        assert!(!time::timeout(Duration::from_millis(10), pool.get())
+            .await
+            .unwrap()
+            .is_ok(),);
     }
     assert_eq!(status.available, 0);
     assert_eq!(status.size, 0);

@@ -22,7 +22,7 @@ struct Manager {
 #[derive(Clone)]
 struct RemoteControl {
     create_tx: mpsc::Sender<Result<(), ()>>,
-    recycle_tx: mpsc::Sender<Result<(), ()>>,
+    _recycle_tx: mpsc::Sender<Result<(), ()>>,
 }
 
 impl RemoteControl {
@@ -51,7 +51,7 @@ impl Manager {
             recycle_rx: Arc::new(Mutex::new(recycle_rx)),
             remote_control: RemoteControl {
                 create_tx,
-                recycle_tx,
+                _recycle_tx: recycle_tx,
             },
         }
     }

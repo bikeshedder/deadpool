@@ -9,8 +9,7 @@ use deadpool_diesel::{
 
 fn create_pool(max_size: usize) -> Pool {
     let manager = Manager::new(":memory:", Runtime::Tokio1);
-    let pool = Pool::builder(manager).max_size(max_size).build().unwrap();
-    pool
+    Pool::builder(manager).max_size(max_size).build().unwrap()
 }
 
 #[tokio::test]

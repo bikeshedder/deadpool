@@ -122,8 +122,8 @@ async fn transaction_pipeline() {
         });
     }
     let results = future::join_all(futures).await;
-    for i in 0..100 {
-        assert_eq!(results[i], (i as i32) + 1);
+    for (i, &result) in results.iter().enumerate() {
+        assert_eq!(result, (i as i32) + 1);
     }
 }
 

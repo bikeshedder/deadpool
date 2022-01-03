@@ -108,7 +108,7 @@ where
     where
         F: FnOnce() -> Result<T, E> + Send + 'static,
     {
-        let result = match runtime.spawn_blocking(move || f()).await {
+        let result = match runtime.spawn_blocking(f).await {
             // FIXME: Panicking when the creation panics is not nice.
             // In order to handle this properly the Manager::create
             // methods needs to support a custom error enum which

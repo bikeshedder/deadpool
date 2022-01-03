@@ -374,7 +374,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     .inner
                     .hooks
                     .pre_recycle
-                    .apply(&mut obj.inner.as_mut().unwrap(), PoolError::PreRecycleHook)
+                    .apply(obj.inner.as_mut().unwrap(), PoolError::PreRecycleHook)
                     .await?
                 {
                     continue;
@@ -397,7 +397,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     .inner
                     .hooks
                     .post_recycle
-                    .apply(&mut obj.inner.as_mut().unwrap(), PoolError::PostRecycleHook)
+                    .apply(obj.inner.as_mut().unwrap(), PoolError::PostRecycleHook)
                     .await?
                 {
                     continue;
@@ -431,7 +431,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     .inner
                     .hooks
                     .post_create
-                    .apply(&mut obj.inner.as_mut().unwrap(), PoolError::PostCreateHook)
+                    .apply(obj.inner.as_mut().unwrap(), PoolError::PostCreateHook)
                     .await?
                 {
                     continue;
