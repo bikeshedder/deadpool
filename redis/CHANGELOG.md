@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.10.2 (unreleased)
+
+* Fix bug causing connections not to be recycled
+
 ## v0.10.1
 
 * Config structs now implement `Serialize`
