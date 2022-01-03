@@ -104,7 +104,7 @@ async fn test_recycled() {
             .query_async::<_, i64>(&mut conn)
             .await
             .unwrap();
-        
+
         assert_eq!(
             client_id, new_client_id,
             "the redis connection was not recycled"
