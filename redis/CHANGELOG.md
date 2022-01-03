@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.10.2 (unreleased)
+## v0.10.2
 
 * Fix bug causing connections not to be recycled
 
