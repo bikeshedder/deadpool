@@ -23,6 +23,7 @@ rt_async-std_1 = ["deadpool-runtime/async-std_1"]
 
 [dependencies]
 num_cpus = "1.11.1"
+retain_mut ="0.1.6"
 # `managed` feature
 async-trait = { version = "0.1.17", optional = true }
 # `serde` feature

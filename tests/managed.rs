@@ -253,3 +253,22 @@ async fn resize_pool_grow_concurrent() {
     assert_eq!(pool.status().size, 1);
     assert_eq!(pool.status().available, 1);
 }
+
+#[tokio::test]
+async fn retain() {
+    let mgr = Manager {};
+    let pool = Pool::builder(mgr).max_size(4).build().unwrap();
+    {
+        let _a = pool.get().await;
+        let _b = pool.get().await;
+        tokio::time::sleep(Duration::from_millis(5)).await;
+        let _c = pool.get().await;
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    assert_eq!(pool.status().size, 3);
+    pool.retain(|_, metrics| metrics.age() <= Duration::from_millis(10));
+    assert_eq!(pool.status().size, 1);
+    tokio::time::sleep(Duration::from_millis(5)).await;
+    pool.retain(|_, metrics| metrics.age() <= Duration::from_millis(10));
+    assert_eq!(pool.status().size, 0);
+}
