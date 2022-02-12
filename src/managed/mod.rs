@@ -369,7 +369,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     let _ = self.inner.available.fetch_sub(1, Ordering::Relaxed);
                 });
 
-                // Apply post_recycle hooks
+                // Apply pre_recycle hooks
                 if let Some(_e) = self
                     .inner
                     .hooks
