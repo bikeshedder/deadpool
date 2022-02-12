@@ -79,6 +79,7 @@ use std::{
 
 use async_trait::async_trait;
 use deadpool_runtime::Runtime;
+use retain_mut::RetainMut;
 use tokio::sync::{Semaphore, TryAcquireError};
 
 pub use crate::Status;
@@ -490,6 +491,43 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             slots.vec.reserve_exact(additional);
             self.inner.semaphore.add_permits(additional);
         }
+    }
+
+    /// Retains only the objects specified by the given function.
+    ///
+    /// This function is typically used to remove objects from
+    /// the pool based on their current state or metrics.
+    ///
+    /// **Caution:** This function blocks the entire pool while
+    /// it is running. Therefore the given function should not
+    /// block.
+    ///
+    /// The following example starts a background task that
+    /// runs every 30 seconds and removes objects from the pool
+    /// that haven't been used for more than one minute.
+    ///
+    /// ```rust,ignore
+    /// let interval = Duration::from_secs(30);
+    /// let max_age = Duration::from_secs(60);
+    /// tokio::spawn(async move {
+    ///     loop {
+    ///         tokio::time::sleep(interval).await;
+    ///         pool.retain(|_, metrics| metrics.last_used() < max_age);
+    ///     }
+    /// });
+    /// ```
+    pub fn retain(&self, f: impl Fn(&M::Type, Metrics) -> bool) {
+        let mut guard = self.inner.slots.lock().unwrap();
+        let len_before = guard.vec.len();
+        guard.vec.retain_mut(|obj| {
+            if f(&obj.obj, obj.metrics) {
+                true
+            } else {
+                self.manager().detach(&mut obj.obj);
+                false
+            }
+        });
+        guard.size -= len_before - guard.vec.len();
     }
 
     /// Closes this [`Pool`].
