@@ -357,9 +357,17 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
 
         let mut obj = loop {
             let mut obj = Object {
-                inner: self.inner.slots.lock().unwrap().vec.pop_front(),
+                inner: {
+                    let mut slot_guard = self.inner.slots.lock().unwrap();
+                    let inner = slot_guard.vec.pop_front();
+                    if inner.is_none() {
+                        slot_guard.size += 1;
+                    }
+                    inner
+                },
                 ready: false,
             };
+
             if obj.inner.is_some() {
                 // Recycle existing object
                 let recycle_guard = DropGuard(|| {
@@ -410,6 +418,13 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
 
                 break obj;
             } else {
+                let size_guard = DropGuard(|| {
+                    // This guard is dropped either if the future is cancelled,
+                    // the `Manager::create` method returns an error or the
+                    // `post_create` hooks return an error.
+                    self.inner.slots.lock().unwrap().size -= 1;
+                });
+
                 // Create new object
                 let mut obj = Object {
                     inner: Some(ObjectInner {
@@ -437,7 +452,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                     continue;
                 }
 
-                self.inner.slots.lock().unwrap().size += 1;
+                size_guard.disarm();
                 let _ = self.inner.available.fetch_add(1, Ordering::Relaxed);
 
                 break obj;

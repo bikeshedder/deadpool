@@ -86,20 +86,20 @@ async fn pool_drained() {
     // let first task grab the only connection
     let get_1 = tokio::spawn(async move { pool_clone.get().await });
     task::yield_now().await;
-    assert_eq!(pool.status().size, 0);
+    assert_eq!(pool.status().size, 1);
     assert_eq!(pool.status().available, -1);
 
     // let second task wait for the connection
     let pool_clone = pool.clone();
     let get_2 = tokio::spawn(async move { pool_clone.get().await });
     task::yield_now().await;
-    assert_eq!(pool.status().size, 0);
+    assert_eq!(pool.status().size, 1);
     assert_eq!(pool.status().available, -2);
 
     // first task receives an error
     rc.create_err();
     assert!(get_1.await.unwrap().is_err());
-    assert_eq!(pool.status().size, 0);
+    assert_eq!(pool.status().size, 1);
     assert_eq!(pool.status().available, -1);
 
     // the second task should now be able to create an object
