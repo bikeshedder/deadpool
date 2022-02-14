@@ -3,6 +3,7 @@
 ## v0.9.3 (unreleased)
 
 * Add `Pool::retain` method
+* Fix `Pool::get_timeouts` method
 
 ## v0.9.2
 

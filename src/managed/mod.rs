@@ -344,7 +344,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             apply_timeout(
                 self.inner.runtime,
                 TimeoutType::Wait,
-                self.inner.config.timeouts.wait,
+                timeouts.wait,
                 async {
                     self.inner
                         .semaphore
@@ -384,7 +384,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                 if apply_timeout(
                     self.inner.runtime,
                     TimeoutType::Recycle,
-                    self.inner.config.timeouts.recycle,
+                    timeouts.recycle,
                     self.inner.manager.recycle(&mut *obj),
                 )
                 .await
@@ -417,7 +417,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                         obj: apply_timeout(
                             self.inner.runtime,
                             TimeoutType::Create,
-                            self.inner.config.timeouts.create,
+                            timeouts.create,
                             self.inner.manager.create(),
                         )
                         .await?,
