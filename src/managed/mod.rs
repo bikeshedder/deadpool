@@ -302,7 +302,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     ///
     /// See [`PoolError`] for details.
     pub async fn get(&self) -> Result<W, PoolError<M::Error>> {
-        self.timeout_get(&self.inner.config.timeouts).await
+        self.timeout_get(&self.timeouts()).await
     }
 
     /// Retrieves an [`Object`] from this [`Pool`] and doesn't wait if there is
@@ -312,10 +312,16 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     /// # Errors
     ///
     /// See [`PoolError`] for details.
+    #[deprecated(
+        since = "0.9.3",
+        note = "The name of this method is highly misleading. Please use timeout_get instead. e.g. `pool.timeout_get(&Timeouts { wait: Some(Duration::ZERO), ..pool.timeouts() })"
+    )]
     pub async fn try_get(&self) -> Result<W, PoolError<M::Error>> {
-        let mut timeouts = self.inner.config.timeouts;
-        timeouts.wait = Some(Duration::from_secs(0));
-        self.timeout_get(&timeouts).await
+        self.timeout_get(&Timeouts {
+            wait: Some(Duration::ZERO),
+            ..self.timeouts()
+        })
+        .await
     }
 
     /// Retrieves an [`Object`] from this [`Pool`] using a different `timeout`
@@ -528,6 +534,11 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             }
         });
         guard.size -= len_before - guard.vec.len();
+    }
+
+    /// Get current timeout configuration
+    pub fn timeouts(&self) -> Timeouts {
+        self.inner.config.timeouts
     }
 
     /// Closes this [`Pool`].

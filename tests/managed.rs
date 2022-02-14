@@ -5,7 +5,7 @@ use std::{convert::Infallible, time::Duration};
 use async_trait::async_trait;
 use tokio::time;
 
-use deadpool::managed::{self, Object, PoolError, RecycleResult};
+use deadpool::managed::{self, Object, PoolError, RecycleResult, Timeouts};
 
 type Pool = managed::Pool<Manager>;
 
@@ -86,7 +86,14 @@ async fn closing() {
 
     assert!(matches!(join_handle.await.unwrap(), Err(PoolError::Closed)));
     assert!(matches!(pool.get().await, Err(PoolError::Closed)));
-    assert!(matches!(pool.try_get().await, Err(PoolError::Closed)));
+    assert!(matches!(
+        pool.timeout_get(&Timeouts {
+            wait: Some(Duration::ZERO),
+            ..pool.timeouts()
+        })
+        .await,
+        Err(PoolError::Closed)
+    ));
 
     drop(obj);
     tokio::task::yield_now().await;

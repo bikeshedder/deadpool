@@ -4,6 +4,8 @@
 
 * Add `Pool::retain` method
 * Fix `Pool::get_timeouts` method
+* Deprecate `managed::Pool::try_get`
+* Add `Pool::timeouts` method
 
 ## v0.9.2
 
