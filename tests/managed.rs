@@ -262,6 +262,64 @@ async fn resize_pool_grow_concurrent() {
 }
 
 #[tokio::test]
+async fn resize_pool_with_config() {
+    let mgr = Manager {};
+    let pool = Pool::builder(mgr).max_size(0).build().unwrap();
+    let join_handle = {
+        let pool = pool.clone();
+        tokio::spawn(async move { pool.get().await })
+    };
+    tokio::task::yield_now().await;
+    assert_eq!(
+        pool.status(),
+        Status {
+            max_size: 0,
+            size: 0,
+            available: -1
+        }
+    );
+    pool.swap_config(PoolConfig {
+        max_size: 1,
+        ..pool.config()
+    });
+    assert_eq!(
+        pool.status(),
+        Status {
+            max_size: 1,
+            size: 0,
+            available: -1
+        }
+    );
+    tokio::task::yield_now().await;
+    assert_eq!(
+        pool.status(),
+        Status {
+            max_size: 1,
+            size: 1,
+            available: 0,
+        }
+    );
+    let obj0 = join_handle.await.unwrap().unwrap();
+    assert_eq!(
+        pool.status(),
+        Status {
+            max_size: 1,
+            size: 1,
+            available: 0
+        }
+    );
+    pool.swap_config(PoolConfig {
+        max_size: 2,
+        ..pool.config()
+    });
+    assert_eq!(pool.status(), Status {
+        max_size: 2,
+        size: 1,
+        available, 0,
+    });
+}
+
+#[tokio::test]
 async fn retain() {
     let mgr = Manager {};
     let pool = Pool::builder(mgr).max_size(4).build().unwrap();
