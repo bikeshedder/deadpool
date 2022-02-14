@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.9.3 (unreleased)
+
+* Add `Pool::retain` method
+
 ## v0.9.2
 
 * `PoolConfig` now implements `Serialize`
