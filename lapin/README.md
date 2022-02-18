@@ -24,7 +24,6 @@ use deadpool_lapin::lapin::{
     options::BasicPublishOptions,
     BasicProperties,
 };
-use tokio_amqp::LapinTokioExt as _;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -38,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "",
             "hello",
             BasicPublishOptions::default(),
-            b"hello from deadpool".to_vec(),
+            b"hello from deadpool",
             BasicProperties::default(),
         ).await?;
     }
@@ -86,7 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "",
             "hello",
             BasicPublishOptions::default(),
-            b"hello from deadpool".to_vec(),
+            b"hello from deadpool",
             BasicProperties::default(),
         ).await?;
     }
