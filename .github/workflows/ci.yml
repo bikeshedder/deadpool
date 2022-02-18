@@ -132,10 +132,7 @@ jobs:
           #       `rustc-serialize = 0.3.19`. Try re-enable it on next `diesel`
           #       major version upgrade.
           #- { crate: deadpool-diesel, msrv: '1.54.0' }
-          # TODO: Doesn't work with `lexical-core = 0.7.0` because of
-          #       `nom = 6.0.0`. Try re-enable it on next `lapin` major version
-          #        upgrade.
-          #- { crate: deadpool-lapin, msrv: '1.54.0' }
+          - { crate: deadpool-lapin, msrv: '1.56.0' }
           - { crate: deadpool-postgres, msrv: '1.54.0' }
           - { crate: deadpool-redis, msrv: '1.54.0' }
           - { crate: deadpool-sqlite, msrv: '1.54.0' }
