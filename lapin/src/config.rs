@@ -1,10 +1,5 @@
 use std::convert::Infallible;
 
-#[cfg(feature = "rt_async-std_1")]
-use async_amqp::LapinAsyncStdExt as _;
-#[cfg(feature = "rt_tokio_1")]
-use tokio_amqp::LapinTokioExt as _;
-
 use crate::{CreatePoolError, Manager, Pool, PoolBuilder, PoolConfig, Runtime};
 
 /// Configuration object.
@@ -36,7 +31,7 @@ use crate::{CreatePoolError, Manager, Pool, PoolBuilder, PoolConfig, Runtime};
 ///     }
 /// }
 /// ```
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Default)]
 #[cfg_attr(feature = "serde", derive(serde_1::Deserialize, serde_1::Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct Config {
@@ -49,6 +44,29 @@ pub struct Config {
     /// Connection properties.
     #[cfg_attr(feature = "serde", serde(skip))]
     pub connection_properties: lapin::ConnectionProperties,
+}
+
+pub(crate) struct ConnProps<'a>(pub(crate) &'a lapin::ConnectionProperties);
+impl<'a> std::fmt::Debug for ConnProps<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConnectionProperties")
+            .field("locale", &self.0.locale)
+            .field("client_properties", &self.0.client_properties)
+            .finish_non_exhaustive()
+    }
+}
+
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("url", &self.url)
+            .field("pool", &self.pool)
+            .field(
+                "connection_properties",
+                &ConnProps(&self.connection_properties),
+            )
+            .finish()
+    }
 }
 
 impl Config {
@@ -72,9 +90,11 @@ impl Config {
         let conn_props = match runtime {
             None => conn_props,
             #[cfg(feature = "rt_tokio_1")]
-            Some(Runtime::Tokio1) => conn_props.with_tokio(),
+            Some(Runtime::Tokio1) => {
+                conn_props.with_executor(tokio_executor_trait::Tokio::current())
+            }
             #[cfg(feature = "rt_async-std_1")]
-            Some(Runtime::AsyncStd1) => conn_props.with_async_std(),
+            Some(Runtime::AsyncStd1) => conn_props.with_executor(async_executor_trait::AsyncStd),
         };
 
         let mut builder = Pool::builder(Manager::new(url, conn_props)).config(pool_config);
