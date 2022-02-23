@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.10.0 (unreleased)
+## v0.10.0
 
 * Update `lapin` to `2.0`
 
