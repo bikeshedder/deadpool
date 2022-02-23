@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.10.0 (unreleased)
+
+* Update `lapin` to `2.0`
+
 ## v0.9.1
 
 * Config structs now implement `Serialize`
