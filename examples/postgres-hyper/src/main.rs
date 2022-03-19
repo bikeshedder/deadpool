@@ -16,9 +16,11 @@ struct Config {
 
 impl Config {
     fn from_env() -> Result<Self, ConfigError> {
-        let mut cfg = config::Config::new();
-        cfg.merge(config::Environment::new().separator("__"))?;
-        cfg.try_into()
+        config::Config::builder()
+            .add_source(config::Environment::default().separator("__"))
+            .build()
+            .unwrap()
+            .try_deserialize()
     }
 }
 
