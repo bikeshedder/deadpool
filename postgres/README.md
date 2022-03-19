@@ -10,11 +10,11 @@ and `tokio_postgres::Transaction`.
 
 ## Features
 
-| Feature | Description | Extra dependencies | Default |
-| ------- | ----------- | ------------------ | ------- |
-| `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
-| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
-| `serde` | Enable support for [serde](https://crates.io/crates/serde) crate | `deadpool/serde`, `serde/derive` | no |
+| Feature          | Description                                                           | Extra dependencies               | Default |
+| ---------------- | --------------------------------------------------------------------- | -------------------------------- | ------- |
+| `rt_tokio_1`     | Enable support for [tokio](https://crates.io/crates/tokio) crate      | `deadpool/rt_tokio_1`            | yes     |
+| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1`        | no      |
+| `serde`          | Enable support for [serde](https://crates.io/crates/serde) crate      | `deadpool/serde`, `serde/derive` | no      |
 
 **Important:** `async-std` support is currently limited to the
 `async-std` specific timeout function. You still need to enable
@@ -49,6 +49,7 @@ async fn main() {
 # .env
 PG__DBNAME=deadpool
 ```
+
 ```rust
 use deadpool_postgres::{Manager, Pool, Runtime};
 use dotenv::dotenv;
@@ -62,11 +63,11 @@ struct Config {
 }
 
 impl Config {
-    pub fn from_env() -> Result<Self, config::ConfigError> {
-        let mut cfg = config::Config::new();
-        cfg.set_default("pg.dbname", "deadpool");
-        cfg.merge(config::Environment::new().separator("__"))?;
-        cfg.try_into()
+     pub fn from_env() -> Result<Self, config::ConfigError> {
+         config::Config::builder()
+            .add_source(config::Environment::default().separator("__"))
+            .build()?
+            .try_deserialize()
     }
 }
 

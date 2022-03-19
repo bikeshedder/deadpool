@@ -8,11 +8,11 @@ manager for [`redis`](https://crates.io/crates/redis).
 
 ## Features
 
-| Feature | Description | Extra dependencies | Default |
-| ------- | ----------- | ------------------ | ------- |
-| `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1`, `redis/tokio-comp` | yes |
-| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1`, `redis/async-std-comp` | no |
-| `serde` | Enable support for [serde](https://crates.io/crates/serde) crate | `deadpool/serde`, `serde/derive` | no |
+| Feature          | Description                                                           | Extra dependencies                                | Default |
+| ---------------- | --------------------------------------------------------------------- | ------------------------------------------------- | ------- |
+| `rt_tokio_1`     | Enable support for [tokio](https://crates.io/crates/tokio) crate      | `deadpool/rt_tokio_1`, `redis/tokio-comp`         | yes     |
+| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1`, `redis/async-std-comp` | no      |
+| `serde`          | Enable support for [serde](https://crates.io/crates/serde) crate      | `deadpool/serde`, `serde/derive`                  | no      |
 
 ## Example
 
@@ -56,10 +56,11 @@ struct Config {
 }
 
 impl Config {
-    pub fn from_env() -> Result<Self, config::ConfigError> {
-        let mut cfg = config::Config::new();
-        cfg.merge(config::Environment::new().separator("__"))?;
-        cfg.try_into()
+      pub fn from_env() -> Result<Self, config::ConfigError> {
+         config::Config::builder()
+            .add_source(config::Environment::default().separator("__"))
+            .build()?
+            .try_deserialize()
     }
 }
 
