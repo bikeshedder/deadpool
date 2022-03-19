@@ -14,10 +14,10 @@ struct Config {
 
 impl Config {
     pub fn from_env() -> Self {
-        let mut cfg = config::Config::default();
-        cfg.merge(config::Environment::new().separator("__"))
+        config::Config::builder()
+            .add_source(config::Environment::default().separator("__"))
+            .build()
             .unwrap();
-        cfg.try_into().unwrap()
     }
 }
 

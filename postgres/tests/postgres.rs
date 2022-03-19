@@ -15,19 +15,23 @@ struct Config {
 
 impl Config {
     pub fn from_env() -> Self {
-        let mut cfg = config::Config::new();
-        cfg.merge(config::Environment::new().separator("__"))
+        let cfg = config::Config::builder()
+            .add_source(config::Environment::default().separator("__"))
+            .build()
             .unwrap();
-        let mut cfg = cfg.try_into::<Self>().unwrap();
+
+        let mut cfg = cfg.try_deserialize::<Self>().unwrap();
         cfg.pg.dbname.get_or_insert("deadpool".to_string());
         cfg
     }
 
     pub fn from_env_with_prefix(prefix: &str) -> Self {
-        let mut cfg = config::Config::new();
-        cfg.merge(config::Environment::with_prefix(prefix).separator("__"))
+        let cfg = config::Config::builder()
+            .add_source(config::Environment::with_prefix(prefix).separator("__"))
+            .build()
             .unwrap();
-        let mut cfg = cfg.try_into::<Self>().unwrap();
+
+        let mut cfg = cfg.try_deserialize::<Self>().unwrap();
         cfg.pg.dbname.get_or_insert("deadpool".to_string());
         cfg
     }
