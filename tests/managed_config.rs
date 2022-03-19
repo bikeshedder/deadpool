@@ -50,10 +50,13 @@ fn from_env() {
     env.set("POOL__TIMEOUTS__RECYCLE__SECS", "3");
     env.set("POOL__TIMEOUTS__RECYCLE__NANOS", "0");
 
-    let mut cfg = Config::new();
-    cfg.merge(config::Environment::new().separator("__"))
+    let cfg = Config::builder()
+        .add_source(config::Environment::default().separator("__"))
+        .build()
+        .unwrap()
+        .try_deserialize::<TestConfig>()
         .unwrap();
-    let cfg: TestConfig = cfg.try_into().unwrap();
+
     assert_eq!(cfg.pool.max_size, 42);
     assert_eq!(cfg.pool.timeouts.wait, Some(Duration::from_secs(1)));
     assert_eq!(cfg.pool.timeouts.create, Some(Duration::from_secs(2)));
