@@ -25,9 +25,10 @@ use crate::{CreatePoolError, Manager, Pool, PoolBuilder, PoolConfig, Runtime};
 ///
 /// impl Config {
 ///     pub fn from_env() -> Result<Self, config::ConfigError> {
-///         let mut cfg = config::Config::new();
-///         cfg.merge(config::Environment::new().separator("__")).unwrap();
-///         cfg.try_into()
+///         let mut cfg = config::Config::builder()
+///            .add_source(config::Environment::default().separator("__"))
+///            .build()?;
+///            cfg.try_deserialize()
 ///     }
 /// }
 /// ```
