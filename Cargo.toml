@@ -49,6 +49,7 @@ harness = false
 members = [
     "diesel",
     "lapin",
+    "memcached",
     "postgres",
     "r2d2",
     "redis",

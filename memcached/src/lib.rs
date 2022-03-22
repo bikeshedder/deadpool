@@ -7,19 +7,18 @@
 //! connect via TCP as there is no existing mechanism to parameterize how to deal with different
 //! unerlying connection types at the moment.
 #![deny(warnings, missing_docs)]
+use std::convert::Infallible;
+
 use async_memcached::{Client, Error};
 use async_trait::async_trait;
 
-/// A type alias for using `deadpool::Pool` with `async-memcached`
-pub type Pool = deadpool::managed::Pool<Client, Error>;
-
-/// A type alias for using `deadpool::PoolError` with `async-memcached`
-pub type PoolError = deadpool::managed::PoolError<Error>;
-
-/// A type alias for using `deadpool::Object` with `async-memcached`
-pub type Connection = deadpool::managed::Object<Client, Error>;
-
+/// Type alias for using [`deadpool::managed::RecycleResult`] with [`redis`].
 type RecycleResult = deadpool::managed::RecycleResult<Error>;
+
+type ConfigError = Infallible;
+
+pub use deadpool::managed::reexports::*;
+deadpool::managed_reexports!("memcached", Manager, Client, Error, ConfigError);
 
 /// The manager for creating and recyling memcache connections
 pub struct Manager {
@@ -34,7 +33,10 @@ impl Manager {
 }
 
 #[async_trait]
-impl deadpool::managed::Manager<Client, Error> for Manager {
+impl deadpool::managed::Manager for Manager {
+    type Type = Client;
+    type Error = Error;
+
     async fn create(&self) -> Result<Client, Error> {
         Client::new(&self.addr).await
     }

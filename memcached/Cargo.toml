@@ -1,24 +1,29 @@
 [package]
 name = "deadpool-memcached"
 version = "0.1.2"
-authors = ["Toby Lawrence <toby@nuclearfurnace.com>"]
+resolver = "2"
+edition = "2018"
+authors = [
+    "Toby Lawrence <toby@nuclearfurnace.com>",
+    "Michael P. Jung <michael.jung@terreon.de>"
+]
 description = "Dead simple async pool for memcached"
 keywords = ["async", "memcached", "pool"]
 license = "MIT/Apache-2.0"
-repository = "https://github.com/nuclearfurnace/deadpool-memcached"
+repository = "https://github.com/bikeshedder/deadpool"
 readme = "README.md"
-edition = "2018"
 
 [package.metadata.docs.rs]
 all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["tcp"]
 tcp = ["async-memcached/tcp"]
 
 [dependencies]
-deadpool = { version = "0.5", default-features = false, features = ["managed"] } 
+async-memcached = { version = "0.1", default-features = false }
 async-trait = "0.1"
+deadpool = { path = "../", version = "0.9.0", default-features = false, features = ["managed"] }
 futures = { version = "0.3", features = ["compat"] }
 log = "0.4"
-async-memcached = { version = "0.1", default-features = false }
