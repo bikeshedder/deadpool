@@ -1,5 +1,10 @@
 # Change Log
 
+## Unreleased
+
+* Export `TargetSessionAttrs` and `ChannelBinding` enums (part of `Config`
+  struct)
+
 ## v0.10.1
 
 * Config structs now implement `Serialize`
