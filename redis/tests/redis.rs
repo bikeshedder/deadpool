@@ -17,7 +17,9 @@ impl Config {
         config::Config::builder()
             .add_source(config::Environment::default().separator("__"))
             .build()
-            .unwrap();
+            .unwrap()
+            .try_deserialize()
+            .unwrap()
     }
 }
 
