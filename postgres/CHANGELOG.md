@@ -1,6 +1,6 @@
 # Change Log
 
-## Unreleased
+## v0.10.2
 
 * Export `TargetSessionAttrs` and `ChannelBinding` enums (part of `Config`
   struct)
