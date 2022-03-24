@@ -63,11 +63,11 @@ struct Config {
 }
 
 impl Config {
-     pub fn from_env() -> Result<Self, config::ConfigError> {
-         config::Config::builder()
-            .add_source(config::Environment::default().separator("__"))
-            .build()?
-            .try_deserialize()
+    pub fn from_env() -> Result<Self, config::ConfigError> {
+        config::Config::builder()
+           .add_source(config::Environment::default().separator("__"))
+           .build()?
+           .try_deserialize()
     }
 }
 
