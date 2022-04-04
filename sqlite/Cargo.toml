@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-sqlite"
-version = "0.3.1"
+version = "0.4.0-pre"
 edition = "2018"
 resolver = "2"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
@@ -23,7 +23,7 @@ serde = ["deadpool/serde", "serde_1"]
 [dependencies]
 deadpool = { path = "../", version = "0.9.1", default-features = false, features = ["managed"] }
 deadpool-sync = { path = "../sync", version = "0.1" }
-rusqlite = "0.25"
+rusqlite = "0.27"
 serde_1 = { package = "serde", version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]

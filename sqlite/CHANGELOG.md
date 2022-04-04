@@ -1,3 +1,7 @@
+## v0.4.0 (Unreleased)
+
+- Update `rusqlite` dependency to version `0.27`
+
 ## v0.3.1
 
 * Config structs now implement `Serialize`
