@@ -601,3 +601,54 @@ pub trait GenericClient {
     where
         T: ?Sized + tokio_postgres::ToStatement + Sync + Send;
 }
+
+#[async_trait]
+impl GenericClient for Transaction<'_> {
+    async fn prepare(&self, query: &str) -> Result<Statement, Error> {
+        tokio_postgres::Transaction::prepare(&self, query).await
+    }
+
+    async fn execute<T>(
+        &self,
+        query: &T,
+        params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+    ) -> Result<u64, Error>
+    where
+        T: ?Sized + tokio_postgres::ToStatement + Sync + Send,
+    {
+        tokio_postgres::Transaction::execute(&self, query, params).await
+    }
+
+    async fn query_one<T>(
+        &self,
+        statement: &T,
+        params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+    ) -> Result<tokio_postgres::Row, Error>
+    where
+        T: ?Sized + tokio_postgres::ToStatement + Sync + Send,
+    {
+        tokio_postgres::Transaction::query_one(&self, statement, params).await
+    }
+
+    async fn query_opt<T>(
+        &self,
+        statement: &T,
+        params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+    ) -> Result<Option<tokio_postgres::Row>, Error>
+    where
+        T: ?Sized + tokio_postgres::ToStatement + Sync + Send,
+    {
+        tokio_postgres::Transaction::query_opt(&self, statement, params).await
+    }
+
+    async fn query<T>(
+        &self,
+        query: &T,
+        params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+    ) -> Result<Vec<tokio_postgres::Row>, Error>
+    where
+        T: ?Sized + tokio_postgres::ToStatement + Sync + Send,
+    {
+        tokio_postgres::Transaction::query(&self, query, params).await
+    }
+}
