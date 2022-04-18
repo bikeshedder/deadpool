@@ -568,3 +568,36 @@ impl<'a> DerefMut for TransactionBuilder<'a> {
         &mut self.builder
     }
 }
+
+#[async_trait]
+pub trait GenericClient {
+    async fn prepare(&self, query: &str) -> Result<Statement, Error>;
+    async fn execute<T>(
+        &self,
+        query: &T,
+        params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+    ) -> Result<u64, Error>
+    where
+        T: ?Sized + tokio_postgres::ToStatement + Sync + Send;
+    async fn query_one<T>(
+        &self,
+        statement: &T,
+        params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+    ) -> Result<tokio_postgres::Row, Error>
+    where
+        T: ?Sized + tokio_postgres::ToStatement + Sync + Send;
+    async fn query_opt<T>(
+        &self,
+        statement: &T,
+        params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+    ) -> Result<Option<tokio_postgres::Row>, Error>
+    where
+        T: ?Sized + tokio_postgres::ToStatement + Sync + Send;
+    async fn query<T>(
+        &self,
+        query: &T,
+        params: &[&(dyn tokio_postgres::types::ToSql + Sync)],
+    ) -> Result<Vec<tokio_postgres::Row>, Error>
+    where
+        T: ?Sized + tokio_postgres::ToStatement + Sync + Send;
+}
