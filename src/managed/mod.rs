@@ -314,7 +314,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     /// See [`PoolError`] for details.
     #[deprecated(
         since = "0.9.3",
-        note = "The name of this method is highly misleading. Please use timeout_get instead. e.g. `pool.timeout_get(&Timeouts { wait: Some(Duration::ZERO), ..pool.timeouts() })"
+        note = "The name of this method is highly misleading. Please use timeout_get instead. e.g.\n`pool.timeout_get(&Timeouts { wait: Some(Duration::ZERO), ..pool.timeouts() })`"
     )]
     pub async fn try_get(&self) -> Result<W, PoolError<M::Error>> {
         self.timeout_get(&Timeouts {
