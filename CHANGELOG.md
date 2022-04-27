@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.9.4 (unreleased)
+## v0.9.4
 
 - Fix `HookError` and `HookErrorCause` in re-exports
 
