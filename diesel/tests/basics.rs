@@ -67,9 +67,9 @@ async fn lock() {
     let pool = create_pool(1);
     let wrapper = pool.get().await.unwrap();
     let result = tokio::task::spawn_blocking(move || {
-        let conn = wrapper.try_lock().unwrap();
+        let mut conn = wrapper.try_lock().unwrap();
         let query = select("foo".into_sql::<Text>());
-        query.get_result::<String>(&*conn)
+        query.get_result::<String>(&mut *conn)
     })
     .await
     .unwrap()

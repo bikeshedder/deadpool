@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.4.0 (unreleased)
+
+* Update Diesel to 2.0.0-rc.0
+
 ## v0.3.1
 
 * Add missing reexports from the `mysql` and `postgres` modules.

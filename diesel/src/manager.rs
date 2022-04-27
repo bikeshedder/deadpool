@@ -6,6 +6,11 @@ use deadpool::{
     Runtime,
 };
 use deadpool_sync::SyncWrapper;
+use diesel::{
+    backend::Backend,
+    query_builder::{Query, QueryFragment},
+    QueryId, QueryResult, RunQueryDsl,
+};
 
 use crate::{Connection, Error};
 
@@ -66,9 +71,35 @@ where
                 "Mutex is poisoned. Connection is considered unusable.",
             ));
         }
-        obj.interact(|conn| conn.execute("SELECT 1").map_err(Error::Ping))
+        obj.interact(|conn| CheckConnectionQuery.execute(conn).map_err(Error::Ping))
             .await
             .map_err(|e| RecycleError::Message(format!("Panic: {:?}", e)))
             .map(|_| ())
     }
 }
+
+// The `CheckConnectionQuery` is a 1:1 copy of the code found in
+// the `diesel::r2d2` module:
+// https://github.com/diesel-rs/diesel/blob/master/diesel/src/r2d2.rs
+
+#[derive(QueryId)]
+struct CheckConnectionQuery;
+
+impl<DB> QueryFragment<DB> for CheckConnectionQuery
+where
+    DB: Backend,
+{
+    fn walk_ast<'b>(
+        &'b self,
+        mut pass: diesel::query_builder::AstPass<'_, 'b, DB>,
+    ) -> QueryResult<()> {
+        pass.push_sql("SELECT 1");
+        Ok(())
+    }
+}
+
+impl Query for CheckConnectionQuery {
+    type SqlType = diesel::sql_types::Integer;
+}
+
+impl<C> RunQueryDsl<C> for CheckConnectionQuery {}
