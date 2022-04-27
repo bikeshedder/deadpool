@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.9.4 (unreleased)
+
+- Fix `HookError` and `HookErrorCause` in re-exports
+
 ## v0.9.3
 
 * Add `Pool::retain` method
