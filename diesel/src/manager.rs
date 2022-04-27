@@ -8,8 +8,8 @@ use deadpool::{
 use deadpool_sync::SyncWrapper;
 use diesel::{
     backend::Backend,
-    query_builder::{Query, QueryFragment},
-    QueryId, QueryResult, RunQueryDsl,
+    query_builder::{Query, QueryFragment, QueryId},
+    QueryResult, RunQueryDsl,
 };
 
 use crate::{Connection, Error};
