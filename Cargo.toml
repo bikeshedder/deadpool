@@ -37,9 +37,13 @@ tokio = { version = "1.0", features = ["sync"] }
 
 [dev-dependencies]
 async-std = { version = "1.0", features = ["attributes"] }
-config = { version = "0.12", features = ["json"] }
-criterion = "0.3"
+config = { version = "0.13", features = ["json"] }
+criterion = { version = "0.3", features = ["html_reports"] }
 tokio = { version = "1.5.0", features = ["macros", "rt", "rt-multi-thread", "time"] }
+
+[[bench]]
+name = "managed"
+harness = false
 
 [[bench]]
 name = "unmanaged"
