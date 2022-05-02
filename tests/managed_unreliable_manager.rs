@@ -1,6 +1,9 @@
 #![cfg(feature = "managed")]
 
-use std::time::Duration;
+use std::{
+    sync::atomic::{AtomicUsize, Ordering},
+    time::Duration,
+};
 
 use async_trait::async_trait;
 use tokio::time;
@@ -12,6 +15,7 @@ type Pool = managed::Pool<Manager>;
 struct Manager {
     create_fail: bool,
     recycle_fail: bool,
+    detached: AtomicUsize,
 }
 
 #[async_trait]
@@ -33,6 +37,10 @@ impl managed::Manager for Manager {
             Ok(())
         }
     }
+
+    fn detach(&self, _obj: &mut Self::Type) {
+        self.detached.fetch_add(1, Ordering::Relaxed);
+    }
 }
 
 #[tokio::test]
@@ -40,21 +48,22 @@ async fn create() {
     let manager = Manager {
         create_fail: true,
         recycle_fail: false,
+        detached: AtomicUsize::new(0),
     };
 
     let pool = Pool::builder(manager).max_size(16).build().unwrap();
     {
-        assert!(!pool.get().await.is_ok());
+        assert!(pool.get().await.is_err());
     }
 
     let status = pool.status();
     assert_eq!(status.available, 0);
     assert_eq!(status.size, 0);
     {
-        assert!(!time::timeout(Duration::from_millis(10), pool.get())
+        assert!(time::timeout(Duration::from_millis(10), pool.get())
             .await
             .unwrap()
-            .is_ok(),);
+            .is_err());
     }
     assert_eq!(status.available, 0);
     assert_eq!(status.size, 0);
@@ -65,6 +74,7 @@ async fn recycle() {
     let manager = Manager {
         create_fail: false,
         recycle_fail: true,
+        detached: AtomicUsize::new(0),
     };
 
     let pool = Pool::builder(manager).max_size(16).build().unwrap();
@@ -76,6 +86,7 @@ async fn recycle() {
     let status = pool.status();
     assert_eq!(status.available, 2);
     assert_eq!(status.size, 2);
+    assert_eq!(pool.manager().detached.load(Ordering::Relaxed), 0);
     {
         let _a = pool.get().await.unwrap();
         // All connections fail to recycle. Thus reducing the
@@ -83,6 +94,7 @@ async fn recycle() {
         let status = pool.status();
         assert_eq!(status.available, 0);
         assert_eq!(status.size, 1);
+        assert_eq!(pool.manager().detached.load(Ordering::Relaxed), 2);
     }
     let status = pool.status();
     assert_eq!(status.available, 1);
