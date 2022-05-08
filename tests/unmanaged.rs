@@ -13,24 +13,40 @@ async fn basic() {
     let status = pool.status();
     assert_eq!(status.size, 3);
     assert_eq!(status.available, 3);
+    assert_eq!(status.waiting, 0);
 
     let _val0 = pool.get().await;
 
     let status = pool.status();
     assert_eq!(status.size, 3);
     assert_eq!(status.available, 2);
+    assert_eq!(status.waiting, 0);
 
     let _val1 = pool.get().await;
 
     let status = pool.status();
     assert_eq!(status.size, 3);
     assert_eq!(status.available, 1);
+    assert_eq!(status.waiting, 0);
 
     let _val2 = pool.get().await;
 
     let status = pool.status();
     assert_eq!(status.size, 3);
     assert_eq!(status.available, 0);
+    assert_eq!(status.waiting, 0);
+
+    // block in other task
+    {
+        let pool = pool.clone();
+        tokio::spawn(async move { pool.get().await });
+    };
+    tokio::task::yield_now().await;
+
+    let status = pool.status();
+    assert_eq!(status.size, 3);
+    assert_eq!(status.available, 0);
+    assert_eq!(status.waiting, 1);
 }
 
 #[tokio::test]

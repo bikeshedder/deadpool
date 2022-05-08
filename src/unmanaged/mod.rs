@@ -32,10 +32,9 @@ mod config;
 mod errors;
 
 use std::{
-    convert::TryInto,
     ops::{Deref, DerefMut},
     sync::{
-        atomic::{AtomicIsize, AtomicUsize, Ordering},
+        atomic::{AtomicUsize, Ordering},
         Arc, Mutex, Weak,
     },
     time::Duration,
@@ -84,7 +83,7 @@ impl<T> Drop for Object<T> {
                     let mut queue = pool.queue.lock().unwrap();
                     queue.push(obj);
                 }
-                let _ = pool.available.fetch_add(1, Ordering::Relaxed);
+                let _ = pool.users.fetch_sub(1, Ordering::Relaxed);
                 pool.semaphore.add_permits(1);
                 pool.clean_up();
             }
@@ -164,7 +163,7 @@ impl<T> Pool<T> {
                 queue: Mutex::new(Vec::with_capacity(config.max_size)),
                 size: AtomicUsize::new(0),
                 size_semaphore: Semaphore::new(config.max_size),
-                available: AtomicIsize::new(0),
+                users: AtomicUsize::new(0),
                 semaphore: Semaphore::new(0),
             }),
         }
@@ -189,6 +188,7 @@ impl<T> Pool<T> {
     /// See [`PoolError`] for details.
     pub fn try_get(&self) -> Result<Object<T>, PoolError> {
         let inner = self.inner.as_ref();
+        let _ = inner.users.fetch_add(1, Ordering::Relaxed);
         let permit = inner.semaphore.try_acquire().map_err(|e| match e {
             TryAcquireError::NoPermits => PoolError::Timeout,
             TryAcquireError::Closed => PoolError::Closed,
@@ -198,7 +198,6 @@ impl<T> Pool<T> {
             queue.pop().unwrap()
         };
         permit.forget();
-        let _ = inner.available.fetch_sub(1, Ordering::Relaxed);
         Ok(Object {
             pool: Arc::downgrade(&self.inner),
             obj: Some(obj),
@@ -213,6 +212,7 @@ impl<T> Pool<T> {
     /// See [`PoolError`] for details.
     pub async fn timeout_get(&self, timeout: Option<Duration>) -> Result<Object<T>, PoolError> {
         let inner = self.inner.as_ref();
+        let _ = inner.users.fetch_add(1, Ordering::Relaxed);
         let permit = match (timeout, inner.config.runtime) {
             (None, _) => inner
                 .semaphore
@@ -237,7 +237,6 @@ impl<T> Pool<T> {
             queue.pop().unwrap()
         };
         permit.forget();
-        let _ = inner.available.fetch_sub(1, Ordering::Relaxed);
         Ok(Object {
             pool: Arc::downgrade(&self.inner),
             obj: Some(obj),
@@ -296,7 +295,6 @@ impl<T> Pool<T> {
             let mut queue = self.inner.queue.lock().unwrap();
             queue.push(object);
         }
-        let _ = self.inner.available.fetch_add(1, Ordering::Relaxed);
         self.inner.semaphore.add_permits(1);
     }
 
@@ -336,11 +334,17 @@ impl<T> Pool<T> {
     pub fn status(&self) -> Status {
         let max_size = self.inner.config.max_size;
         let size = self.inner.size.load(Ordering::Relaxed);
-        let available = self.inner.available.load(Ordering::Relaxed);
+        let used = self.inner.users.load(Ordering::Relaxed);
+        let (available, waiting) = if used > size {
+            (0, used - size)
+        } else {
+            (size - used, 0)
+        };
         Status {
             max_size,
             size,
             available,
+            waiting,
         }
     }
 }
@@ -355,12 +359,12 @@ struct PoolInner<T> {
     /// semaphore and every time an [`Object`] is removed a permit is returned
     /// back.
     size_semaphore: Semaphore,
-    /// Number of available [`Object`]s in the [`Pool`]. If there are no
-    /// [`Object`]s in the [`Pool`] this number can become negative and store
-    /// the number of [`Future`]s waiting for an [`Object`].
+    /// Number of requests for [`Object`]s from the [`Pool`]. If there are more
+    /// requests than there are [`Object`]s in the [`Pool`] it means there are
+    /// [`Future`]s waiting for an [`Object`].
     ///
     /// [`Future`]: std::future::Future
-    available: AtomicIsize,
+    users: AtomicUsize,
     semaphore: Semaphore,
 }
 
@@ -380,9 +384,6 @@ impl<T> PoolInner<T> {
     fn clear(&self) {
         let mut queue = self.queue.lock().unwrap();
         let _ = self.size.fetch_sub(queue.len(), Ordering::Relaxed);
-        let _ = self
-            .available
-            .fetch_sub(queue.len() as isize, Ordering::Relaxed);
         queue.clear();
     }
 
@@ -411,7 +412,7 @@ where
                 config: PoolConfig::new(len),
                 size: AtomicUsize::new(len),
                 size_semaphore: Semaphore::new(0),
-                available: AtomicIsize::new(len.try_into().unwrap()),
+                users: AtomicUsize::new(0),
                 semaphore: Semaphore::new(len),
             }),
         }

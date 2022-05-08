@@ -66,7 +66,6 @@ pub mod sync;
 
 use std::{
     collections::VecDeque,
-    convert::TryFrom,
     fmt,
     future::Future,
     marker::PhantomData,
@@ -577,11 +576,16 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     pub fn status(&self) -> Status {
         let slots = self.inner.slots.lock().unwrap();
         let used = self.inner.users.load(Ordering::Relaxed);
-        let available = isize::try_from(slots.size).unwrap() - isize::try_from(used).unwrap();
+        let (available, waiting) = if used > slots.size {
+            (0, used - slots.size)
+        } else {
+            (slots.size - used, 0)
+        };
         Status {
             max_size: slots.max_size,
             size: slots.size,
             available,
+            waiting,
         }
     }
 
