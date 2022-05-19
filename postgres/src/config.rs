@@ -53,6 +53,44 @@ use super::{Pool, PoolConfig};
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct Config {
+    /// Connection configuration that is either a URL
+    /// or a structured connection configuration.
+    #[cfg_attr(feature = "serde", serde(flatten))]
+    pub connection: ConnectionConfig,
+
+    /// [`Manager`] configuration.
+    ///
+    /// [`Manager`]: super::Manager
+    pub manager: Option<ManagerConfig>,
+
+    /// [`Pool`] configuration.
+    pub pool: Option<PoolConfig>,
+}
+
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde_1", untagged))]
+pub enum ConnectionConfig {
+    /// Connection string
+    ConnectionString {
+        /// Either in key-value format or URL encoded:
+        /// See https://docs.rs/tokio-postgres/latest/tokio_postgres/config/struct.Config.html
+        url: String,
+    },
+    /// Structured connection configuration
+    Structured(StructuredConnectionConfig),
+}
+
+impl Default for ConnectionConfig {
+    fn default() -> Self {
+        Self::Structured(StructuredConnectionConfig::default())
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+pub struct StructuredConnectionConfig {
     /// See [`tokio_postgres::Config::user`].
     pub user: Option<String>,
     /// See [`tokio_postgres::Config::password`].
@@ -97,23 +135,88 @@ pub struct Config {
     pub target_session_attrs: Option<TargetSessionAttrs>,
     /// See [`tokio_postgres::Config::channel_binding`].
     pub channel_binding: Option<ChannelBinding>,
+}
 
-    /// [`Manager`] configuration.
-    ///
-    /// [`Manager`]: super::Manager
-    pub manager: Option<ManagerConfig>,
-
-    /// [`Pool`] configuration.
-    pub pool: Option<PoolConfig>,
+impl StructuredConnectionConfig {
+    /// Returns [`tokio_postgres::Config`] which can be used to connect to
+    /// the database.
+    pub fn get_pg_config(&self) -> Result<tokio_postgres::Config, ConfigError> {
+        let mut cfg = tokio_postgres::Config::new();
+        if let Some(user) = &self.user {
+            let _ = cfg.user(user.as_str());
+        } else if let Ok(user) = env::var("USER") {
+            let _ = cfg.user(user.as_str());
+        }
+        if let Some(password) = &self.password {
+            let _ = cfg.password(password);
+        }
+        let _ = match &self.dbname {
+            Some(dbname) => match dbname.as_str() {
+                "" => return Err(ConfigError::DbnameMissing),
+                dbname => cfg.dbname(dbname),
+            },
+            None => return Err(ConfigError::DbnameEmpty),
+        };
+        if let Some(options) = &self.options {
+            let _ = cfg.options(options.as_str());
+        }
+        if let Some(application_name) = &self.application_name {
+            let _ = cfg.application_name(application_name.as_str());
+        }
+        if let Some(host) = &self.host {
+            let _ = cfg.host(host.as_str());
+        }
+        if let Some(hosts) = &self.hosts {
+            for host in hosts.iter() {
+                let _ = cfg.host(host.as_str());
+            }
+        }
+        if self.host.is_none() && self.hosts.is_none() {
+            // Systems that support it default to unix domain sockets.
+            #[cfg(unix)]
+            {
+                let _ = cfg.host_path("/run/postgresql");
+                let _ = cfg.host_path("/var/run/postgresql");
+                let _ = cfg.host_path("/tmp");
+            }
+            // Windows and other systems use 127.0.0.1 instead.
+            #[cfg(not(unix))]
+            cfg.host("127.0.0.1");
+        }
+        if let Some(port) = self.port {
+            let _ = cfg.port(port);
+        }
+        if let Some(ports) = &self.ports {
+            for port in ports.iter() {
+                let _ = cfg.port(*port);
+            }
+        }
+        if let Some(connect_timeout) = self.connect_timeout {
+            let _ = cfg.connect_timeout(connect_timeout);
+        }
+        if let Some(keepalives) = self.keepalives {
+            let _ = cfg.keepalives(keepalives);
+        }
+        if let Some(keepalives_idle) = self.keepalives_idle {
+            let _ = cfg.keepalives_idle(keepalives_idle);
+        }
+        if let Some(mode) = self.ssl_mode {
+            let _ = cfg.ssl_mode(mode.into());
+        }
+        Ok(cfg)
+    }
 }
 
 /// This error is returned if there is something wrong with the configuration
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug)]
 pub enum ConfigError {
     /// This variant is returned if the `dbname` is missing from the config
     DbnameMissing,
     /// This variant is returned if the `dbname` contains an empty string
     DbnameEmpty,
+    /// This variant is returned if a URL was passed and the conversion to
+    /// the config structure failed.
+    InvalidUrl(tokio_postgres::Error),
 }
 
 impl fmt::Display for ConfigError {
@@ -124,6 +227,7 @@ impl fmt::Display for ConfigError {
                 f,
                 "configuration property \"dbname\" contains an empty string",
             ),
+            Self::InvalidUrl(url) => write!(f, "invalid URL: {}", url,),
         }
     }
 }
@@ -180,69 +284,12 @@ impl Config {
     /// the database.
     #[allow(unused_results)]
     pub fn get_pg_config(&self) -> Result<tokio_postgres::Config, ConfigError> {
-        let mut cfg = tokio_postgres::Config::new();
-        if let Some(user) = &self.user {
-            cfg.user(user.as_str());
-        } else if let Ok(user) = env::var("USER") {
-            cfg.user(user.as_str());
-        }
-        if let Some(password) = &self.password {
-            cfg.password(password);
-        }
-        match &self.dbname {
-            Some(dbname) => match dbname.as_str() {
-                "" => return Err(ConfigError::DbnameMissing),
-                dbname => cfg.dbname(dbname),
-            },
-            None => return Err(ConfigError::DbnameEmpty),
-        };
-        if let Some(options) = &self.options {
-            cfg.options(options.as_str());
-        }
-        if let Some(application_name) = &self.application_name {
-            cfg.application_name(application_name.as_str());
-        }
-        if let Some(host) = &self.host {
-            cfg.host(host.as_str());
-        }
-        if let Some(hosts) = &self.hosts {
-            for host in hosts.iter() {
-                cfg.host(host.as_str());
+        match &self.connection {
+            ConnectionConfig::ConnectionString { url } => {
+                url.parse().map_err(ConfigError::InvalidUrl)
             }
+            ConnectionConfig::Structured(cfg) => cfg.get_pg_config(),
         }
-        if self.host.is_none() && self.hosts.is_none() {
-            // Systems that support it default to unix domain sockets.
-            #[cfg(unix)]
-            {
-                cfg.host_path("/run/postgresql");
-                cfg.host_path("/var/run/postgresql");
-                cfg.host_path("/tmp");
-            }
-            // Windows and other systems use 127.0.0.1 instead.
-            #[cfg(not(unix))]
-            cfg.host("127.0.0.1");
-        }
-        if let Some(port) = self.port {
-            cfg.port(port);
-        }
-        if let Some(ports) = &self.ports {
-            for port in ports.iter() {
-                cfg.port(*port);
-            }
-        }
-        if let Some(connect_timeout) = self.connect_timeout {
-            cfg.connect_timeout(connect_timeout);
-        }
-        if let Some(keepalives) = self.keepalives {
-            cfg.keepalives(keepalives);
-        }
-        if let Some(keepalives_idle) = self.keepalives_idle {
-            cfg.keepalives_idle(keepalives_idle);
-        }
-        if let Some(mode) = self.ssl_mode {
-            cfg.ssl_mode(mode.into());
-        }
-        Ok(cfg)
     }
 
     /// Returns [`ManagerConfig`] which can be used to construct a

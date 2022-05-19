@@ -43,8 +43,8 @@ use tokio_postgres::{
 pub use tokio_postgres;
 
 pub use self::config::{
-    ChannelBinding, Config, ConfigError, ManagerConfig, RecyclingMethod, SslMode,
-    TargetSessionAttrs,
+    ChannelBinding, Config, ConfigError, ConnectionConfig, ManagerConfig, RecyclingMethod, SslMode,
+    StructuredConnectionConfig, TargetSessionAttrs,
 };
 
 pub use deadpool::managed::reexports::*;

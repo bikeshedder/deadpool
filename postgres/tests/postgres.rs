@@ -4,7 +4,9 @@ use futures::future;
 use serde_1::{Deserialize, Serialize};
 use tokio_postgres::{types::Type, IsolationLevel};
 
-use deadpool_postgres::{ManagerConfig, Pool, RecyclingMethod, Runtime};
+use deadpool_postgres::{
+    ConnectionConfig, ManagerConfig, Pool, RecyclingMethod, Runtime, StructuredConnectionConfig,
+};
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(crate = "serde_1")]
@@ -263,11 +265,17 @@ fn config_from_env() {
     // `tokio_postgres::Config` does not provide any read access to its
     // internals, so we can only check if the environment was actually read
     // correctly.
-    assert_eq!(cfg.pg.host, Some("pg.example.com".to_string()));
-    assert_eq!(cfg.pg.port, Some(5433));
-    assert_eq!(cfg.pg.user, Some("john_doe".to_string()));
-    assert_eq!(cfg.pg.password, Some("topsecret".to_string()));
-    assert_eq!(cfg.pg.dbname, Some("example".to_string()));
+    assert!(matches!(
+        cfg.pg.connection,
+        ConnectionConfig::Structured(StructuredConnectionConfig {
+            host: Some("pg.example.com".to_string()),
+            port: Some(5433),
+            user: Some("john_doe".to_string()),
+            password: Some("topsecret".to_string()),
+            dbname: Some("example".to_string()),
+            ..
+        })
+    ));
     let pool_cfg = cfg.pg.get_pool_config();
     assert_eq!(pool_cfg.max_size, 42);
     assert_eq!(pool_cfg.timeouts.wait, Some(Duration::from_secs(1)));
