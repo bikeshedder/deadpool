@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.9.5 (unreleased)
+## v0.9.5
 
 - Fix bug causing the pool to exceed its `max_size` in the
   case of a recycling error.
