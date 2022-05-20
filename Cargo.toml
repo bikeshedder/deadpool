@@ -39,6 +39,7 @@ tokio = { version = "1.0", features = ["sync"] }
 async-std = { version = "1.0", features = ["attributes"] }
 config = { version = "0.13", features = ["json"] }
 criterion = { version = "0.3", features = ["html_reports"] }
+itertools = "0.10.3"
 tokio = { version = "1.5.0", features = ["macros", "rt", "rt-multi-thread", "time"] }
 
 [[bench]]
