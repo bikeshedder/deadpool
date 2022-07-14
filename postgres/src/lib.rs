@@ -25,6 +25,7 @@ mod config;
 use std::{
     borrow::Cow,
     collections::HashMap,
+    fmt,
     ops::{Deref, DerefMut},
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -65,7 +66,6 @@ type RecycleError = deadpool::managed::RecycleError<Error>;
 /// [`Manager`] for creating and recycling PostgreSQL connections.
 ///
 /// [`Manager`]: managed::Manager
-#[allow(missing_debug_implementations)] // due to `StatementCaches`
 pub struct Manager {
     config: ManagerConfig,
     pg_config: PgConfig,
@@ -102,6 +102,17 @@ impl Manager {
             connect: Box::new(ConnectImpl { tls }),
             statement_caches: StatementCaches::default(),
         }
+    }
+}
+
+impl fmt::Debug for Manager {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Manager")
+            .field("config", &self.config)
+            .field("pg_config", &self.pg_config)
+            //.field("connect", &self.connect)
+            .field("statement_caches", &self.statement_caches)
+            .finish()
     }
 }
 
@@ -176,8 +187,7 @@ where
 
 /// Structure holding a reference to all [`StatementCache`]s and providing
 /// access for clearing all caches and removing single statements from them.
-#[derive(Default)]
-#[allow(missing_debug_implementations)] // due to `StatementCache`
+#[derive(Default, Debug)]
 pub struct StatementCaches {
     caches: Mutex<Vec<Weak<StatementCache>>>,
 }
@@ -216,6 +226,15 @@ impl StatementCaches {
     }
 }
 
+impl fmt::Debug for StatementCache {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ClientWrapper")
+            //.field("map", &self.map)
+            .field("size", &self.size)
+            .finish()
+    }
+}
+
 // Allows us to use owned keys in a `HashMap`, but still be able to call `get`
 // with borrowed keys instead of allocating them each time.
 #[derive(Debug, Eq, Hash, PartialEq)]
@@ -243,7 +262,6 @@ struct StatementCacheKey<'a> {
 /// Normally, you probably want to use the [`ClientWrapper::prepare_cached()`]
 /// and [`ClientWrapper::prepare_typed_cached()`] methods instead (or the
 /// similar ones on [`Transaction`]).
-#[allow(missing_debug_implementations)] // due to `Statement`
 pub struct StatementCache {
     map: RwLock<HashMap<StatementCacheKey<'static>, Statement>>,
     size: AtomicUsize,
@@ -343,7 +361,7 @@ impl StatementCache {
 }
 
 /// Wrapper around [`tokio_postgres::Client`] with a [`StatementCache`].
-#[allow(missing_debug_implementations)] // due to `StatementCache`
+#[derive(Debug)]
 pub struct ClientWrapper {
     /// Original [`PgClient`].
     client: PgClient,
@@ -417,7 +435,6 @@ impl DerefMut for ClientWrapper {
 
 /// Wrapper around [`tokio_postgres::Transaction`] with a [`StatementCache`]
 /// from the [`Client`] object it was created by.
-#[allow(missing_debug_implementations)] // due to `StatementCache`
 pub struct Transaction<'a> {
     /// Original [`PgTransaction`].
     txn: PgTransaction<'a>,
@@ -479,6 +496,15 @@ impl<'a> Transaction<'a> {
     }
 }
 
+impl<'a> fmt::Debug for Transaction<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Transaction")
+            //.field("txn", &self.txn)
+            .field("statement_cache", &self.statement_cache)
+            .finish()
+    }
+}
+
 impl<'a> Deref for Transaction<'a> {
     type Target = PgTransaction<'a>;
 
@@ -495,7 +521,6 @@ impl<'a> DerefMut for Transaction<'a> {
 
 /// Wrapper around [`tokio_postgres::TransactionBuilder`] with a
 /// [`StatementCache`] from the [`Client`] object it was created by.
-#[allow(missing_debug_implementations)] // due to `StatementCache`
 #[must_use = "builder does nothing itself, use `.start()` to use it"]
 pub struct TransactionBuilder<'a> {
     /// Original [`PgTransactionBuilder`].
@@ -552,6 +577,15 @@ impl<'a> TransactionBuilder<'a> {
             txn: self.builder.start().await?,
             statement_cache: self.statement_cache,
         })
+    }
+}
+
+impl<'a> fmt::Debug for TransactionBuilder<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TransactionBuilder")
+            //.field("builder", &self.builder)
+            .field("statement_cache", &self.statement_cache)
+            .finish()
     }
 }
 
