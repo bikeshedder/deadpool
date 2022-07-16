@@ -20,6 +20,24 @@ jobs:
     if: ${{ github.ref == 'refs/heads/master'
             || startsWith(github.ref, 'refs/tags/deadpool-')
             || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+          - deadpool-diesel
+          - deadpool-lapin
+          - deadpool-memcached
+          - deadpool-postgres
+          - deadpool-r2d2
+          - deadpool-redis
+          - deadpool-runtime
+          - deadpool-sqlite
+          - deadpool-sync
+          # Examples
+          - postgres-actix-web
+          - postgres-benchmark
+          - postgres-hyper
+          - redis-actix-web
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -29,12 +47,30 @@ jobs:
           toolchain: stable
           components: clippy
 
-      - run: cargo clippy --workspace --all-features -- -D warnings
+      - run: cargo clippy -p ${{ matrix.crate }} --no-deps --all-features -- -D warnings
 
   rustfmt:
     if: ${{ github.ref == 'refs/heads/master'
             || startsWith(github.ref, 'refs/tags/deadpool-')
             || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+          - deadpool-diesel
+          - deadpool-lapin
+          - deadpool-memcached
+          - deadpool-postgres
+          - deadpool-r2d2
+          - deadpool-redis
+          - deadpool-runtime
+          - deadpool-sqlite
+          - deadpool-sync
+          # Examples
+          - example-postgres-actix-web
+          - example-postgres-benchmark
+          - example-postgres-hyper
+          - example-redis-actix-web
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -44,7 +80,7 @@ jobs:
           toolchain: stable
           components: rustfmt
 
-      - run: cargo fmt --all -- --check
+      - run: cargo fmt -p ${{ matrix.crate }} --check
 
 
 
@@ -241,4 +277,4 @@ jobs:
           profile: minimal
           toolchain: stable
 
-      - run: cargo doc -p ${{ matrix.crate }} --all-features
+      - run: cargo doc -p ${{ matrix.crate }} --no-deps --all-features
