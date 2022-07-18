@@ -61,7 +61,7 @@ jobs:
           toolchain: stable
           components: rustfmt
 
-      - run: cargo fmt -all --check
+      - run: cargo fmt --all --check
 
 
 
