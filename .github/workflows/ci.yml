@@ -17,8 +17,6 @@ jobs:
   ##########################
 
   clippy:
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     strategy:
       fail-fast: false
       matrix:
@@ -50,8 +48,6 @@ jobs:
       - run: cargo clippy -p ${{ matrix.crate }} --no-deps --all-features -- -D warnings
 
   rustfmt:
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -72,8 +68,6 @@ jobs:
 
   check-deadpool:
     name: Check deadpool
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     strategy:
       fail-fast: false
       matrix:
@@ -98,8 +92,6 @@ jobs:
 
   check-integration:
     name: Check integration
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     strategy:
       fail-fast: false
       matrix:
@@ -135,8 +127,6 @@ jobs:
 
   msrv:
     name: MSRV
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     strategy:
       fail-fast: false
       matrix:
@@ -168,8 +158,6 @@ jobs:
       - run: cargo check -p ${{ matrix.crate }} --all-features
 
   test:
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     strategy:
       fail-fast: false
       matrix:
@@ -234,8 +222,6 @@ jobs:
 
   rustdoc:
     name: Docs
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     strategy:
       matrix:
         crate:
