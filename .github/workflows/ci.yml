@@ -34,10 +34,10 @@ jobs:
           - deadpool-sqlite
           - deadpool-sync
           # Examples
-          #- postgres-actix-web
-          #- postgres-benchmark
-          #- postgres-hyper
-          #- redis-actix-web
+          - example-postgres-actix-web
+          - example-postgres-benchmark
+          - example-postgres-hyper
+          - example-redis-actix-web
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
