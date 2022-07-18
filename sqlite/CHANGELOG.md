@@ -1,3 +1,7 @@
+## v0.5.0 (unreleased)
+
+- Update `rusqlite` dependency to version `0.28`
+
 ## v0.4.0
 
 - Update `rusqlite` dependency to version `0.27`
