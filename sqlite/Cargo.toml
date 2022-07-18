@@ -23,7 +23,7 @@ serde = ["deadpool/serde", "serde_1"]
 [dependencies]
 deadpool = { path = "../", version = "0.9.1", default-features = false, features = ["managed"] }
 deadpool-sync = { path = "../sync", version = "0.1" }
-rusqlite = "0.27"
+rusqlite = "0.28"
 serde_1 = { package = "serde", version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
