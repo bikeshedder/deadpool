@@ -149,7 +149,7 @@ jobs:
           - { crate: deadpool-lapin, msrv: '1.56.0' }
           - { crate: deadpool-postgres, msrv: '1.54.0' }
           - { crate: deadpool-redis, msrv: '1.54.0' }
-          - { crate: deadpool-sqlite, msrv: '1.54.0' }
+          - { crate: deadpool-sqlite, msrv: '1.56.0' }
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
