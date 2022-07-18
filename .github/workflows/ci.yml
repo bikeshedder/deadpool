@@ -18,8 +18,7 @@ jobs:
 
   clippy:
     if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
+            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     strategy:
       fail-fast: false
       matrix:
@@ -41,7 +40,7 @@ jobs:
           - redis-actix-web
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -52,37 +51,17 @@ jobs:
 
   rustfmt:
     if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
-    strategy:
-      fail-fast: false
-      matrix:
-        crate:
-          - deadpool
-          - deadpool-diesel
-          - deadpool-lapin
-          - deadpool-memcached
-          - deadpool-postgres
-          - deadpool-r2d2
-          - deadpool-redis
-          - deadpool-runtime
-          - deadpool-sqlite
-          - deadpool-sync
-          # Examples
-          - example-postgres-actix-web
-          - example-postgres-benchmark
-          - example-postgres-hyper
-          - example-redis-actix-web
+            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           components: rustfmt
 
-      - run: cargo fmt -p ${{ matrix.crate }} --check
+      - run: cargo fmt -all --check
 
 
 
@@ -94,8 +73,7 @@ jobs:
   check-deadpool:
     name: Check deadpool
     if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
+            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     strategy:
       fail-fast: false
       matrix:
@@ -108,7 +86,7 @@ jobs:
           - serde
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -121,8 +99,7 @@ jobs:
   check-integration:
     name: Check integration
     if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
+            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     strategy:
       fail-fast: false
       matrix:
@@ -145,7 +122,7 @@ jobs:
             feature: sqlite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -159,8 +136,7 @@ jobs:
   msrv:
     name: MSRV
     if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
+            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     strategy:
       fail-fast: false
       matrix:
@@ -176,7 +152,7 @@ jobs:
           - { crate: deadpool-sqlite, msrv: '1.54.0' }
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -193,8 +169,7 @@ jobs:
 
   test:
     if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
+            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     strategy:
       fail-fast: false
       matrix:
@@ -234,7 +209,7 @@ jobs:
           RABBITMQ_DEFAULT_PASS: deadpool
           RABBITMQ_DEFAULT_VHOST: deadpool
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -260,8 +235,7 @@ jobs:
   rustdoc:
     name: Docs
     if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
+            || startsWith(github.ref, 'refs/tags/deadpool-') }}
     strategy:
       matrix:
         crate:
@@ -273,7 +247,7 @@ jobs:
           - deadpool-sqlite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
