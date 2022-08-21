@@ -70,7 +70,7 @@ use std::{
     fmt,
     future::Future,
     marker::PhantomData,
-    ops::{Deref, DerefMut},
+    ops::{ControlFlow, Deref, DerefMut},
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc, Mutex, Weak,
@@ -389,80 +389,14 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
 
         let inner_obj = loop {
             let inner_obj = self.inner.slots.lock().unwrap().vec.pop_front();
-            if let Some(inner_obj) = inner_obj {
-                let mut unready_obj = UnreadyObject {
-                    inner: Some(inner_obj),
-                    pool: &self.inner,
-                };
-
-                // Apply pre_recycle hooks
-                if let Some(_e) = self
-                    .inner
-                    .hooks
-                    .pre_recycle
-                    .apply(&mut unready_obj, PoolError::PreRecycleHook)
-                    .await?
-                {
-                    continue;
-                }
-
-                if apply_timeout(
-                    self.inner.runtime,
-                    TimeoutType::Recycle,
-                    timeouts.recycle,
-                    self.inner.manager.recycle(&mut unready_obj.obj),
-                )
-                .await
-                .is_err()
-                {
-                    continue;
-                }
-
-                // Apply post_recycle hooks
-                if let Some(_e) = self
-                    .inner
-                    .hooks
-                    .post_recycle
-                    .apply(&mut unready_obj, PoolError::PostRecycleHook)
-                    .await?
-                {
-                    continue;
-                }
-
-                unready_obj.metrics.recycle_count += 1;
-                unready_obj.metrics.recycled = Some(Instant::now());
-
-                break unready_obj.ready();
+            let inner_obj = if let Some(inner_obj) = inner_obj {
+                self.try_recycle(timeouts, inner_obj).await?
             } else {
-                // Create new object
-                let mut unready_obj = UnreadyObject {
-                    inner: Some(ObjectInner {
-                        obj: apply_timeout(
-                            self.inner.runtime,
-                            TimeoutType::Create,
-                            timeouts.create,
-                            self.inner.manager.create(),
-                        )
-                        .await?,
-                        metrics: Metrics::default(),
-                    }),
-                    pool: &self.inner,
-                };
-
-                self.inner.slots.lock().unwrap().size += 1;
-
-                // Apply post_create hooks
-                if let Some(_e) = self
-                    .inner
-                    .hooks
-                    .post_create
-                    .apply(&mut *unready_obj, PoolError::PostCreateHook)
-                    .await?
-                {
-                    continue;
-                }
-
-                break unready_obj.ready();
+                self.try_create(timeouts).await?
+            };
+            match inner_obj {
+                ControlFlow::Continue(_) => continue,
+                ControlFlow::Break(inner_obj) => break inner_obj,
             }
         };
 
@@ -474,6 +408,85 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             pool: Arc::downgrade(&self.inner),
         }
         .into())
+    }
+
+    #[inline]
+    async fn try_recycle(&self, timeouts: &Timeouts, inner_obj: ObjectInner<M>) -> Result<ControlFlow<ObjectInner<M>>, PoolError<M::Error>> {
+        let mut unready_obj = UnreadyObject {
+            inner: Some(inner_obj),
+            pool: &self.inner,
+        };
+
+        // Apply pre_recycle hooks
+        if let Some(_e) = self
+            .inner
+            .hooks
+            .pre_recycle
+            .apply(&mut unready_obj, PoolError::PreRecycleHook)
+            .await?
+        {
+            return Ok(ControlFlow::Continue(()));
+        }
+
+        if apply_timeout(
+            self.inner.runtime,
+            TimeoutType::Recycle,
+            timeouts.recycle,
+            self.inner.manager.recycle(&mut unready_obj.obj),
+        )
+        .await
+        .is_err()
+        {
+            return Ok(ControlFlow::Continue(()));
+        }
+
+        // Apply post_recycle hooks
+        if let Some(_e) = self
+            .inner
+            .hooks
+            .post_recycle
+            .apply(&mut unready_obj, PoolError::PostRecycleHook)
+            .await?
+        {
+            return Ok(ControlFlow::Continue(()));
+        }
+
+        unready_obj.metrics.recycle_count += 1;
+        unready_obj.metrics.recycled = Some(Instant::now());
+
+        Ok(ControlFlow::Break(unready_obj.ready()))
+    }
+
+    #[inline]
+    async fn try_create(&self, timeouts: &Timeouts) -> Result<ControlFlow<ObjectInner<M>>, PoolError<M::Error>> {
+        let mut unready_obj = UnreadyObject {
+            inner: Some(ObjectInner {
+                obj: apply_timeout(
+                    self.inner.runtime,
+                    TimeoutType::Create,
+                    timeouts.create,
+                    self.inner.manager.create(),
+                )
+                .await?,
+                metrics: Metrics::default(),
+            }),
+            pool: &self.inner,
+        };
+
+        self.inner.slots.lock().unwrap().size += 1;
+
+        // Apply post_create hooks
+        if let Some(_e) = self
+            .inner
+            .hooks
+            .post_create
+            .apply(&mut *unready_obj, PoolError::PostCreateHook)
+            .await?
+        {
+            return Ok(ControlFlow::Continue(()));
+        }
+
+        Ok(ControlFlow::Break(unready_obj.ready()))
     }
 
     /**
