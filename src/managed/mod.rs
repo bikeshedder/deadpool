@@ -70,7 +70,7 @@ use std::{
     fmt,
     future::Future,
     marker::PhantomData,
-    ops::{ControlFlow, Deref, DerefMut},
+    ops::{Deref, DerefMut},
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc, Mutex, Weak,
@@ -394,9 +394,8 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             } else {
                 self.try_create(timeouts).await?
             };
-            match inner_obj {
-                ControlFlow::Continue(_) => continue,
-                ControlFlow::Break(inner_obj) => break inner_obj,
+            if let Some(inner_obj) = inner_obj {
+                break inner_obj;
             }
         };
 
@@ -415,7 +414,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         &self,
         timeouts: &Timeouts,
         inner_obj: ObjectInner<M>,
-    ) -> Result<ControlFlow<ObjectInner<M>>, PoolError<M::Error>> {
+    ) -> Result<Option<ObjectInner<M>>, PoolError<M::Error>> {
         let mut unready_obj = UnreadyObject {
             inner: Some(inner_obj),
             pool: &self.inner,
@@ -429,7 +428,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             .apply(&mut unready_obj, PoolError::PreRecycleHook)
             .await?
         {
-            return Ok(ControlFlow::Continue(()));
+            return Ok(None);
         }
 
         if apply_timeout(
@@ -441,7 +440,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         .await
         .is_err()
         {
-            return Ok(ControlFlow::Continue(()));
+            return Ok(None);
         }
 
         // Apply post_recycle hooks
@@ -452,20 +451,20 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             .apply(&mut unready_obj, PoolError::PostRecycleHook)
             .await?
         {
-            return Ok(ControlFlow::Continue(()));
+            return Ok(None);
         }
 
         unready_obj.metrics.recycle_count += 1;
         unready_obj.metrics.recycled = Some(Instant::now());
 
-        Ok(ControlFlow::Break(unready_obj.ready()))
+        Ok(Some(unready_obj.ready()))
     }
 
     #[inline]
     async fn try_create(
         &self,
         timeouts: &Timeouts,
-    ) -> Result<ControlFlow<ObjectInner<M>>, PoolError<M::Error>> {
+    ) -> Result<Option<ObjectInner<M>>, PoolError<M::Error>> {
         let mut unready_obj = UnreadyObject {
             inner: Some(ObjectInner {
                 obj: apply_timeout(
@@ -490,10 +489,10 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             .apply(&mut *unready_obj, PoolError::PostCreateHook)
             .await?
         {
-            return Ok(ControlFlow::Continue(()));
+            return Ok(None);
         }
 
-        Ok(ControlFlow::Break(unready_obj.ready()))
+        Ok(Some(unready_obj.ready()))
     }
 
     /**
