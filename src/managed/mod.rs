@@ -411,7 +411,11 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     }
 
     #[inline]
-    async fn try_recycle(&self, timeouts: &Timeouts, inner_obj: ObjectInner<M>) -> Result<ControlFlow<ObjectInner<M>>, PoolError<M::Error>> {
+    async fn try_recycle(
+        &self,
+        timeouts: &Timeouts,
+        inner_obj: ObjectInner<M>,
+    ) -> Result<ControlFlow<ObjectInner<M>>, PoolError<M::Error>> {
         let mut unready_obj = UnreadyObject {
             inner: Some(inner_obj),
             pool: &self.inner,
@@ -458,7 +462,10 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     }
 
     #[inline]
-    async fn try_create(&self, timeouts: &Timeouts) -> Result<ControlFlow<ObjectInner<M>>, PoolError<M::Error>> {
+    async fn try_create(
+        &self,
+        timeouts: &Timeouts,
+    ) -> Result<ControlFlow<ObjectInner<M>>, PoolError<M::Error>> {
         let mut unready_obj = UnreadyObject {
             inner: Some(ObjectInner {
                 obj: apply_timeout(
