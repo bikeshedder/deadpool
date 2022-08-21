@@ -57,7 +57,6 @@ impl deadpool::managed::Manager for Manager {
 
 type Pool = deadpool::managed::Pool<Manager>;
 
-#[tokio::main]
 async fn bench_get(cfg: Config) {
     let pool = Pool::builder(Manager {})
         .max_size(cfg.pool_size)
@@ -79,13 +78,14 @@ async fn bench_get(cfg: Config) {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
+    let runtime = tokio::runtime::Runtime::new().unwrap();
     let mut group = c.benchmark_group("managed");
     group.throughput(criterion::Throughput::Elements(
         ITERATIONS.try_into().expect("Can't convert u64 to usize"),
     ));
     for &config in CONFIGS {
         group.bench_with_input(BenchmarkId::new("get", config), &config, |b, &cfg| {
-            b.iter(|| bench_get(cfg))
+            b.to_async(&runtime).iter(|| bench_get(cfg))
         });
     }
 }
