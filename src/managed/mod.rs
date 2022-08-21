@@ -304,7 +304,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     pub(crate) fn from_builder(builder: PoolBuilder<M, W>) -> Self {
         Self {
             inner: Arc::new(PoolInner {
-                manager: Box::new(builder.manager),
+                manager: builder.manager,
                 slots: Mutex::new(Slots {
                     vec: VecDeque::with_capacity(builder.config.max_size),
                     size: 0,
@@ -592,12 +592,12 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     /// Returns [`Manager`] of this [`Pool`].
     #[must_use]
     pub fn manager(&self) -> &M {
-        &*self.inner.manager
+        &self.inner.manager
     }
 }
 
 struct PoolInner<M: Manager> {
-    manager: Box<M>,
+    manager: M,
     slots: Mutex<Slots<ObjectInner<M>>>,
     /// Number of available [`Object`]s in the [`Pool`]. If there are no
     /// [`Object`]s in the [`Pool`] this number can become negative and store
