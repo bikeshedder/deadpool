@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.4.0 (unreleased)
+## v0.4.0
 
 * Update Diesel to 2.0.0
 
