@@ -26,8 +26,8 @@ serde = ["deadpool/serde"]
 [dependencies]
 deadpool = { path = "../", version = "0.9.1", default-features = false, features = ["managed"] }
 deadpool-sync = { path = "../sync", version = "0.1.0" }
-diesel = { version = "2.0.0-rc.0", default-features = false }
+diesel = { version = "2.0.0", default-features = false }
 
 [dev-dependencies]
-diesel = { version = "2.0.0-rc.0", default-features = false, features = ["sqlite"] }
+diesel = { version = "2.0.0", default-features = false, features = ["sqlite"] }
 tokio = { version = "1.0", features = ["macros", "rt", "rt-multi-thread"] }
