@@ -2,7 +2,7 @@
 
 ## v0.4.0 (unreleased)
 
-* Update Diesel to 2.0.0-rc.0
+* Update Diesel to 2.0.0
 
 ## v0.3.1
 
