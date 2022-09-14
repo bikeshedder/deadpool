@@ -91,17 +91,16 @@ impl Default for Timeouts {
 /// This error is used when building pools via the config `create_pool`
 /// methods.
 #[derive(Debug)]
-pub enum CreatePoolError<C, B> {
+pub enum CreatePoolError<C> {
     /// This variant is used for configuration errors
     Config(C),
     /// This variant is used for errors while building the pool
-    Build(BuildError<B>),
+    Build(BuildError),
 }
 
-impl<C, B> fmt::Display for CreatePoolError<C, B>
+impl<C> fmt::Display for CreatePoolError<C>
 where
     C: fmt::Display,
-    B: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -111,9 +110,4 @@ where
     }
 }
 
-impl<C, B> std::error::Error for CreatePoolError<C, B>
-where
-    C: std::error::Error,
-    B: std::error::Error,
-{
-}
+impl<C> std::error::Error for CreatePoolError<C> where C: std::error::Error {}
