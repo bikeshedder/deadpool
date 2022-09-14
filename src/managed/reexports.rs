@@ -34,10 +34,10 @@ macro_rules! managed_reexports {
         pub type PoolBuilder = deadpool::managed::PoolBuilder<$Manager, $Wrapper>;
 
         #[doc=concat!("Type alias for using [`deadpool::managed::BuildError`] with [`", $crate_name, "`].")]
-        pub type BuildError = deadpool::managed::BuildError<$Error>;
+        pub type BuildError = deadpool::managed::BuildError;
 
         #[doc=concat!("Type alias for using [`deadpool::managed::CreatePoolError`] with [`", $crate_name, "`].")]
-        pub type CreatePoolError = deadpool::managed::CreatePoolError<$ConfigError, $Error>;
+        pub type CreatePoolError = deadpool::managed::CreatePoolError<$ConfigError>;
 
         #[doc=concat!("Type alias for using [`deadpool::managed::PoolError`] with [`", $crate_name, "`].")]
         pub type PoolError = deadpool::managed::PoolError<$Error>;
