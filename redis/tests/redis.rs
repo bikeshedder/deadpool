@@ -51,7 +51,9 @@ async fn test_high_level_commands() {
     use deadpool_redis::redis::AsyncCommands;
     let pool = create_pool();
     let mut conn = pool.get().await.unwrap();
-    let _: () = conn.set("deadpool/hlc_test_key", 42).await.unwrap();
+    conn.set::<_, _, ()>("deadpool/hlc_test_key", 42)
+        .await
+        .unwrap();
     let value: isize = conn.get("deadpool/hlc_test_key").await.unwrap();
     assert_eq!(value, 42);
 }
