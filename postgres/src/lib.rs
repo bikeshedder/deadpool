@@ -131,14 +131,14 @@ impl managed::Manager for Manager {
 
     async fn recycle(&self, client: &mut ClientWrapper) -> RecycleResult {
         if client.is_closed() {
-            log::info!(target: "deadpool.postgres", "Connection could not be recycled: Connection closed");
+            log::trace!(target: "deadpool.postgres", "Connection could not be recycled: Connection closed");
             return Err(RecycleError::StaticMessage("Connection closed"));
         }
         match self.config.recycling_method.query() {
             Some(sql) => match client.simple_query(sql).await {
                 Ok(_) => Ok(()),
                 Err(e) => {
-                    log::info!(target: "deadpool.postgres", "Connection could not be recycled: {}", e);
+                    log::trace!(target: "deadpool.postgres", "Connection could not be recycled: {}", e);
                     Err(e.into())
                 }
             },
