@@ -99,6 +99,7 @@ Backend | Crate | Latest Version |
 [rusqlite](https://crates.io/crates/rusqlite) | [deadpool-sqlite](https://crates.io/crates/deadpool-sqlite) | [![Latest Version](https://img.shields.io/crates/v/deadpool-sqlite.svg)](https://crates.io/crates/deadpool-sqlite) |
 [diesel](https://crates.io/crates/diesel) | [deadpool-diesel](https://crates.io/crates/deadpool-diesel) | [![Latest Version](https://img.shields.io/crates/v/deadpool-diesel.svg)](https://crates.io/crates/deadpool-diesel) |
 [r2d2](https://crates.io/crates/r2d2) | [deadpool-r2d2](https://crates.io/crates/deadpool-r2d2) | [![Latest Version](https://img.shields.io/crates/v/deadpool-r2d2.svg)](https://crates.io/crates/deadpool-r2d2) |
+[rbatis](https://crates.io/crates/rbatis) | [rbatis](https://crates.io/crates/rbatis) | [![Latest Version](https://img.shields.io/crates/v/rbatis.svg)](https://crates.io/crates/rbatis) |
 
 ### Reasons for yet another connection pool
 
