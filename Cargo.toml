@@ -58,6 +58,7 @@ members = [
     "postgres",
     "r2d2",
     "redis",
+    "redis-cluster",
     "runtime",
     "sqlite",
     "sync",
