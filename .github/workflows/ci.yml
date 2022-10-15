@@ -194,8 +194,6 @@ jobs:
           - 6379:6379
       redis-cluster:
         image: grokzen/redis-cluster
-        environment:
-          IP: 0.0.0.0
         ports:
           - 7000-7005:7000-7005
 
