@@ -13,10 +13,10 @@ use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime
 /// By enabling the `serde` feature you can read the configuration using the
 /// [`config`](https://crates.io/crates/config) crate as following:
 /// ```env
-/// REDIS__CONNECTION__ADDR=redis.example.com
-/// REDIS__POOL__MAX_SIZE=16
-/// REDIS__POOL__TIMEOUTS__WAIT__SECS=2
-/// REDIS__POOL__TIMEOUTS__WAIT__NANOS=0
+/// REDIS_CLUSTER__URLS=redis://127.0.0.1:7000,redis://127.0.0.1:7001
+/// REDIS_CLUSTER__POOL__MAX_SIZE=16
+/// REDIS_CLUSTER__POOL__TIMEOUTS__WAIT__SECS=2
+/// REDIS_CLUSTER__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
 /// # use serde_1 as serde;
@@ -30,7 +30,12 @@ use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime
 /// impl Config {
 ///     pub fn from_env() -> Result<Self, config::ConfigError> {
 ///         let mut cfg = config::Config::builder()
-///            .add_source(config::Environment::default().separator("__"))
+///            .add_source(
+///                config::Environment::default()
+///                .separator("__")
+///                .try_parsing(true)
+///                .list_separator(","),
+///            )
 ///            .build()?;
 ///            cfg.try_deserialize()
 ///     }
@@ -73,15 +78,10 @@ impl Config {
     /// See [`ConfigError`] for details.
     pub fn builder(&self) -> Result<PoolBuilder, ConfigError> {
         let manager = match (&self.urls, &self.connections) {
-            (Some(urls), None) => crate::Manager::new(
-                urls
-                .into_iter()
-                .map(|url| url.as_str())
-                .collect()
-            )?,
-            (None, Some(connections)) => crate::Manager::new(
-                connections.clone()
-            )?,
+            (Some(urls), None) => {
+                crate::Manager::new(urls.iter().map(|url| url.as_str()).collect())?
+            }
+            (None, Some(connections)) => crate::Manager::new(connections.clone())?,
             (None, None) => crate::Manager::new(vec![ConnectionInfo::default()])?,
             (Some(_), Some(_)) => return Err(ConfigError::UrlAndConnectionSpecified),
         };

@@ -28,10 +28,7 @@ use std::{
 };
 
 use deadpool::{async_trait, managed};
-use redis::{
-    aio::ConnectionLike,
-    IntoConnectionInfo, RedisError, RedisResult
-};
+use redis::{aio::ConnectionLike, IntoConnectionInfo, RedisError, RedisResult};
 
 pub use redis;
 pub use redis_cluster_async::{Client, Connection as RedisConnection};
@@ -39,7 +36,13 @@ pub use redis_cluster_async::{Client, Connection as RedisConnection};
 pub use self::config::{Config, ConfigError};
 
 pub use deadpool::managed::reexports::*;
-deadpool::managed_reexports!("redis_cluster", Manager, Connection, RedisError, ConfigError);
+deadpool::managed_reexports!(
+    "redis_cluster",
+    Manager,
+    Connection,
+    RedisError,
+    ConfigError
+);
 
 type RecycleResult = managed::RecycleResult<RedisError>;
 
@@ -129,7 +132,8 @@ impl std::fmt::Debug for Manager {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Manager")
             .field("client", &format!("{:p}", &self.client))
-            .field("ping_number", &self.ping_number).finish()
+            .field("ping_number", &self.ping_number)
+            .finish()
     }
 }
 

@@ -1,5 +1,7 @@
 #![cfg(feature = "serde")]
 
+use std::println;
+
 use deadpool_redis_cluster::Runtime;
 use futures::FutureExt;
 use redis::cmd;
@@ -15,7 +17,12 @@ struct Config {
 impl Config {
     pub fn from_env() -> Self {
         config::Config::builder()
-            .add_source(config::Environment::default().separator("__"))
+            .add_source(
+                config::Environment::default()
+                    .separator("__")
+                    .try_parsing(true)
+                    .list_separator(","),
+            )
             .build()
             .unwrap()
             .try_deserialize()
@@ -25,7 +32,9 @@ impl Config {
 
 fn create_pool() -> deadpool_redis_cluster::Pool {
     let cfg = Config::from_env();
-    cfg.redis_cluster.create_pool(Some(Runtime::Tokio1)).unwrap()
+    cfg.redis_cluster
+        .create_pool(Some(Runtime::Tokio1))
+        .unwrap()
 }
 
 #[tokio::test]
