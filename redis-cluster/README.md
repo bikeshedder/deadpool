@@ -21,7 +21,10 @@ use deadpool_redis_cluster::{redis::{cmd, FromRedisValue}, Config, Runtime};
 
 #[tokio::main]
 async fn main() {
-    let mut cfg = Config::from_urls(vec!["redis://127.0.0.1/".to_string()]);
+    let mut cfg = Config::from_urls(vec![
+        "redis://127.0.0.1:7000".to_string(),
+        "redis://127.0.0.1:7001".to_string(),
+    ]);
     let pool = cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
     {
         let mut conn = pool.get().await.unwrap();
@@ -58,7 +61,12 @@ struct Config {
 impl Config {
       pub fn from_env() -> Result<Self, config::ConfigError> {
          config::Config::builder()
-            .add_source(config::Environment::default().separator("__"))
+            .add_source(
+                config::Environment::default()
+                .separator("__")
+                .try_parsing(true)
+                .list_separator(","),
+            )
             .build()?
             .try_deserialize()
     }
