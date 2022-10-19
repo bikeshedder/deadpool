@@ -1,7 +1,5 @@
 #![cfg(feature = "serde")]
 
-use std::println;
-
 use deadpool_redis_cluster::Runtime;
 use futures::FutureExt;
 use redis::cmd;
