@@ -1,5 +1,9 @@
 # Change Log
 
+## Unreleased
+
+* Change `redis` dependency to version range `0.21` to `0.22`
+
 ## v0.10.2
 
 * Fix bug causing connections not to be recycled

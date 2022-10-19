@@ -140,7 +140,7 @@ jobs:
           #- { crate: deadpool-diesel, msrv: '1.54.0' }
           - { crate: deadpool-lapin, msrv: '1.56.0' }
           - { crate: deadpool-postgres, msrv: '1.54.0' }
-          - { crate: deadpool-redis, msrv: '1.54.0' }
+          - { crate: deadpool-redis, msrv: '1.59.0' }
           - { crate: deadpool-redis-cluster, msrv: '1.54.0' }
           - { crate: deadpool-sqlite, msrv: '1.56.0' }
     runs-on: ubuntu-latest
