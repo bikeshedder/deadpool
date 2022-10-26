@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.10.3
+
+* Make `Transaction::statement_cache` field public
+
 ## v0.10.2
 
 * Export `TargetSessionAttrs` and `ChannelBinding` enums (part of `Config`
