@@ -440,7 +440,7 @@ pub struct Transaction<'a> {
     txn: PgTransaction<'a>,
 
     /// [`StatementCache`] of this [`Transaction`].
-    statement_cache: Arc<StatementCache>,
+    pub statement_cache: Arc<StatementCache>,
 }
 
 impl<'a> Transaction<'a> {
