@@ -28,6 +28,7 @@ jobs:
           - deadpool-postgres
           - deadpool-r2d2
           - deadpool-redis
+          - deadpool-redis-cluster
           - deadpool-runtime
           - deadpool-sqlite
           - deadpool-sync
@@ -100,6 +101,7 @@ jobs:
           - lapin
           - postgres
           - redis
+          - redis-cluster
           - sqlite
         feature:
           - rt_tokio_1
@@ -139,6 +141,7 @@ jobs:
           - { crate: deadpool-lapin, msrv: '1.56.0' }
           - { crate: deadpool-postgres, msrv: '1.54.0' }
           - { crate: deadpool-redis, msrv: '1.59.0' }
+          - { crate: deadpool-redis-cluster, msrv: '1.54.0' }
           - { crate: deadpool-sqlite, msrv: '1.56.0' }
     runs-on: ubuntu-latest
     steps:
@@ -167,6 +170,7 @@ jobs:
           - deadpool-lapin
           - deadpool-postgres
           - deadpool-redis
+          - deadpool-redis-cluster
           - deadpool-sqlite
     runs-on: ubuntu-latest
     services:
@@ -188,6 +192,11 @@ jobs:
         image: redis
         ports:
           - 6379:6379
+      redis-cluster:
+        image: grokzen/redis-cluster
+        ports:
+          - 7000-7005:7000-7005
+
       rabbitmq:
         image: rabbitmq:3.8  # 3.9 and above doesn't support env vars
         ports:
@@ -211,6 +220,7 @@ jobs:
           PG__PASSWORD: deadpool
           PG__DBNAME: deadpool
           REDIS__URL: redis://127.0.0.1/
+          REDIS_CLUSTER__URLS: redis://127.0.0.1:7000,redis://127.0.0.1:7001
           AMQP__URL: amqp://deadpool:deadpool@127.0.0.1/deadpool
 
 
@@ -230,6 +240,7 @@ jobs:
           - deadpool-lapin
           - deadpool-postgres
           - deadpool-redis
+          - deadpool-redis-cluster
           - deadpool-sqlite
     runs-on: ubuntu-latest
     steps:

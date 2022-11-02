@@ -1,0 +1,34 @@
+[package]
+name = "deadpool-redis-cluster"
+version = "0.1.0"
+edition = "2018"
+resolver = "2"
+authors = ["Michael P. Jung <michael.jung@terreon.de>", "Subeom Choi <subumm1@gmail.com>"]
+description = "Dead simple async pool for redis-cluster"
+keywords = ["async", "redis-cluster", "pool"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/bikeshedder/deadpool"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = ["rt_tokio_1"]
+rt_tokio_1 = ["deadpool/rt_tokio_1", "redis/tokio-comp"]
+rt_async-std_1 = ["deadpool/rt_async-std_1", "redis/async-std-comp"]
+serde = ["deadpool/serde", "serde_1"]
+
+[dependencies]
+deadpool = { path = "../", version = "0.9.5", default-features = false, features = ["managed"] }
+redis = { version = "0.21.6", default-features = false, features = ["aio"] }
+redis_cluster_async="0.7.0"
+serde_1 = { package = "serde", version = "1.0.145", features = ["derive"], optional = true }
+
+[dev-dependencies]
+config = { version = "0.13.2", features = ["json"] }
+dotenv = "0.15.0"
+futures = "0.3.24"
+redis = { version = "0.21.6", default-features = false, features = ["aio"] }
+tokio = { version = "1.21.2", features = ["full"] }

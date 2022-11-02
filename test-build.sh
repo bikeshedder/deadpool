@@ -27,6 +27,13 @@ cargo build --no-default-features --features managed,unmanaged
 )
 
 (
+	cd redis-cluster
+	cargo build
+	cargo build --no-default-features --features rt_tokio_1
+	cargo build --no-default-features --features rt_async-std_1
+)
+
+(
 	cd lapin
 	cargo build
 	cargo build --no-default-features
