@@ -340,7 +340,12 @@ impl<T> Pool<T> {
         Status {
             max_size,
             size,
-            available,
+            available: if available > 0 { available as usize } else { 0 },
+            waiting: if available < 0 {
+                (-available) as usize
+            } else {
+                0
+            },
         }
     }
 }

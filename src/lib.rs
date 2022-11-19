@@ -45,8 +45,9 @@ pub struct Status {
     /// The current size of the pool.
     pub size: usize,
 
-    /// The number of available objects in the pool. If there are no
-    /// objects in the pool this number can become negative and stores the
-    /// number of futures waiting for an object.
-    pub available: isize,
+    /// The number of available objects in the pool.
+    pub available: usize,
+
+    /// The number of futures waiting for an object.
+    pub waiting: usize,
 }

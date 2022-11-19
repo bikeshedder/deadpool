@@ -156,7 +156,7 @@ async fn test_cancellations() {
             pool.manager().gates
         );
         assert!(
-            status.available <= status.max_size as isize,
+            status.available <= status.max_size,
             "available({}) > max_size({}), gates: {:?}",
             status.available,
             status.max_size,
