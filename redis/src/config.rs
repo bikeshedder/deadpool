@@ -2,7 +2,9 @@ use std::{fmt, path::PathBuf};
 
 use redis::RedisError;
 #[cfg(feature = "serde")]
-use serde_1::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "serde")]
+use serde_1 as serde;
 
 use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime};
 
@@ -20,7 +22,7 @@ use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime
 /// ```
 /// ```rust
 /// # use serde_1 as serde;
-/// #
+///
 /// #[derive(serde::Deserialize)]
 /// # #[serde(crate = "serde_1")]
 /// struct Config {
@@ -37,8 +39,8 @@ use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime
 /// }
 /// ```
 #[derive(Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(serde_1::Deserialize, serde_1::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde"))]
 pub struct Config {
     /// Redis URL.
     ///
@@ -127,7 +129,7 @@ impl Default for Config {
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[cfg_attr(feature = "serde", serde(crate = "serde"))]
 pub enum ConnectionAddr {
     /// Format for this is `(host, port)`.
     Tcp(String, u16),
@@ -202,7 +204,7 @@ impl From<redis::ConnectionAddr> for ConnectionAddr {
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[cfg_attr(feature = "serde", serde(crate = "serde"))]
 pub struct ConnectionInfo {
     /// A connection address for where to connect to.
     pub addr: ConnectionAddr,
@@ -241,7 +243,7 @@ impl redis::IntoConnectionInfo for ConnectionInfo {
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[cfg_attr(feature = "serde", serde(crate = "serde"))]
 pub struct RedisConnectionInfo {
     /// The database number to use. This is usually `0`.
     pub db: i64,
