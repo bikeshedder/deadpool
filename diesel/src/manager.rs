@@ -74,6 +74,7 @@ where
         obj.interact(|conn| CheckConnectionQuery.execute(conn).map_err(Error::Ping))
             .await
             .map_err(|e| RecycleError::Message(format!("Panic: {:?}", e)))
+            .and_then(|r| r.map_err(RecycleError::Backend))
             .map(|_| ())
     }
 }
