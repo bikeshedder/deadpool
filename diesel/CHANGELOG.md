@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.4.1
+
+* Fix error handling when recycling connections
+
 ## v0.4.0
 
 * Update Diesel to 2.0.0
