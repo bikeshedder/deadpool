@@ -99,6 +99,17 @@ impl Config {
             pool: None,
         }
     }
+
+    /// Creates a new [`Config`] from the given Redis ConnectionInfo
+    /// structure.
+    #[must_use]
+    pub fn from_connection_info<T: Into<ConnectionInfo>>(connection_info: T) -> Config {
+        Config {
+            url: None,
+            connection: Some(connection_info.into()),
+            pool: None,
+        }
+    }
 }
 
 impl Default for Config {
