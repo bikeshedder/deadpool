@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.11.1 (unreleased)
+## v0.11.1
 
 - Export missing config structures:
   - `ConnectionAddr`
