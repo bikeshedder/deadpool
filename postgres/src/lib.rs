@@ -381,13 +381,13 @@ impl ClientWrapper {
         }
     }
 
-    /// Like [`tokio_postgres::Transaction::prepare()`], but uses an existing
+    /// Like [`tokio_postgres::Client::prepare()`], but uses an existing
     /// [`Statement`] from the [`StatementCache`] if possible.
     pub async fn prepare_cached(&self, query: &str) -> Result<Statement, Error> {
         self.statement_cache.prepare(&self.client, query).await
     }
 
-    /// Like [`tokio_postgres::Transaction::prepare_typed()`], but uses an
+    /// Like [`tokio_postgres::Client::prepare_typed()`], but uses an
     /// existing [`Statement`] from the [`StatementCache`] if possible.
     pub async fn prepare_typed_cached(
         &self,
