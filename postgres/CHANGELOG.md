@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.10.4 (unreleased)
+
+- Add `GenericClient`
+
 ## v0.10.3
 
 * Make `Transaction::statement_cache` field public

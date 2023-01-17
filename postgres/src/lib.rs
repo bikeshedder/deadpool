@@ -21,6 +21,7 @@
 )]
 
 mod config;
+mod generic_client;
 
 use std::{
     borrow::Cow,
@@ -47,6 +48,8 @@ pub use self::config::{
     ChannelBinding, Config, ConfigError, ManagerConfig, RecyclingMethod, SslMode,
     TargetSessionAttrs,
 };
+
+pub use self::generic_client::GenericClient;
 
 pub use deadpool::managed::reexports::*;
 deadpool::managed_reexports!(
