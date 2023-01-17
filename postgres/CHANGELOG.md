@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.10.4 (unreleased)
+## v0.10.4
 
 - Add `GenericClient`
 
