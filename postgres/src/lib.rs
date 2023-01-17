@@ -25,7 +25,6 @@ mod generic_client;
 
 use std::{
     borrow::Cow,
-    collections::HashMap,
     fmt,
     ops::{Deref, DerefMut},
     sync::{
@@ -35,6 +34,7 @@ use std::{
 };
 
 use deadpool::{async_trait, managed};
+use rustc_hash::FxHashMap;
 use tokio::spawn;
 use tokio_postgres::{
     tls::MakeTlsConnect, tls::TlsConnect, types::Type, Client as PgClient, Config as PgConfig,
@@ -266,14 +266,14 @@ struct StatementCacheKey<'a> {
 /// and [`ClientWrapper::prepare_typed_cached()`] methods instead (or the
 /// similar ones on [`Transaction`]).
 pub struct StatementCache {
-    map: RwLock<HashMap<StatementCacheKey<'static>, Statement>>,
+    map: RwLock<FxHashMap<StatementCacheKey<'static>, Statement>>,
     size: AtomicUsize,
 }
 
 impl StatementCache {
     fn new() -> Self {
         Self {
-            map: RwLock::new(HashMap::new()),
+            map: RwLock::new(FxHashMap::default()),
             size: AtomicUsize::new(0),
         }
     }
