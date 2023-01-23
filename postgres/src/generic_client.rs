@@ -9,7 +9,7 @@ use tokio_postgres::{Error, Row, Statement, ToStatement};
 
 use deadpool::async_trait;
 
-use crate::{Client, Transaction};
+use crate::{Client, ClientWrapper, Transaction};
 
 mod private {
     pub trait Sealed {}
@@ -95,7 +95,7 @@ impl GenericClient for Client {
     where
         T: ?Sized + ToStatement + Sync + Send,
     {
-        self.execute(query, params).await
+        tokio_postgres::Client::execute(self, query, params).await
     }
 
     async fn execute_raw<P, I, T>(&self, statement: &T, params: I) -> Result<u64, Error>
@@ -105,14 +105,14 @@ impl GenericClient for Client {
         I: IntoIterator<Item = P> + Sync + Send,
         I::IntoIter: ExactSizeIterator,
     {
-        self.execute_raw(statement, params).await
+        tokio_postgres::Client::execute_raw(self, statement, params).await
     }
 
     async fn query<T>(&self, query: &T, params: &[&(dyn ToSql + Sync)]) -> Result<Vec<Row>, Error>
     where
         T: ?Sized + ToStatement + Sync + Send,
     {
-        self.query(query, params).await
+        tokio_postgres::Client::query(self, query, params).await
     }
 
     async fn query_one<T>(
@@ -123,7 +123,7 @@ impl GenericClient for Client {
     where
         T: ?Sized + ToStatement + Sync + Send,
     {
-        self.query_one(statement, params).await
+        tokio_postgres::Client::query_one(self, statement, params).await
     }
 
     async fn query_opt<T>(
@@ -134,7 +134,7 @@ impl GenericClient for Client {
     where
         T: ?Sized + ToStatement + Sync + Send,
     {
-        self.query_opt(statement, params).await
+        tokio_postgres::Client::query_opt(self, statement, params).await
     }
 
     async fn query_raw<T, P, I>(&self, statement: &T, params: I) -> Result<RowStream, Error>
@@ -144,11 +144,11 @@ impl GenericClient for Client {
         I: IntoIterator<Item = P> + Sync + Send,
         I::IntoIter: ExactSizeIterator,
     {
-        self.query_raw(statement, params).await
+        tokio_postgres::Client::query_raw(self, statement, params).await
     }
 
     async fn prepare(&self, query: &str) -> Result<Statement, Error> {
-        self.prepare(query).await
+        tokio_postgres::Client::prepare(self, query).await
     }
 
     async fn prepare_typed(
@@ -156,23 +156,23 @@ impl GenericClient for Client {
         query: &str,
         parameter_types: &[Type],
     ) -> Result<Statement, Error> {
-        self.prepare_typed(query, parameter_types).await
+        tokio_postgres::Client::prepare_typed(self, query, parameter_types).await
     }
 
     async fn prepare_cached(&self, query: &str) -> Result<Statement, Error> {
-        self.prepare_cached(query).await
+        ClientWrapper::prepare_cached(self, query).await
     }
 
     async fn prepare_typed_cached(&self, query: &str, types: &[Type]) -> Result<Statement, Error> {
-        self.prepare_typed_cached(query, types).await
+        ClientWrapper::prepare_typed_cached(self, query, types).await
     }
 
     async fn transaction(&mut self) -> Result<Transaction<'_>, Error> {
-        self.transaction().await
+        ClientWrapper::transaction(self).await
     }
 
     async fn batch_execute(&self, query: &str) -> Result<(), Error> {
-        self.batch_execute(query).await
+        tokio_postgres::Client::batch_execute(self, query).await
     }
 }
 
@@ -185,7 +185,7 @@ impl GenericClient for Transaction<'_> {
     where
         T: ?Sized + ToStatement + Sync + Send,
     {
-        self.execute(query, params).await
+        tokio_postgres::Transaction::execute(self, query, params).await
     }
 
     async fn execute_raw<P, I, T>(&self, statement: &T, params: I) -> Result<u64, Error>
@@ -195,14 +195,14 @@ impl GenericClient for Transaction<'_> {
         I: IntoIterator<Item = P> + Sync + Send,
         I::IntoIter: ExactSizeIterator,
     {
-        self.execute_raw(statement, params).await
+        tokio_postgres::Transaction::execute_raw(self, statement, params).await
     }
 
     async fn query<T>(&self, query: &T, params: &[&(dyn ToSql + Sync)]) -> Result<Vec<Row>, Error>
     where
         T: ?Sized + ToStatement + Sync + Send,
     {
-        self.query(query, params).await
+        tokio_postgres::Transaction::query(self, query, params).await
     }
 
     async fn query_one<T>(
@@ -213,7 +213,7 @@ impl GenericClient for Transaction<'_> {
     where
         T: ?Sized + ToStatement + Sync + Send,
     {
-        self.query_one(statement, params).await
+        tokio_postgres::Transaction::query_one(self, statement, params).await
     }
 
     async fn query_opt<T>(
@@ -224,7 +224,7 @@ impl GenericClient for Transaction<'_> {
     where
         T: ?Sized + ToStatement + Sync + Send,
     {
-        self.query_opt(statement, params).await
+        tokio_postgres::Transaction::query_opt(self, statement, params).await
     }
 
     async fn query_raw<T, P, I>(&self, statement: &T, params: I) -> Result<RowStream, Error>
@@ -234,11 +234,11 @@ impl GenericClient for Transaction<'_> {
         I: IntoIterator<Item = P> + Sync + Send,
         I::IntoIter: ExactSizeIterator,
     {
-        self.query_raw(statement, params).await
+        tokio_postgres::Transaction::query_raw(self, statement, params).await
     }
 
     async fn prepare(&self, query: &str) -> Result<Statement, Error> {
-        self.prepare(query).await
+        tokio_postgres::Transaction::prepare(self, query).await
     }
 
     async fn prepare_typed(
@@ -246,23 +246,23 @@ impl GenericClient for Transaction<'_> {
         query: &str,
         parameter_types: &[Type],
     ) -> Result<Statement, Error> {
-        self.prepare_typed(query, parameter_types).await
+        tokio_postgres::Transaction::prepare_typed(self, query, parameter_types).await
     }
 
     async fn prepare_cached(&self, query: &str) -> Result<Statement, Error> {
-        self.prepare_cached(query).await
+        Transaction::prepare_cached(self, query).await
     }
 
     async fn prepare_typed_cached(&self, query: &str, types: &[Type]) -> Result<Statement, Error> {
-        self.prepare_typed_cached(query, types).await
+        Transaction::prepare_typed_cached(self, query, types).await
     }
 
     #[allow(clippy::needless_lifetimes)]
     async fn transaction<'a>(&'a mut self) -> Result<Transaction<'a>, Error> {
-        self.transaction().await
+        Transaction::transaction(self).await
     }
 
     async fn batch_execute(&self, query: &str) -> Result<(), Error> {
-        self.batch_execute(query).await
+        tokio_postgres::Transaction::batch_execute(self, query).await
     }
 }
