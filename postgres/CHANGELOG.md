@@ -1,6 +1,10 @@
 # Change Log
 
-## v0.10.4
+## v0.10.5
+
+- Fix infinite recursion in `GenericClient`
+
+## v0.10.4 (yanked)
 
 - Add `GenericClient`
 
