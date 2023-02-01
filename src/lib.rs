@@ -19,6 +19,7 @@
     unused_qualifications,
     unused_results
 )]
+#![allow(clippy::uninlined_format_args)]
 
 #[cfg(feature = "managed")]
 #[cfg_attr(docsrs, doc(cfg(feature = "managed")))]

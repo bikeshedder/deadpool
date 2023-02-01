@@ -19,6 +19,7 @@
     unused_qualifications,
     unused_results
 )]
+#![allow(clippy::uninlined_format_args)]
 
 use std::{any::Any, fmt, future::Future, time::Duration};
 

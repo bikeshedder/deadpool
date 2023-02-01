@@ -93,7 +93,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
 
         if let Err(e) = server.await {
-            eprintln!("server error: {}", e);
+            eprintln!("server error: {e}");
         }
 
         Ok(())

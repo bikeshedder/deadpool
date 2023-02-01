@@ -21,9 +21,9 @@ async fn redis_ping(pool: &Pool) -> Result<String, PoolError> {
 async fn index(redis_pool: web::Data<Pool>) -> Result<HttpResponse, Error> {
     let pong = redis_ping(&redis_pool)
         .await
-        .map_err(|pool_error| error::ErrorNotAcceptable(format!("{}", pool_error)))?;
+        .map_err(|pool_error| error::ErrorNotAcceptable(format!("{pool_error}")))?;
 
-    Ok(HttpResponse::Ok().body(format!("Redis PING -> {}", pong)))
+    Ok(HttpResponse::Ok().body(format!("Redis PING -> {pong}")))
 }
 
 #[actix_web::main]
@@ -42,8 +42,7 @@ async fn main() -> std::io::Result<()> {
     .run();
 
     println!(
-        "Server running! Access the index page here: http://{}/",
-        server_url
+        "Server running! Access the index page here: http://{server_url}/",
     );
 
     server.await
