@@ -41,9 +41,7 @@ async fn main() -> std::io::Result<()> {
     .bind(server_url)?
     .run();
 
-    println!(
-        "Server running! Access the index page here: http://{server_url}/",
-    );
+    println!("Server running! Access the index page here: http://{server_url}/",);
 
     server.await
 }
