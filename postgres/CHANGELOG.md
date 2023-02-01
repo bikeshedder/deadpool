@@ -1,5 +1,15 @@
 # Change Log
 
+## v0.11.0 (unreleased)
+
+- **BREAKING:** Disconnect immediately from the database when dropping
+  clients. This is considered a breaking change as in previous versions
+  the connections would stick around until all queued queries were
+  processed. This was considered a potential leak of resources. The
+  `Connection` object is now tied to the lifetime of the `ClientWrapper`
+  and dropped as soon as possible. The disconnect is not graceful and
+  you might see error messages in the database log.
+
 ## v0.10.5
 
 - Fix infinite recursion in `GenericClient`
