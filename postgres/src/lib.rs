@@ -154,6 +154,8 @@ impl managed::Manager for Manager {
     }
 }
 
+impl std::panic::UnwindSafe for Manager {}
+
 #[async_trait]
 trait Connect: Sync + Send {
     async fn connect(&self, pg_config: &PgConfig) -> Result<(PgClient, JoinHandle<()>), Error>;
