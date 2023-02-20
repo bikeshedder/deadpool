@@ -78,6 +78,13 @@ impl<T> Object<T> {
 
 impl<T> Drop for Object<T> {
     fn drop(&mut self) {
+        // If we're panicking, there is no way to determine whether the object
+        // we are dropping is the source of the panic. Therefore, always discard
+        // the object on a panic, and do not return it to the pool.
+        if std::thread::panicking() {
+            return;
+        }
+
         if let Some(obj) = self.obj.take() {
             if let Some(pool) = self.pool.upgrade() {
                 {

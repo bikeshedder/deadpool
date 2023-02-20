@@ -71,6 +71,7 @@ use std::{
     future::Future,
     marker::PhantomData,
     ops::{Deref, DerefMut},
+    panic::{RefUnwindSafe, UnwindSafe},
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc, Mutex, Weak,
@@ -613,6 +614,20 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     pub fn manager(&self) -> &M {
         &self.inner.manager
     }
+}
+
+impl<M: Manager, W: From<Object<M>>> UnwindSafe for Pool<M, W>
+where
+    M: UnwindSafe,
+    W: UnwindSafe,
+{
+}
+
+impl<M: Manager, W: From<Object<M>>> RefUnwindSafe for Pool<M, W>
+where
+    M: UnwindSafe,
+    W: UnwindSafe,
+{
 }
 
 struct PoolInner<M: Manager> {
