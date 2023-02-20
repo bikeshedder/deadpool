@@ -114,10 +114,14 @@ where
         R: Send + 'static,
     {
         let arc = self.obj.clone();
+        #[cfg(feature = "tracing")]
+        let span = tracing::Span::current();
         self.runtime
             .spawn_blocking(move || {
                 let mut guard = arc.lock().unwrap();
                 let conn = guard.as_mut().unwrap();
+                #[cfg(feature = "tracing")]
+                let _span = span.enter();
                 f(conn)
             })
             .await
