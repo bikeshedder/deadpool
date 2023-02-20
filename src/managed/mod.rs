@@ -619,14 +619,12 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
 impl<M: Manager, W: From<Object<M>>> UnwindSafe for Pool<M, W>
 where
     M: UnwindSafe,
-    W: UnwindSafe,
 {
 }
 
 impl<M: Manager, W: From<Object<M>>> RefUnwindSafe for Pool<M, W>
 where
     M: UnwindSafe,
-    W: UnwindSafe,
 {
 }
 
