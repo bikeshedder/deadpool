@@ -90,7 +90,7 @@ pub use crate::Status;
 use self::dropguard::DropGuard;
 pub use self::{
     builder::{BuildError, PoolBuilder},
-    config::{CreatePoolError, PoolConfig, Timeouts},
+    config::{CreatePoolError, PoolConfig, QueueMode, Timeouts},
     errors::{PoolError, RecycleError, TimeoutType},
     hooks::{Hook, HookError, HookErrorCause, HookFuture, HookResult},
     metrics::Metrics,
@@ -387,7 +387,10 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         };
 
         let inner_obj = loop {
-            let inner_obj = self.inner.slots.lock().unwrap().vec.pop_front();
+            let inner_obj = match self.inner.config.queue_mode {
+                QueueMode::Fifo => self.inner.slots.lock().unwrap().vec.pop_front(),
+                QueueMode::Lifo => self.inner.slots.lock().unwrap().vec.pop_back(),
+            };
             let inner_obj = if let Some(inner_obj) = inner_obj {
                 self.try_recycle(timeouts, inner_obj).await?
             } else {
