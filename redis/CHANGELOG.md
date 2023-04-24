@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.12.0 (unreleased)
+## v0.12.0
 
 - Update `redis` dependency to version `0.23`
 
