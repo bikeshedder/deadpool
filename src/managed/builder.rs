@@ -4,7 +4,7 @@ use crate::Runtime;
 
 use super::{
     hooks::{Hook, Hooks},
-    Manager, Object, Pool, PoolConfig, Timeouts,
+    Manager, Object, Pool, PoolConfig, QueueMode, Timeouts,
 };
 
 /// Possible errors returned when [`PoolBuilder::build()`] fails to build a
@@ -130,6 +130,12 @@ where
     /// Sets the [`Timeouts::recycle`] value of the [`PoolConfig::timeouts`].
     pub fn recycle_timeout(mut self, value: Option<Duration>) -> Self {
         self.config.timeouts.recycle = value;
+        self
+    }
+
+    /// Sets the [`PoolConfig::queue_mode`].
+    pub fn queue_mode(mut self, value: QueueMode) -> Self {
+        self.config.queue_mode = value;
         self
     }
 

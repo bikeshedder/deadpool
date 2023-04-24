@@ -51,6 +51,7 @@ async fn test_managed_timeout(runtime: Runtime) {
             wait: Some(Duration::from_millis(0)),
             recycle: Some(Duration::from_millis(0)),
         },
+        ..Default::default()
     };
     let pool = Pool::builder(mgr)
         .config(cfg)
