@@ -1,5 +1,9 @@
 # Change Log
 
+## v0.12.0 (unreleased)
+
+- Update `redis` dependency to version `0.23`
+
 ## v0.11.1
 
 - Export missing config structures:
