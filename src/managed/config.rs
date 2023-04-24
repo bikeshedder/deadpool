@@ -18,6 +18,14 @@ pub struct PoolConfig {
     /// [`Pool`]: super::Pool
     #[cfg_attr(feature = "serde", serde(default))]
     pub timeouts: Timeouts,
+
+    /// Queue mode of the [`Pool`].
+    ///
+    /// Determines the order of objects being queued and dequeued.
+    ///
+    /// [`Pool`]: super::Pool
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub queue_mode: QueueMode,
 }
 
 impl PoolConfig {
@@ -28,6 +36,7 @@ impl PoolConfig {
         Self {
             max_size,
             timeouts: Timeouts::default(),
+            queue_mode: QueueMode::default(),
         }
     }
 }
@@ -86,6 +95,20 @@ impl Default for Timeouts {
             recycle: None,
         }
     }
+}
+
+/// Mode for dequeuing [`Object`]s from a [`Pool`].
+///
+/// [`Object`]: super::Object
+/// [`Pool`]: super::Pool
+#[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+pub enum QueueMode {
+    /// Dequeue the object that was least recently added (first in first out).
+    #[default]
+    Fifo,
+    /// Dequeue the object that was most recently added (last in first out).
+    Lifo,
 }
 
 /// This error is used when building pools via the config `create_pool`
