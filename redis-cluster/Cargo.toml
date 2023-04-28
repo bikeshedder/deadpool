@@ -22,13 +22,13 @@ serde = ["deadpool/serde", "serde_1"]
 
 [dependencies]
 deadpool = { path = "../", version = "0.9.5", default-features = false, features = ["managed"] }
-redis = { version = "0.21.6", default-features = false, features = ["aio"] }
-redis_cluster_async="0.7.0"
+redis = { version = "0.23.0", default-features = false, features = ["aio"] }
+redis_cluster_async="0.8.0"
 serde_1 = { package = "serde", version = "1.0.145", features = ["derive"], optional = true }
 
 [dev-dependencies]
 config = { version = "0.13.2", features = ["json"] }
 dotenv = "0.15.0"
 futures = "0.3.24"
-redis = { version = "0.21.6", default-features = false, features = ["aio"] }
+redis = { version = "0.23.0", default-features = false, features = ["aio"] }
 tokio = { version = "1.21.2", features = ["full"] }
