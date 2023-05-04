@@ -121,9 +121,7 @@ where
                 f(conn)
             })
             .await
-            .map_err(|e| match e {
-                SpawnBlockingError::Panic(p) => InteractError::Panic(p),
-            })
+            .map_err(|SpawnBlockingError::Panic(e)| InteractError::Panic(p))
     }
 
     /// Indicates whether the underlying [`Mutex`] has been poisoned.
