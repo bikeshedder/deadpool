@@ -101,14 +101,19 @@ impl Default for Timeouts {
 ///
 /// [`Object`]: super::Object
 /// [`Pool`]: super::Pool
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub enum QueueMode {
     /// Dequeue the object that was least recently added (first in first out).
-    #[default]
     Fifo,
     /// Dequeue the object that was most recently added (last in first out).
     Lifo,
+}
+
+impl Default for QueueMode {
+    fn default() -> Self {
+        Self::Fifo
+    }
 }
 
 /// This error is used when building pools via the config `create_pool`
