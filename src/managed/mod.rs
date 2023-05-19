@@ -92,7 +92,7 @@ pub use self::{
     builder::{BuildError, PoolBuilder},
     config::{CreatePoolError, PoolConfig, QueueMode, Timeouts},
     errors::{PoolError, RecycleError, TimeoutType},
-    hooks::{Hook, HookError, HookErrorCause, HookFuture, HookResult},
+    hooks::{Hook, HookError, HookFuture, HookResult},
     metrics::Metrics,
 };
 
@@ -423,13 +423,8 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         };
 
         // Apply pre_recycle hooks
-        if let Some(_e) = self
-            .inner
-            .hooks
-            .pre_recycle
-            .apply(&mut unready_obj, PoolError::PreRecycleHook)
-            .await?
-        {
+        if let Err(_e) = self.inner.hooks.pre_recycle.apply(&mut unready_obj).await {
+            // TODO log pre_recycle error
             return Ok(None);
         }
 
@@ -446,13 +441,8 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         }
 
         // Apply post_recycle hooks
-        if let Some(_e) = self
-            .inner
-            .hooks
-            .post_recycle
-            .apply(&mut unready_obj, PoolError::PostRecycleHook)
-            .await?
-        {
+        if let Err(_e) = self.inner.hooks.post_recycle.apply(&mut unready_obj).await {
+            // TODO log post_recycle error
             return Ok(None);
         }
 
@@ -484,14 +474,8 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         self.inner.slots.lock().unwrap().size += 1;
 
         // Apply post_create hooks
-        if let Some(_e) = self
-            .inner
-            .hooks
-            .post_create
-            .apply(&mut *unready_obj, PoolError::PostCreateHook)
-            .await?
-        {
-            return Ok(None);
+        if let Err(e) = self.inner.hooks.post_create.apply(&mut *unready_obj).await {
+            return Err(PoolError::PostCreateHook(e));
         }
 
         Ok(Some(unready_obj.ready()))

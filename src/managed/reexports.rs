@@ -51,8 +51,5 @@ macro_rules! managed_reexports {
         #[doc=concat!("Type alias for using [`deadpool::managed::HookError`] with [`", $crate_name, "`].")]
         pub type HookError = deadpool::managed::HookError<$Error>;
 
-        #[doc=concat!("Type alias for using [`deadpool::managed::HookErrorCause`] with [`", $crate_name, "`].")]
-        pub type HookErrorCause = deadpool::managed::HookErrorCause<$Error>;
-
     };
 }
