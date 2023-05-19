@@ -87,17 +87,16 @@ async fn post_create_err_continue() {
 #[tokio::test]
 async fn post_create_err_abort() {
     let manager = Computer::new(0);
-    let pool = Pool::<Computer>::builder(manager)
-        .max_size(3)
-        .post_create(Hook::sync_fn(|obj, _| {
-            (*obj % 2 == 0)
-                .then(|| ())
-                .ok_or(HookError::Abort(HookErrorCause::StaticMessage(
-                    "odd creation",
-                )))
-        }))
-        .build()
-        .unwrap();
+    let pool =
+        Pool::<Computer>::builder(manager)
+            .max_size(3)
+            .post_create(Hook::sync_fn(|obj, _| {
+                (*obj % 2 == 0).then_some(()).ok_or(HookError::Abort(
+                    HookErrorCause::StaticMessage("odd creation"),
+                ))
+            }))
+            .build()
+            .unwrap();
     let obj1 = pool.get().await.unwrap();
     assert_eq!(*obj1, 0);
     assert!(pool.get().await.is_err());
