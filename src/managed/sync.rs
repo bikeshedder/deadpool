@@ -141,9 +141,7 @@ where
                 f(conn)
             })
             .await
-            .map_err(|e| match e {
-                SpawnBlockingError::Panic(p) => InteractError::Panic(p),
-            })?
+            .map_err(|SpawnBlockingError::Panic(p)| InteractError::Panic(p))?
             .map_err(InteractError::Backend)
     }
 
