@@ -8,7 +8,7 @@ use tokio::{
     task, time,
 };
 
-use deadpool::managed::{self, RecycleError, RecycleResult};
+use deadpool::managed::{self, Metrics, RecycleError, RecycleResult};
 
 type Pool = managed::Pool<Manager>;
 
@@ -66,7 +66,7 @@ impl managed::Manager for Manager {
         self.create_rx.lock().await.recv().await.unwrap()
     }
 
-    async fn recycle(&self, _conn: &mut ()) -> RecycleResult<()> {
+    async fn recycle(&self, _conn: &mut (), _: &Metrics) -> RecycleResult<()> {
         match self.recycle_rx.lock().await.recv().await.unwrap() {
             Ok(()) => Ok(()),
             Err(e) => Err(RecycleError::Backend(e)),

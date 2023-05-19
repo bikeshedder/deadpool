@@ -30,7 +30,7 @@
 //!     async fn create(&self) -> Result<Computer, Error> {
 //!         Ok(Computer {})
 //!     }
-//!     async fn recycle(&self, conn: &mut Computer) -> managed::RecycleResult<Error> {
+//!     async fn recycle(&self, conn: &mut Computer, _: &managed::Metrics) -> managed::RecycleResult<Error> {
 //!         Ok(())
 //!     }
 //! }
@@ -116,7 +116,7 @@ pub trait Manager: Sync + Send {
     /// # Errors
     ///
     /// Returns [`Manager::Error`] if the instance couldn't be recycled.
-    async fn recycle(&self, obj: &mut Self::Type) -> RecycleResult<Self::Error>;
+    async fn recycle(&self, obj: &mut Self::Type, metrics: &Metrics) -> RecycleResult<Self::Error>;
 
     /// Detaches an instance of [`Manager::Type`] from this [`Manager`].
     ///
@@ -162,6 +162,12 @@ impl<'a, M: Manager> UnreadyObject<'a, M> {
     fn ready(mut self) -> ObjectInner<M> {
         self.inner.take().unwrap()
     }
+    fn obj(&self) -> &ObjectInner<M> {
+        return self.inner.as_ref().unwrap();
+    }
+    fn mut_obj(&mut self) -> &mut ObjectInner<M> {
+        return self.inner.as_mut().unwrap();
+    }
 }
 
 impl<'a, M: Manager> Drop for UnreadyObject<'a, M> {
@@ -170,19 +176,6 @@ impl<'a, M: Manager> Drop for UnreadyObject<'a, M> {
             self.pool.slots.lock().unwrap().size -= 1;
             self.pool.manager.detach(&mut inner.obj);
         }
-    }
-}
-
-impl<'a, M: Manager> Deref for UnreadyObject<'a, M> {
-    type Target = ObjectInner<M>;
-    fn deref(&self) -> &Self::Target {
-        self.inner.as_ref().unwrap()
-    }
-}
-
-impl<'a, M: Manager> DerefMut for UnreadyObject<'a, M> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.inner.as_mut().unwrap()
     }
 }
 
@@ -421,9 +414,10 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             inner: Some(inner_obj),
             pool: &self.inner,
         };
+        let inner = unready_obj.mut_obj();
 
         // Apply pre_recycle hooks
-        if let Err(_e) = self.inner.hooks.pre_recycle.apply(&mut unready_obj).await {
+        if let Err(_e) = self.inner.hooks.pre_recycle.apply(inner).await {
             // TODO log pre_recycle error
             return Ok(None);
         }
@@ -432,7 +426,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             self.inner.runtime,
             TimeoutType::Recycle,
             timeouts.recycle,
-            self.inner.manager.recycle(&mut unready_obj.obj),
+            self.inner.manager.recycle(&mut inner.obj, &inner.metrics),
         )
         .await
         .is_err()
@@ -441,13 +435,13 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         }
 
         // Apply post_recycle hooks
-        if let Err(_e) = self.inner.hooks.post_recycle.apply(&mut unready_obj).await {
+        if let Err(_e) = self.inner.hooks.post_recycle.apply(inner).await {
             // TODO log post_recycle error
             return Ok(None);
         }
 
-        unready_obj.metrics.recycle_count += 1;
-        unready_obj.metrics.recycled = Some(Instant::now());
+        inner.metrics.recycle_count += 1;
+        inner.metrics.recycled = Some(Instant::now());
 
         Ok(Some(unready_obj.ready()))
     }
@@ -474,7 +468,13 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         self.inner.slots.lock().unwrap().size += 1;
 
         // Apply post_create hooks
-        if let Err(e) = self.inner.hooks.post_create.apply(&mut *unready_obj).await {
+        if let Err(e) = self
+            .inner
+            .hooks
+            .post_create
+            .apply(unready_obj.mut_obj())
+            .await
+        {
             return Err(PoolError::PostCreateHook(e));
         }
 

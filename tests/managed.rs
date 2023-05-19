@@ -5,7 +5,7 @@ use std::{convert::Infallible, time::Duration};
 use async_trait::async_trait;
 use tokio::time;
 
-use deadpool::managed::{self, Object, PoolError, RecycleResult, Timeouts};
+use deadpool::managed::{self, Metrics, Object, PoolError, RecycleResult, Timeouts};
 
 type Pool = managed::Pool<Manager>;
 
@@ -20,7 +20,7 @@ impl managed::Manager for Manager {
         Ok(0)
     }
 
-    async fn recycle(&self, _conn: &mut usize) -> RecycleResult<Infallible> {
+    async fn recycle(&self, _conn: &mut usize, _: &Metrics) -> RecycleResult<Infallible> {
         Ok(())
     }
 }

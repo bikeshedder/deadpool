@@ -2,7 +2,7 @@ use std::{fmt, marker::PhantomData};
 
 use deadpool::{
     async_trait,
-    managed::{self, RecycleError, RecycleResult},
+    managed::{self, Metrics, RecycleError, RecycleResult},
     Runtime,
 };
 use deadpool_sync::SyncWrapper;
@@ -65,7 +65,7 @@ where
         .await
     }
 
-    async fn recycle(&self, obj: &mut Self::Type) -> RecycleResult<Self::Error> {
+    async fn recycle(&self, obj: &mut Self::Type, _: &Metrics) -> RecycleResult<Self::Error> {
         if obj.is_mutex_poisoned() {
             return Err(RecycleError::StaticMessage(
                 "Mutex is poisoned. Connection is considered unusable.",

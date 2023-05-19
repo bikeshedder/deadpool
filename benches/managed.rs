@@ -2,6 +2,7 @@ use std::{convert::TryInto, fmt::Display};
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
+use deadpool::managed::Metrics;
 use tokio::task::JoinHandle;
 
 //const ITERATIONS: usize = 1_048_576;
@@ -50,7 +51,11 @@ impl deadpool::managed::Manager for Manager {
     async fn create(&self) -> Result<Self::Type, Self::Error> {
         Ok(())
     }
-    async fn recycle(&self, _: &mut Self::Type) -> deadpool::managed::RecycleResult<Self::Error> {
+    async fn recycle(
+        &self,
+        _: &mut Self::Type,
+        _: &Metrics,
+    ) -> deadpool::managed::RecycleResult<Self::Error> {
         Ok(())
     }
 }

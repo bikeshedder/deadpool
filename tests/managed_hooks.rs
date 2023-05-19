@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use async_trait::async_trait;
 
-use deadpool::managed::{Hook, HookError, Manager, Pool, RecycleResult};
+use deadpool::managed::{Hook, HookError, Manager, Metrics, Pool, RecycleResult};
 
 struct Computer {
     next_id: AtomicUsize,
@@ -27,7 +27,7 @@ impl Manager for Computer {
         Ok(self.next_id.fetch_add(1, Ordering::Relaxed))
     }
 
-    async fn recycle(&self, _: &mut Self::Type) -> RecycleResult<Self::Error> {
+    async fn recycle(&self, _: &mut Self::Type, _: &Metrics) -> RecycleResult<Self::Error> {
         Ok(())
     }
 }

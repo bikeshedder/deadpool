@@ -66,7 +66,7 @@ impl managed::Manager for Manager {
         Ok(Computer {})
     }
     
-    async fn recycle(&self, _: &mut Computer) -> managed::RecycleResult<Error> {
+    async fn recycle(&self, _: &mut Computer, _: &managed::Metrics) -> managed::RecycleResult<Error> {
         Ok(())
     }
 }

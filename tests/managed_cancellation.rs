@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use deadpool::managed::{Hook, HookError, Manager, Pool, RecycleResult};
+use deadpool::managed::{Hook, HookError, Manager, Metrics, Pool, RecycleResult};
 use itertools::Itertools;
 use tokio::time::{sleep, timeout};
 
@@ -104,7 +104,7 @@ impl Manager for GatedManager {
         self.gates.create.open().await?;
         Ok(())
     }
-    async fn recycle(&self, _conn: &mut Self::Type) -> RecycleResult<Self::Error> {
+    async fn recycle(&self, _conn: &mut Self::Type, _: &Metrics) -> RecycleResult<Self::Error> {
         self.gates.recycle.open().await?;
         Ok(())
     }

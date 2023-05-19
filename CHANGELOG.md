@@ -9,7 +9,9 @@
 - Remove `HookError::Continue` and `HookError::Abort` variants
   replacing it with the contents of `HookErrorCause`. Returning
   a `HookError` from a `post_create` hook causes the `Pool::get`
-  operation to fail while returning it from a `pre_recycle` or `post_recycle` hook the operation continues.
+  operation to fail while returning it from a `pre_recycle` or
+  `post_recycle` hook the operation continues.
+- Add `metrics` argument to `Manager::recycle` method.
 
 ## v0.9.5
 
