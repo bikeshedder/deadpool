@@ -162,10 +162,7 @@ impl<'a, M: Manager> UnreadyObject<'a, M> {
     fn ready(mut self) -> ObjectInner<M> {
         self.inner.take().unwrap()
     }
-    fn obj(&self) -> &ObjectInner<M> {
-        return self.inner.as_ref().unwrap();
-    }
-    fn mut_obj(&mut self) -> &mut ObjectInner<M> {
+    fn inner(&mut self) -> &mut ObjectInner<M> {
         return self.inner.as_mut().unwrap();
     }
 }
@@ -414,7 +411,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             inner: Some(inner_obj),
             pool: &self.inner,
         };
-        let inner = unready_obj.mut_obj();
+        let inner = unready_obj.inner();
 
         // Apply pre_recycle hooks
         if let Err(_e) = self.inner.hooks.pre_recycle.apply(inner).await {
@@ -472,7 +469,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
             .inner
             .hooks
             .post_create
-            .apply(unready_obj.mut_obj())
+            .apply(unready_obj.inner())
             .await
         {
             return Err(PoolError::PostCreateHook(e));
