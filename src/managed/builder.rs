@@ -176,7 +176,7 @@ where
     /// when trying to use [`Pool::timeout_get()`].
     ///
     /// [`PoolBuilder::build()`] will fail with a
-    /// [`BuildError::TimeoutsNoRuntime`] if you try to build a
+    /// [`BuildError::NoRuntimeSpecified`] if you try to build a
     /// [`Pool`] with timeouts and no [`Runtime`] specified.
     ///
     /// [`PoolError::NoRuntimeSpecified`]: super::PoolError::NoRuntimeSpecified
