@@ -175,7 +175,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres
+        image: postgres:15.3-alpine
         ports:
           - 5432:5432
         env:
@@ -189,16 +189,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       redis:
-        image: redis
+        image: redis:7.0-alpine
         ports:
           - 6379:6379
       redis-cluster:
-        image: grokzen/redis-cluster
+        image: grokzen/redis-cluster:7.0.10
         ports:
           - 7000-7005:7000-7005
-
       rabbitmq:
-        image: rabbitmq:3.8  # 3.9 and above doesn't support env vars
+        image: rabbitmq:3.11-alpine
         ports:
           - 5672:5672
         env:
