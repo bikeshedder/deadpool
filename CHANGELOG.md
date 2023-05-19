@@ -3,6 +3,9 @@
 ## v0.10.0 (unreleased)
 
 - Remove unreachable enum variant `BuildError::Backend`
+- Split `Status.available` into `available` and `waiting`.
+- Add `QueueMode` configuration option for choosing between
+  a `FIFO` (default) and `LIFO` queue.
 - Remove `HookError::Continue` and `HookError::Abort` variants
   replacing it with the contents of `HookErrorCause`. Returning
   a `HookError` from a `post_create` hook causes the `Pool::get`
