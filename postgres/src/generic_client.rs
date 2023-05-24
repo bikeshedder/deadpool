@@ -19,7 +19,7 @@ mod private {
 ///
 /// This trait is "sealed", and cannot be implemented outside of this crate.
 #[async_trait]
-pub trait GenericClient: private::Sealed {
+pub trait GenericClient: Sync + private::Sealed {
     /// Like `Client::execute`.
     async fn execute<T>(&self, query: &T, params: &[&(dyn ToSql + Sync)]) -> Result<u64, Error>
     where
