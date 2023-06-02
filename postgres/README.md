@@ -21,8 +21,15 @@ and `tokio_postgres::Transaction`.
 the `tokio1` feature of `async-std` in order to use this crate
 with `async-std`.
 
-## Example
+## Minimal Example
 
+For a minimal example you need the following dependencies in Cargo.toml:
+```
+tokio = {version = "1", features = ["rt-multi-thread","macros"] }
+deadpool-postgres = { version = "0.10" }
+tokio-postgres = "0.7"
+```
+The required configuration can be set by modifying the fields of the configuration:
 ```rust,no_run
 use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod, Runtime};
 use tokio_postgres::NoTls;
@@ -30,15 +37,26 @@ use tokio_postgres::NoTls;
 #[tokio::main]
 async fn main() {
     let mut cfg = Config::new();
-    cfg.dbname = Some("deadpool".to_string());
+    cfg.host = Some("localhost".to_string());
+    cfg.port = Some(5432);
+    cfg.user = Some("postgres".to_string());
+    cfg.dbname = Some("my_database".to_string());
     cfg.manager = Some(ManagerConfig { recycling_method: RecyclingMethod::Fast });
+    println!("Config: {:?}",cfg);
     let pool = cfg.create_pool(Some(Runtime::Tokio1), NoTls).unwrap();
     for i in 1..10 {
-        let mut client = pool.get().await.unwrap();
-        let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
-        let rows = client.query(&stmt, &[&i]).await.unwrap();
-        let value: i32 = rows[0].get(0);
-        assert_eq!(value, i + 1);
+        let mut client = pool.get().await;
+        match client {
+            Ok(cl) => {
+                let stmt = cl.prepare_cached("SELECT 1 + $1").await.unwrap();
+                let rows = cl.query(&stmt, &[&i]).await.unwrap();
+                let value: i32 = rows[0].get(0);
+                assert_eq!(value, i + 1);
+            },
+            Err(e) => {
+                println!("For iteration {} something went wrong: {:?}",i,e);
+            }
+        }
     }
 }
 ```
