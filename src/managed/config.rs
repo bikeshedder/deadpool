@@ -10,10 +10,14 @@ use super::BuildError;
 pub struct PoolConfig {
     /// Maximum size of the [`Pool`].
     ///
+    /// Default: `cpu_count * 4`
+    ///
     /// [`Pool`]: super::Pool
     pub max_size: usize,
 
     /// Timeouts of the [`Pool`].
+    ///
+    /// Default: No timeouts
     ///
     /// [`Pool`]: super::Pool
     #[cfg_attr(feature = "serde", serde(default))]
@@ -22,6 +26,8 @@ pub struct PoolConfig {
     /// Queue mode of the [`Pool`].
     ///
     /// Determines the order of objects being queued and dequeued.
+    ///
+    /// Default: `Fifo`
     ///
     /// [`Pool`]: super::Pool
     #[cfg_attr(feature = "serde", serde(default))]
