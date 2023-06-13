@@ -67,6 +67,7 @@
 ## v0.7.0
 
 * Update `tokio` dependency to version `1`
+* Update `tokio-postgres` dependency to version `0.7`
 * Re-export `deadpool::managed::PoolConfig`
 * Add `StatementCache::remove` method
 
