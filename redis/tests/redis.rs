@@ -115,3 +115,80 @@ async fn test_recycled() {
         );
     }
 }
+
+#[tokio::test]
+async fn test_recycled_with_watch() {
+    use deadpool_redis::redis::{pipe, Value};
+
+    let pool = create_pool();
+
+    const WATCHED_KEY: &str = "deadpool/watched_test_key";
+    const TXN_KEY: &str = "deadpool/txn_test_key";
+
+    // Start transaction on one key and return connection to pool
+    let client_with_watch_id = {
+        let mut conn = pool.get().await.unwrap();
+
+        let client_id = cmd("CLIENT")
+            .arg("ID")
+            .query_async::<_, i64>(&mut conn)
+            .await
+            .unwrap();
+
+        cmd("WATCH")
+            .arg(WATCHED_KEY)
+            .query_async::<_, ()>(&mut conn)
+            .await
+            .unwrap();
+
+        client_id
+    };
+
+    {
+        let mut txn_conn = pool.get().await.unwrap();
+
+        let new_client_id = cmd("CLIENT")
+            .arg("ID")
+            .query_async::<_, i64>(&mut txn_conn)
+            .await
+            .unwrap();
+
+        // Ensure that's the same connection as the one in first transaction
+        assert_eq!(
+            client_with_watch_id, new_client_id,
+            "the redis connection with transaction was not recycled"
+        );
+
+        // Start transaction on another key
+        cmd("WATCH")
+            .arg(TXN_KEY)
+            .query_async::<_, ()>(&mut txn_conn)
+            .await
+            .unwrap();
+
+        {
+            let mut writer_conn = pool.get().await.unwrap();
+
+            // Overwrite key from first transaction from another connection
+            cmd("SET")
+                .arg(WATCHED_KEY)
+                .arg("v")
+                .query_async::<_, ()>(&mut writer_conn)
+                .await
+                .unwrap();
+        }
+
+        // Expect that new transaction is not aborted by irrelevant key
+        let txn_result = pipe()
+            .atomic()
+            .set(TXN_KEY, "foo")
+            .query_async::<_, Value>(&mut txn_conn)
+            .await
+            .unwrap();
+        assert_eq!(
+            txn_result,
+            Value::Bulk(vec![Value::Okay]),
+            "redis transaction in recycled connection aborted",
+        );
+    }
+}
