@@ -12,6 +12,11 @@ pub enum Error {
 
     /// Failed to ping the database.
     Ping(diesel::result::Error),
+
+    /// The transaction manager of a given
+    /// connection is in a broken state. That usually
+    /// means that it contains an open uncommited transaction
+    BrokenTransactionManger,
 }
 
 impl fmt::Display for Error {
@@ -19,6 +24,7 @@ impl fmt::Display for Error {
         match self {
             Self::Connection(e) => write!(f, "Failed to establish connection: {}", e),
             Self::Ping(e) => write!(f, "Failed to ping database: {}", e),
+            Self::BrokenTransactionManger => write!(f, "Broken transaction manager"),
         }
     }
 }
@@ -28,6 +34,7 @@ impl std::error::Error for Error {
         match self {
             Self::Connection(e) => Some(e),
             Self::Ping(e) => Some(e),
+            Self::BrokenTransactionManger => None,
         }
     }
 }
