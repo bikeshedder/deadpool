@@ -4,6 +4,8 @@
 
 - Update `deadpool` dependency to version `0.10`
 * Add `tracing` feature
+* Check for open transactions before recycling connections
+* Allow to configure a custom recycle check function to customize ping queries for different database backends
 
 ## v0.4.1
 

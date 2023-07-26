@@ -22,6 +22,7 @@ use crate::{Connection, Error};
 pub struct Manager<C: diesel::Connection> {
     database_url: String,
     runtime: Runtime,
+    recycle_check: fn(&mut C) -> Result<(), Error>,
     _marker: PhantomData<fn() -> C>,
 }
 
@@ -36,7 +37,10 @@ impl<C: diesel::Connection> fmt::Debug for Manager<C> {
     }
 }
 
-impl<C: diesel::Connection> Manager<C> {
+impl<C> Manager<C>
+where
+    C: diesel::Connection,
+{
     /// Creates a new [`Manager`] which establishes [`Connection`]s to the given
     /// `database_url`.
     #[must_use]
@@ -44,7 +48,40 @@ impl<C: diesel::Connection> Manager<C> {
         Manager {
             database_url: database_url.into(),
             runtime,
+            recycle_check: Self::default_recycle_check,
             _marker: PhantomData,
+        }
+    }
+
+    /// This function set a custom check function for the checks performed
+    /// when a connection is returned to the pool.
+    ///
+    /// It's useful to configure a custom check function here for the following cases:
+    ///
+    /// * Usage of custom backand that requires a different ping query
+    /// * Customizing the ping query
+    /// * Disabling the ping query
+    ///
+    /// By default the `Self::default_recycle_check` function is used. It will check
+    /// whether the transaction manager is considered to be broken. If that's not the
+    /// case it will execute a `SELECT 1` ping query to see whether the connection
+    /// is still alive.
+    pub fn with_custom_recycle_check(mut self, check: fn(&mut C) -> Result<(), Error>) -> Self {
+        self.recycle_check = check;
+        self
+    }
+
+    /// The default recycle check function used by `Manager`
+    pub fn default_recycle_check(conn: &mut C) -> Result<(), Error> {
+        use diesel::connection::TransactionManager;
+
+        if C::TransactionManager::is_broken_transaction_manager(conn) {
+            Err(Error::BrokenTransactionManger)
+        } else {
+            CheckConnectionQuery
+                .execute(conn)
+                .map_err(Error::Ping)
+                .map(|_| ())
         }
     }
 }
@@ -71,18 +108,16 @@ where
                 "Mutex is poisoned. Connection is considered unusable.",
             ));
         }
-        obj.interact(|conn| CheckConnectionQuery.execute(conn).map_err(Error::Ping))
+        obj.interact(self.recycle_check)
             .await
             .map_err(|e| RecycleError::Message(format!("Panic: {:?}", e)))
             .and_then(|r| r.map_err(RecycleError::Backend))
-            .map(|_| ())
     }
 }
 
 // The `CheckConnectionQuery` is a 1:1 copy of the code found in
 // the `diesel::r2d2` module:
 // https://github.com/diesel-rs/diesel/blob/master/diesel/src/r2d2.rs
-
 #[derive(QueryId)]
 struct CheckConnectionQuery;
 
