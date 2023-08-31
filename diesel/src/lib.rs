@@ -43,7 +43,7 @@ pub use deadpool_sync::reexports::*;
 // generic itself.
 pub use deadpool::managed::Pool;
 
-pub use self::{error::Error, manager::Manager};
+pub use self::{error::Error, manager::{Manager, ManagerConfig, RecycleCheckCallback, RecyclingMethod}};
 
 /// Type alias for using [`deadpool::managed::PoolError`] with [`diesel`].
 pub type PoolError = managed::PoolError<Error>;
