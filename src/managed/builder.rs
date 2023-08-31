@@ -78,7 +78,7 @@ where
             config: PoolConfig::default(),
             runtime: None,
             hooks: Hooks::default(),
-            _wrapper: PhantomData::default(),
+            _wrapper: PhantomData,
         }
     }
 

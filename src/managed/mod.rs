@@ -203,7 +203,7 @@ impl<M: Manager> Object<M> {
     pub fn pool(this: &Self) -> Option<Pool<M>> {
         this.pool.upgrade().map(|inner| Pool {
             inner,
-            _wrapper: PhantomData::default(),
+            _wrapper: PhantomData,
         })
     }
 }
@@ -271,7 +271,7 @@ impl<M: Manager, W: From<Object<M>>> Clone for Pool<M, W> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
-            _wrapper: PhantomData::default(),
+            _wrapper: PhantomData,
         }
     }
 }
@@ -299,7 +299,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
                 hooks: builder.hooks,
                 runtime: builder.runtime,
             }),
-            _wrapper: PhantomData::default(),
+            _wrapper: PhantomData,
         }
     }
 
