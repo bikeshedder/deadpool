@@ -15,6 +15,7 @@ use crate::Error;
 /// See the [`deadpool` documentation](deadpool) for usage examples.
 ///
 /// [`Manager`]: managed::Manager
+/// [`Connection`]: crate::Connection
 pub struct Manager<C> {
     database_url: String,
     runtime: Runtime,
@@ -51,6 +52,8 @@ pub enum RecyclingMethod<C> {
 ///
 /// This currently only makes it possible to specify which [`RecyclingMethod`]
 /// should be used when retrieving existing objects from the [`Pool`].
+///
+/// [`Pool`]: crate::Pool
 #[derive(Debug)]
 pub struct ManagerConfig<C> {
     /// Method of how a connection is recycled. See [RecyclingMethod].
@@ -93,13 +96,17 @@ where
 {
     /// Creates a new [`Manager`] which establishes [`Connection`]s to the given
     /// `database_url`.
+    ///
+    /// [`Connection`]: crate::Connection
     #[must_use]
     pub fn new<S: Into<String>>(database_url: S, runtime: Runtime) -> Self {
         Self::from_config(database_url, runtime, Default::default())
     }
 
-        /// Creates a new [`Manager`] which establishes [`Connection`]s to the given
+    /// Creates a new [`Manager`] which establishes [`Connection`]s to the given
     /// `database_url` with a specific [`ManagerConfig`].
+    ///
+    /// [`Connection`]: crate::Connection
     #[must_use]
     pub fn from_config(
         database_url: impl Into<String>,
