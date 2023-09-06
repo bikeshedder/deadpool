@@ -84,12 +84,6 @@ pub enum PoolError<E> {
 
     /// A `post_create` hook reported an error.
     PostCreateHook(HookError<E>),
-
-    /// A `pre_recycle` hook reported an error.
-    PreRecycleHook(HookError<E>),
-
-    /// A `post_recycle` hook reported an error.
-    PostRecycleHook(HookError<E>),
 }
 
 impl<E> From<E> for PoolError<E> {
@@ -113,8 +107,6 @@ impl<E: fmt::Display> fmt::Display for PoolError<E> {
             Self::Closed => write!(f, "Pool has been closed"),
             Self::NoRuntimeSpecified => write!(f, "No runtime specified"),
             Self::PostCreateHook(e) => writeln!(f, "`post_create` hook failed: {}", e),
-            Self::PreRecycleHook(e) => writeln!(f, "`pre_recycle` hook failed: {}", e),
-            Self::PostRecycleHook(e) => writeln!(f, "`post_recycle` hook failed: {}", e),
         }
     }
 }
@@ -124,7 +116,7 @@ impl<E: std::error::Error + 'static> std::error::Error for PoolError<E> {
         match self {
             Self::Timeout(_) | Self::Closed | Self::NoRuntimeSpecified => None,
             Self::Backend(e) => Some(e),
-            Self::PostCreateHook(e) | Self::PreRecycleHook(e) | Self::PostRecycleHook(e) => Some(e),
+            Self::PostCreateHook(e) => Some(e),
         }
     }
 }

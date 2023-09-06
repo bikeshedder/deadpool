@@ -81,7 +81,11 @@ impl managed::Manager for Manager {
         SyncWrapper::new(self.runtime, move || rusqlite::Connection::open(path)).await
     }
 
-    async fn recycle(&self, conn: &mut Self::Type) -> managed::RecycleResult<Self::Error> {
+    async fn recycle(
+        &self,
+        conn: &mut Self::Type,
+        _: &Metrics,
+    ) -> managed::RecycleResult<Self::Error> {
         if conn.is_mutex_poisoned() {
             return Err(RecycleError::Message(
                 "Mutex is poisoned. Connection is considered unusable.".into(),

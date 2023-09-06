@@ -1,8 +1,12 @@
 # Change Log
 
+## v0.11.0
+
+- Update `deadpool` dependency to version `0.10`
+
 ## v0.10.0
 
-* Update `lapin` to `2.0`
+* Update `lapin` dependency to version `2.0`
 
 ## v0.9.1
 

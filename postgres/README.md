@@ -161,6 +161,13 @@ async fn main() {
   coincidence that both crates have the same MAJOR and MINOR version
   number.
 
+  | deadpool-postgres | tokio-postgres |
+  | ----------------- | -------------- |
+  | 0.7 – 0.10        | 0.7            |
+  | 0.6               | 0.6            |
+  | 0.4 – 0.5         | 0.5            |
+  | 0.2 – 0.3         | 0.5.0-alpha    |
+
 - **How can I clear the statement cache?**
 
   You can call `pool.manager().statement_cache.clear()` to clear all

@@ -29,9 +29,10 @@ type PgPool = deadpool_r2d2::Pool<PgManager>;
 
 fn create_pool(max_size: usize) -> PgPool {
     let mut pg_config = r2d2_postgres::postgres::Config::new();
-    pg_config.host_path("/run/postgresql");
-    pg_config.user(&env::var("USER").unwrap());
-    pg_config.dbname("deadpool");
+    pg_config.host(&env::var("PG__HOST").unwrap());
+    pg_config.user(&env::var("PG__USER").unwrap());
+    pg_config.password(&env::var("PG__PASSWORD").unwrap());
+    pg_config.dbname(&env::var("PG__DBNAME").unwrap());
     let r2d2_manager =
         r2d2_postgres::PostgresConnectionManager::new(pg_config, r2d2_postgres::postgres::NoTls);
     let manager = PgManager::new(r2d2_manager, Runtime::Tokio1);

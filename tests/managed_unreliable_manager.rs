@@ -8,7 +8,7 @@ use std::{
 use async_trait::async_trait;
 use tokio::time;
 
-use deadpool::managed::{self, RecycleError, RecycleResult};
+use deadpool::managed::{self, Metrics, RecycleError, RecycleResult};
 
 type Pool = managed::Pool<Manager>;
 
@@ -30,7 +30,7 @@ impl managed::Manager for Manager {
             Ok(())
         }
     }
-    async fn recycle(&self, _conn: &mut ()) -> RecycleResult<()> {
+    async fn recycle(&self, _conn: &mut (), _: &Metrics) -> RecycleResult<()> {
         if self.recycle_fail {
             Err(RecycleError::Backend(()))
         } else {
