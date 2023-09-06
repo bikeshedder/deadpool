@@ -12,6 +12,7 @@
   operation to fail while returning it from a `pre_recycle` or
   `post_recycle` hook the operation continues.
 - Add `metrics` argument to `Manager::recycle` method.
+- Remove `managed::sync` module.
 
 ## v0.9.5
 

@@ -58,12 +58,6 @@ mod hooks;
 mod metrics;
 pub mod reexports;
 
-#[deprecated(
-    since = "0.9.1",
-    note = "This module has been deprecated in favor of the dedicated `deadpool-sync` utility crate."
-)]
-pub mod sync;
-
 use std::{
     collections::VecDeque,
     fmt,
