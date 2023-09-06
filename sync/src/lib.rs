@@ -29,7 +29,7 @@ use std::{
     sync::{Arc, Mutex, MutexGuard, PoisonError, TryLockError},
 };
 
-use deadpool::{Runtime, SpawnBlockingError};
+use deadpool_runtime::{Runtime, SpawnBlockingError};
 
 /// Possible errors returned when [`SyncWrapper::interact()`] fails.
 #[derive(Debug)]
