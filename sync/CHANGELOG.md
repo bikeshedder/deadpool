@@ -1,8 +1,9 @@
 ## v0.1.2 (unreleased)
 
 * Add `tracing` feature to `README`
+* Fix MSRV `1.56` (This was the reason for yanking the `0.1.1` release)
 
-## v0.1.1
+## v0.1.1 (yanked)
 
 * Replace `deadpool` dependency by `deadpool-runtime`. This is a
   non-breaking change as the `Runtime` and `SpawnBlockingError`
