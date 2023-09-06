@@ -25,7 +25,7 @@ deadpool = { path = "../", version = "0.10.0", default-features = false, feature
     "managed",
 ] }
 deadpool-sync = { path = "../sync", version = "0.1.1" }
-rusqlite = "0.28"
+rusqlite = "0.29"
 serde_1 = { package = "serde", version = "1.0", features = [
     "derive",
 ], optional = true }
