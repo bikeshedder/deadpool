@@ -23,6 +23,13 @@ with `async-std`.
 
 ## Example
 
+The following example assumes a PostgreSQL reachable via an unix domain
+socket and peer auth enabled for the local user in
+[pg\_hba.conf](https://www.postgresql.org/docs/current/auth-pg-hba-conf.html).
+If you're running Windows you probably want to specify the `host`, `user`
+and `password` in the connection config or use an alternative
+[authentication method](https://www.postgresql.org/docs/current/auth-methods.html).
+
 ```rust,no_run
 use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod, Runtime};
 use tokio_postgres::NoTls;
@@ -163,7 +170,7 @@ async fn main() {
 
   | deadpool-postgres | tokio-postgres |
   | ----------------- | -------------- |
-  | 0.7 – 0.10        | 0.7            |
+  | 0.7 – 0.11        | 0.7            |
   | 0.6               | 0.6            |
   | 0.4 – 0.5         | 0.5            |
   | 0.2 – 0.3         | 0.5.0-alpha    |
