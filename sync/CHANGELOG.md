@@ -3,6 +3,7 @@
 * Replace `deadpool` dependency by `deadpool-runtime`. This is a
   non-breaking change as the `Runtime` and `SpawnBlockingError`
   types were a re-export from `deadpool-runtime` anyways.
+* Add `tracing` feature
 
 ## v0.1.0
 

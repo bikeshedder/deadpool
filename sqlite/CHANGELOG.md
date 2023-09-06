@@ -2,6 +2,7 @@
 
 * Update `deadpool` dependency to version `0.10`
 * Update `rusqlite` dependency to version `0.29`
+* Add `tracing` feature
 
 ## v0.5.0
 

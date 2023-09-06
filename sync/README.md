@@ -11,6 +11,12 @@ support async and need to be run inside a thread.
 normally should not use this directly and use some provided
 reexports by the crates using it.
 
+## Features
+
+| Feature | Description | Extra dependencies | Default |
+| ------- | ----------- | ------------------ | ------- |
+| `tracing` | Enable support for [tracing](https://github.com/tokio-rs/tracing) by propagating Spans in the `interact()` calls. Enable this if you use the `tracing` crate and you want to get useful traces from within `interact()` calls. | `tracing` | no |
+
 ## License
 
 Licensed under either of

@@ -3,6 +3,7 @@
 ## v0.5.0 (unreleased)
 
 - Update `deadpool` dependency to version `0.10`
+* Add `tracing` feature
 
 ## v0.4.1
 
