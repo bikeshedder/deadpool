@@ -313,25 +313,6 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         self.timeout_get(&self.timeouts()).await
     }
 
-    /// Retrieves an [`Object`] from this [`Pool`] and doesn't wait if there is
-    /// currently no [`Object`] available and the maximum [`Pool`] size has
-    /// been reached.
-    ///
-    /// # Errors
-    ///
-    /// See [`PoolError`] for details.
-    #[deprecated(
-        since = "0.9.3",
-        note = "The name of this method is highly misleading. Please use timeout_get instead. e.g.\n`pool.timeout_get(&Timeouts { wait: Some(Duration::ZERO), ..pool.timeouts() })`"
-    )]
-    pub async fn try_get(&self) -> Result<W, PoolError<M::Error>> {
-        self.timeout_get(&Timeouts {
-            wait: Some(Duration::ZERO),
-            ..self.timeouts()
-        })
-        .await
-    }
-
     /// Retrieves an [`Object`] from this [`Pool`] using a different `timeout`
     /// than the configured one.
     ///

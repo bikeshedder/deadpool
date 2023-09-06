@@ -12,7 +12,8 @@
   operation to fail while returning it from a `pre_recycle` or
   `post_recycle` hook the operation continues.
 - Add `metrics` argument to `Manager::recycle` method.
-- Remove `managed::sync` module.
+- Remove deprecated `managed::sync` module.
+- Remove deprecated `managed::Pool::try_get` method.
 
 ## v0.9.5
 
