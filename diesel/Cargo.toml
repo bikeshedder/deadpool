@@ -1,6 +1,6 @@
 [package]
 name = "deadpool-diesel"
-version = "0.4.1"
+version = "0.5.0"
 edition = "2018"
 resolver = "2"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
@@ -24,8 +24,10 @@ rt_async-std_1 = ["deadpool/rt_async-std_1"]
 serde = ["deadpool/serde"]
 
 [dependencies]
-deadpool = { path = "../", version = "0.9.1", default-features = false, features = ["managed"] }
-deadpool-sync = { path = "../sync", version = "0.1.0" }
+deadpool = { path = "../", version = "0.10.0", default-features = false, features = [
+    "managed",
+] }
+deadpool-sync = { path = "../sync", version = "0.1.1" }
 diesel = { version = "2.0.0", default-features = false }
 
 [dev-dependencies]

@@ -9,6 +9,7 @@
   `Connection` object is now tied to the lifetime of the `ClientWrapper`
   and dropped as soon as possible. The disconnect is not graceful and
   you might see error messages in the database log.
+- Update `deadpool` dependency to version `0.10`
 
 ## v0.10.5
 

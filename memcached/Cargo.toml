@@ -1,11 +1,11 @@
 [package]
 name = "deadpool-memcached"
-version = "0.1.2"
+version = "0.2.0"
 resolver = "2"
 edition = "2018"
 authors = [
     "Toby Lawrence <toby@nuclearfurnace.com>",
-    "Michael P. Jung <michael.jung@terreon.de>"
+    "Michael P. Jung <michael.jung@terreon.de>",
 ]
 description = "Dead simple async pool for memcached"
 keywords = ["async", "memcached", "pool"]
@@ -24,6 +24,8 @@ tcp = ["async-memcached/tcp"]
 [dependencies]
 async-memcached = { version = "0.1", default-features = false }
 async-trait = "0.1"
-deadpool = { path = "../", version = "0.9.0", default-features = false, features = ["managed"] }
+deadpool = { path = "../", version = "0.10.0", default-features = false, features = [
+    "managed",
+] }
 futures = { version = "0.3", features = ["compat"] }
 log = "0.4"

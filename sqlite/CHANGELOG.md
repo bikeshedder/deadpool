@@ -1,3 +1,7 @@
+## v0.6.0 (unreleased)
+
+* Update `deadpool` dependency to version `0.10`
+
 ## v0.5.0
 
 - Update `rusqlite` dependency to version `0.28`
