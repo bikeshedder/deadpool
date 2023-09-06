@@ -10,14 +10,28 @@ use super::BuildError;
 pub struct PoolConfig {
     /// Maximum size of the [`Pool`].
     ///
+    /// Default: `cpu_count * 4`
+    ///
     /// [`Pool`]: super::Pool
     pub max_size: usize,
 
     /// Timeouts of the [`Pool`].
     ///
+    /// Default: No timeouts
+    ///
     /// [`Pool`]: super::Pool
     #[cfg_attr(feature = "serde", serde(default))]
     pub timeouts: Timeouts,
+
+    /// Queue mode of the [`Pool`].
+    ///
+    /// Determines the order of objects being queued and dequeued.
+    ///
+    /// Default: `Fifo`
+    ///
+    /// [`Pool`]: super::Pool
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub queue_mode: QueueMode,
 }
 
 impl PoolConfig {
@@ -28,6 +42,7 @@ impl PoolConfig {
         Self {
             max_size,
             timeouts: Timeouts::default(),
+            queue_mode: QueueMode::default(),
         }
     }
 }
@@ -88,20 +103,38 @@ impl Default for Timeouts {
     }
 }
 
+/// Mode for dequeuing [`Object`]s from a [`Pool`].
+///
+/// [`Object`]: super::Object
+/// [`Pool`]: super::Pool
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+pub enum QueueMode {
+    /// Dequeue the object that was least recently added (first in first out).
+    Fifo,
+    /// Dequeue the object that was most recently added (last in first out).
+    Lifo,
+}
+
+impl Default for QueueMode {
+    fn default() -> Self {
+        Self::Fifo
+    }
+}
+
 /// This error is used when building pools via the config `create_pool`
 /// methods.
 #[derive(Debug)]
-pub enum CreatePoolError<C, B> {
+pub enum CreatePoolError<C> {
     /// This variant is used for configuration errors
     Config(C),
     /// This variant is used for errors while building the pool
-    Build(BuildError<B>),
+    Build(BuildError),
 }
 
-impl<C, B> fmt::Display for CreatePoolError<C, B>
+impl<C> fmt::Display for CreatePoolError<C>
 where
     C: fmt::Display,
-    B: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -111,9 +144,4 @@ where
     }
 }
 
-impl<C, B> std::error::Error for CreatePoolError<C, B>
-where
-    C: std::error::Error,
-    B: std::error::Error,
-{
-}
+impl<C> std::error::Error for CreatePoolError<C> where C: std::error::Error {}

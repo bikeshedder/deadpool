@@ -5,7 +5,7 @@ use std::{convert::Infallible, time::Duration};
 use async_trait::async_trait;
 use tokio::time;
 
-use deadpool::managed::{self, Object, PoolError, RecycleResult, Timeouts};
+use deadpool::managed::{self, Metrics, Object, PoolError, RecycleResult, Timeouts};
 
 type Pool = managed::Pool<Manager>;
 
@@ -20,7 +20,7 @@ impl managed::Manager for Manager {
         Ok(0)
     }
 
-    async fn recycle(&self, _conn: &mut usize) -> RecycleResult<Infallible> {
+    async fn recycle(&self, _conn: &mut usize, _: &Metrics) -> RecycleResult<Infallible> {
         Ok(())
     }
 }
@@ -33,36 +33,43 @@ async fn basic() {
     let status = pool.status();
     assert_eq!(status.size, 0);
     assert_eq!(status.available, 0);
+    assert_eq!(status.waiting, 0);
 
     let obj0 = pool.get().await.unwrap();
     let status = pool.status();
     assert_eq!(status.size, 1);
     assert_eq!(status.available, 0);
+    assert_eq!(status.waiting, 0);
 
     let obj1 = pool.get().await.unwrap();
     let status = pool.status();
     assert_eq!(status.size, 2);
     assert_eq!(status.available, 0);
+    assert_eq!(status.waiting, 0);
 
     let obj2 = pool.get().await.unwrap();
     let status = pool.status();
     assert_eq!(status.size, 3);
     assert_eq!(status.available, 0);
+    assert_eq!(status.waiting, 0);
 
     drop(obj0);
     let status = pool.status();
     assert_eq!(status.size, 3);
     assert_eq!(status.available, 1);
+    assert_eq!(status.waiting, 0);
 
     drop(obj1);
     let status = pool.status();
     assert_eq!(status.size, 3);
     assert_eq!(status.available, 2);
+    assert_eq!(status.waiting, 0);
 
     drop(obj2);
     let status = pool.status();
     assert_eq!(status.size, 3);
     assert_eq!(status.available, 3);
+    assert_eq!(status.waiting, 0);
 }
 
 #[tokio::test]
@@ -78,11 +85,13 @@ async fn closing() {
     };
 
     tokio::task::yield_now().await;
-    assert_eq!(pool.status().available, -1);
+    assert_eq!(pool.status().available, 0);
+    assert_eq!(pool.status().waiting, 1);
 
     pool.close();
     tokio::task::yield_now().await;
     assert_eq!(pool.status().available, 0);
+    assert_eq!(pool.status().waiting, 0);
 
     assert!(matches!(join_handle.await.unwrap(), Err(PoolError::Closed)));
     assert!(matches!(pool.get().await, Err(PoolError::Closed)));
@@ -98,6 +107,7 @@ async fn closing() {
     drop(obj);
     tokio::task::yield_now().await;
     assert_eq!(pool.status().available, 0);
+    assert_eq!(pool.status().waiting, 0);
 }
 
 #[tokio::test]
@@ -136,6 +146,7 @@ async fn concurrent() {
     let status = pool.status();
     assert_eq!(status.size, 3);
     assert_eq!(status.available, 3);
+    assert_eq!(status.waiting, 0);
 
     let values = [
         pool.get().await.unwrap(),
@@ -156,11 +167,13 @@ async fn object_take() {
     let status = pool.status();
     assert_eq!(status.size, 2);
     assert_eq!(status.available, 0);
+    assert_eq!(status.waiting, 0);
 
     let _ = Object::take(obj0);
     let status = pool.status();
     assert_eq!(status.size, 1);
     assert_eq!(status.available, 0);
+    assert_eq!(status.waiting, 0);
 
     let _ = Object::take(obj1);
     let status = pool.status();
@@ -172,12 +185,14 @@ async fn object_take() {
     let status = pool.status();
     assert_eq!(status.size, 2);
     assert_eq!(status.available, 0);
+    assert_eq!(status.waiting, 0);
 
     drop(obj0);
     drop(obj1);
     let status = pool.status();
     assert_eq!(status.size, 2);
     assert_eq!(status.available, 2);
+    assert_eq!(status.waiting, 0);
 }
 
 #[tokio::test]
@@ -242,23 +257,28 @@ async fn resize_pool_grow_concurrent() {
     tokio::task::yield_now().await;
     assert_eq!(pool.status().max_size, 0);
     assert_eq!(pool.status().size, 0);
-    assert_eq!(pool.status().available, -1);
+    assert_eq!(pool.status().available, 0);
+    assert_eq!(pool.status().waiting, 1);
     pool.resize(1);
     assert_eq!(pool.status().max_size, 1);
     assert_eq!(pool.status().size, 0);
-    assert_eq!(pool.status().available, -1);
+    assert_eq!(pool.status().available, 0);
+    assert_eq!(pool.status().waiting, 1);
     tokio::task::yield_now().await;
     assert_eq!(pool.status().max_size, 1);
     assert_eq!(pool.status().size, 1);
     assert_eq!(pool.status().available, 0);
+    assert_eq!(pool.status().waiting, 0);
     let obj0 = join_handle.await.unwrap().unwrap();
     assert_eq!(pool.status().max_size, 1);
     assert_eq!(pool.status().size, 1);
     assert_eq!(pool.status().available, 0);
+    assert_eq!(pool.status().waiting, 0);
     drop(obj0);
     assert_eq!(pool.status().max_size, 1);
     assert_eq!(pool.status().size, 1);
     assert_eq!(pool.status().available, 1);
+    assert_eq!(pool.status().waiting, 0);
 }
 
 #[tokio::test]

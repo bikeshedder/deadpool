@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use deadpool::managed::{Hook, HookError, HookErrorCause, Manager, Pool, RecycleResult};
+use deadpool::managed::{Hook, HookError, Manager, Metrics, Pool, RecycleResult};
 use itertools::Itertools;
 use tokio::time::{sleep, timeout};
 
@@ -63,7 +63,7 @@ fn pools(max_size: usize) -> impl Iterator<Item = Pool<GatedManager>> {
                         .post_create
                         .open()
                         .await
-                        .map_err(|_| HookError::Abort(HookErrorCause::StaticMessage("Fail")))?;
+                        .map_err(|_| HookError::StaticMessage("Fail"))?;
                     Ok(())
                 })
             }))
@@ -73,7 +73,7 @@ fn pools(max_size: usize) -> impl Iterator<Item = Pool<GatedManager>> {
                         .pre_recycle
                         .open()
                         .await
-                        .map_err(|_| HookError::Continue(None))?;
+                        .map_err(|_| HookError::StaticMessage("pre_recycle gate set to error"))?;
                     Ok(())
                 })
             }))
@@ -83,7 +83,7 @@ fn pools(max_size: usize) -> impl Iterator<Item = Pool<GatedManager>> {
                         .post_recycle
                         .open()
                         .await
-                        .map_err(|_| HookError::Continue(None))?;
+                        .map_err(|_| HookError::StaticMessage("post_recycle gate set to error"))?;
                     Ok(())
                 })
             }))
@@ -104,7 +104,7 @@ impl Manager for GatedManager {
         self.gates.create.open().await?;
         Ok(())
     }
-    async fn recycle(&self, _conn: &mut Self::Type) -> RecycleResult<Self::Error> {
+    async fn recycle(&self, _conn: &mut Self::Type, _: &Metrics) -> RecycleResult<Self::Error> {
         self.gates.recycle.open().await?;
         Ok(())
     }
@@ -156,7 +156,7 @@ async fn test_cancellations() {
             pool.manager().gates
         );
         assert!(
-            status.available <= status.max_size as isize,
+            status.available <= status.max_size,
             "available({}) > max_size({}), gates: {:?}",
             status.available,
             status.max_size,

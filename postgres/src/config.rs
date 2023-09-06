@@ -262,10 +262,8 @@ impl Config {
 
 /// Possible methods of how a connection is recycled.
 ///
-/// **Attention:** The current default is [`Verified`] but will be changed to
-/// [`Fast`] in the next minor release of [`deadpool-postgres`]. Please, make
-/// sure to explicitly state this if you want to keep using the [`Verified`]
-/// recycling method.
+/// The default is [`Fast`] which does not check the connection health or
+/// perform any clean-up queries.
 ///
 /// [`Fast`]: RecyclingMethod::Fast
 /// [`Verified`]: RecyclingMethod::Verified

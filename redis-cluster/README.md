@@ -17,14 +17,17 @@ manager for [`redis-cluster`](https://crates.io/crates/redis_cluster_async).
 ## Example
 
 ```rust
+use std::env;
 use deadpool_redis_cluster::{redis::{cmd, FromRedisValue}, Config, Runtime};
 
 #[tokio::main]
 async fn main() {
-    let mut cfg = Config::from_urls(vec![
-        "redis://127.0.0.1:7000".to_string(),
-        "redis://127.0.0.1:7001".to_string(),
-    ]);
+    let redis_urls = env::var("REDIS_CLUSTER__URLS")
+        .unwrap()
+        .split(',')
+        .map(String::from)
+        .collect::<Vec<_>>();
+    let mut cfg = Config::from_urls(redis_urls);
     let pool = cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
     {
         let mut conn = pool.get().await.unwrap();

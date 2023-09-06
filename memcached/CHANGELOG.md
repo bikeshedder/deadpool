@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update deadpool to version 0.9
+- Update `deadpool` dependency to version `0.10`
 
 ## [0.1.2] - 2020-09-13
 

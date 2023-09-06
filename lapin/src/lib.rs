@@ -89,7 +89,7 @@ impl managed::Manager for Manager {
         Ok(conn)
     }
 
-    async fn recycle(&self, conn: &mut lapin::Connection) -> RecycleResult {
+    async fn recycle(&self, conn: &mut lapin::Connection, _: &Metrics) -> RecycleResult {
         match conn.status().state() {
             lapin::ConnectionState::Connected => Ok(()),
             other_state => Err(RecycleError::Message(format!(

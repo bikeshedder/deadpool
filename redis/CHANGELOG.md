@@ -1,5 +1,13 @@
 # Change Log
 
+## v0.13.0 (unreleased)
+
+* Update `deadpool` dependency to version `0.10`
+
+## v0.12.0
+
+- Update `redis` dependency to version `0.23`
+
 ## v0.11.1
 
 - Export missing config structures:

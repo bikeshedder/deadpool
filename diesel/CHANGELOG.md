@@ -1,12 +1,16 @@
 # Change Log
 
+## v0.5.0 (unreleased)
+
+- Update `deadpool` dependency to version `0.10`
+
 ## v0.4.1
 
 * Fix error handling when recycling connections
 
 ## v0.4.0
 
-* Update Diesel to 2.0.0
+* Update `diesel` dependency to version `2.0.0`
 
 ## v0.3.1
 

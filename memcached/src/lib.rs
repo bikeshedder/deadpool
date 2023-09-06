@@ -41,7 +41,7 @@ impl deadpool::managed::Manager for Manager {
         Client::new(&self.addr).await
     }
 
-    async fn recycle(&self, conn: &mut Client) -> RecycleResult {
+    async fn recycle(&self, conn: &mut Client, _: &Metrics) -> RecycleResult {
         match conn.version().await {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into()),

@@ -9,6 +9,7 @@
   `Connection` object is now tied to the lifetime of the `ClientWrapper`
   and dropped as soon as possible. The disconnect is not graceful and
   you might see error messages in the database log.
+- Update `deadpool` dependency to version `0.10`
 
 ## v0.10.5
 
@@ -67,6 +68,7 @@
 ## v0.7.0
 
 * Update `tokio` dependency to version `1`
+* Update `tokio-postgres` dependency to version `0.7`
 * Re-export `deadpool::managed::PoolConfig`
 * Add `StatementCache::remove` method
 

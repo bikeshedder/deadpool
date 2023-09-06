@@ -17,11 +17,13 @@ manager for [`redis`](https://crates.io/crates/redis).
 ## Example
 
 ```rust
+use std::env;
+
 use deadpool_redis::{redis::{cmd, FromRedisValue}, Config, Runtime};
 
 #[tokio::main]
 async fn main() {
-    let mut cfg = Config::from_url("redis://127.0.0.1/");
+    let mut cfg = Config::from_url(env::var("REDIS__URL").unwrap());
     let pool = cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
     {
         let mut conn = pool.get().await.unwrap();
