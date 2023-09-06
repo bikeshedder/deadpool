@@ -19,6 +19,7 @@ default = ["rt_tokio_1"]
 rt_tokio_1 = ["deadpool/rt_tokio_1"]
 rt_async-std_1 = ["deadpool/rt_async-std_1"]
 serde = ["deadpool/serde", "serde_1"]
+tracing = ["deadpool-sync/tracing"]
 
 [dependencies]
 deadpool = { path = "../", version = "0.10.0", default-features = false, features = [
