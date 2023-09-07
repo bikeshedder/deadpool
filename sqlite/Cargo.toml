@@ -1,7 +1,7 @@
 [package]
 name = "deadpool-sqlite"
 version = "0.6.0"
-edition = "2018"
+edition = "2021"
 resolver = "2"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for rusqlite"

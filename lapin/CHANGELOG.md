@@ -2,7 +2,8 @@
 
 ## v0.11.0
 
-- Update `deadpool` dependency to version `0.10`
+* Update `deadpool` dependency to version `0.10`
+* Increase MSRV to `1.59`
 
 ## v0.10.0
 
