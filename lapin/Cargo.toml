@@ -32,6 +32,12 @@ serde_1 = { package = "serde", version = "1.0.103", features = [
 ], optional = true }
 tokio-executor-trait = { version = "2.1.0", optional = true }
 
+# Not really used, added to survive `minimal-versions` check only.
+# TODO: Remove once new `async-std` version above 1.12.0 is released,
+#       as it's already fixed in their `main` branch. This, of course,
+#       will require bumping minimal version of `async-std` across the workspace.
+async-global-executor = { version = "2.3.1", optional = true, default-features = false }
+
 [dev-dependencies]
 config = { version = "0.13", features = ["json"] }
 dotenv = "0.15"
