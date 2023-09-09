@@ -27,14 +27,12 @@ pub struct Manager<C> {
 pub type RecycleCheckCallback<C> = dyn Fn(&mut C) -> Result<(), Error> + Send + Sync;
 
 /// Possible methods of how a connection is recycled.
-#[derive(Default)]
 pub enum RecyclingMethod<C> {
     /// Only check for open transactions when recycling existing connections
     /// Unless you have special needs this is a safe choice.
     ///
     /// If the database connection is closed you will recieve an error on the first place
     /// you actually try to use the connection
-    #[default]
     Fast,
     /// In addition to checking for open transactions a test query is executed
     ///
@@ -46,6 +44,15 @@ pub enum RecyclingMethod<C> {
     ///
     /// The connection is only recycled if the callback returns `Ok(())`
     CustomFunction(Box<RecycleCheckCallback<C>>),
+}
+
+// We use manual implementation here instead of `#[derive(Default)]` as of MSRV 1.63, it generates
+// redundant `C: Default` bound, which imposes problems in the code.
+// TODO: Use `#[derive(Default)]` with `#[default]` attribute once MSRV is bumped to 1.66 or above.
+impl<C> Default for RecyclingMethod<C> {
+    fn default() -> Self {
+        Self::Fast
+    }
 }
 
 /// Configuration object for a Manager.
