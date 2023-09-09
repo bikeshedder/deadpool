@@ -73,10 +73,6 @@ use std::{
 
 use async_trait::async_trait;
 use deadpool_runtime::Runtime;
-// retain_mut is included since Rust 1.61
-// deadpool has a MSRV of 1.54
-#[allow(deprecated)]
-use retain_mut::RetainMut;
 use tokio::sync::{Semaphore, TryAcquireError};
 
 pub use crate::Status;
@@ -520,8 +516,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     pub fn retain(&self, f: impl Fn(&M::Type, Metrics) -> bool) {
         let mut guard = self.inner.slots.lock().unwrap();
         let len_before = guard.vec.len();
-        #[allow(deprecated)]
-        RetainMut::retain_mut(&mut guard.vec, |obj| {
+        guard.vec.retain_mut(|obj| {
             if f(&obj.obj, obj.metrics) {
                 true
             } else {

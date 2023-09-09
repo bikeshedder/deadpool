@@ -3,14 +3,13 @@ name = "deadpool"
 version = "0.10.0"
 edition = "2018"
 resolver = "2"
+rust-version = "1.63"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool"
 keywords = ["async", "database", "pool"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/bikeshedder/deadpool"
 readme = "README.md"
-
-rust-version = "1.54.0"
 
 [package.metadata.docs.rs]
 all-features = true
@@ -25,7 +24,6 @@ rt_async-std_1 = ["deadpool-runtime/async-std_1"]
 
 [dependencies]
 num_cpus = "1.11.1"
-retain_mut = "0.1.6"
 # `managed` feature
 async-trait = { version = "0.1.17", optional = true }
 # `serde` feature

@@ -21,6 +21,8 @@ jobs:
       fail-fast: false
       matrix:
         crate:
+          - deadpool-runtime
+          - deadpool-sync
           - deadpool
           - deadpool-diesel
           - deadpool-lapin
@@ -29,9 +31,7 @@ jobs:
           - deadpool-r2d2
           - deadpool-redis
           - deadpool-redis-cluster
-          - deadpool-runtime
           - deadpool-sqlite
-          - deadpool-sync
           # Examples
           - example-postgres-actix-web
           - example-postgres-benchmark
@@ -133,13 +133,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { crate: deadpool, msrv: '1.56.0' }
-          - { crate: deadpool-diesel, msrv: '1.56.0' }
-          - { crate: deadpool-lapin, msrv: '1.59.0' }
-          - { crate: deadpool-postgres, msrv: '1.56.0' }
-          - { crate: deadpool-redis, msrv: '1.59.0' }
-          - { crate: deadpool-redis-cluster, msrv: '1.59.0' }
-          - { crate: deadpool-sqlite, msrv: '1.56.0' }
+          - { crate: deadpool-runtime, msrv: '1.63.0' }
+          - { crate: deadpool-sync, msrv: '1.63.0' }
+          - { crate: deadpool, msrv: '1.63.0' }
+          - { crate: deadpool-diesel, msrv: '1.63.0' }
+          - { crate: deadpool-lapin, msrv: '1.63.0' }
+          - { crate: deadpool-postgres, msrv: '1.63.0' }
+          - { crate: deadpool-redis, msrv: '1.63.0' }
+          - { crate: deadpool-redis-cluster, msrv: '1.63.0' }
+          - { crate: deadpool-sqlite, msrv: '1.63.0' }
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -162,6 +164,8 @@ jobs:
       fail-fast: false
       matrix:
         crate:
+          - deadpool-runtime
+          - deadpool-sync
           - deadpool
           - deadpool-diesel
           - deadpool-lapin
@@ -231,6 +235,8 @@ jobs:
     strategy:
       matrix:
         crate:
+          - deadpool-runtime
+          - deadpool-sync
           - deadpool
           - deadpool-diesel
           - deadpool-lapin

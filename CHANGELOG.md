@@ -14,6 +14,7 @@
 - Add `metrics` argument to `Manager::recycle` method.
 - Remove deprecated `managed::sync` module.
 - Remove deprecated `managed::Pool::try_get` method.
+- Bump up MSRV to `1.63` to match the one of `tokio`.
 
 ## v0.9.5
 

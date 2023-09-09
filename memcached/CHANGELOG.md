@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Update `deadpool` dependency to version `0.10`
+- Bump up MSRV to `1.63` to match the one of `tokio`
 
 ## [0.1.2] - 2020-09-13
 

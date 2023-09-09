@@ -3,6 +3,7 @@ name = "deadpool-redis"
 version = "0.13.0"
 edition = "2018"
 resolver = "2"
+rust-version = "1.63"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for redis"
 keywords = ["async", "redis", "pool"]

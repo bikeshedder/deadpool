@@ -3,6 +3,7 @@ name = "deadpool-lapin"
 version = "0.11.0"
 edition = "2018"
 resolver = "2"
+rust-version = "1.63"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for lapin"
 keywords = ["async", "lapin", "pool", "amqp", "rabbitmq"]
