@@ -3,6 +3,7 @@ name = "deadpool-redis-cluster"
 version = "0.2.0"
 edition = "2021"
 resolver = "2"
+rust-version = "1.63"
 authors = [
     "Michael P. Jung <michael.jung@terreon.de>",
     "Subeom Choi <subumm1@gmail.com>",

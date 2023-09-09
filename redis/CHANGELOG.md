@@ -3,6 +3,7 @@
 ## v0.13.0 (unreleased)
 
 * Update `deadpool` dependency to version `0.10`
+* Bump up MSRV to `1.63` to match the one of `tokio`
 
 ## v0.12.0
 

@@ -3,6 +3,7 @@
 * Update `deadpool` dependency to version `0.10`
 * Update `rusqlite` dependency to version `0.29`
 * Add `tracing` feature
+* Bump up MSRV to `1.63` to match the one of `tokio`
 
 ## v0.5.0
 
