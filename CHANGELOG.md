@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.10.0 (unreleased)
+## v0.10.0
 
 - Remove unreachable enum variant `BuildError::Backend`
 - Split `Status.available` into `available` and `waiting`.
