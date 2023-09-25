@@ -96,6 +96,8 @@ impl Config {
             }
             #[cfg(feature = "rt_async-std_1")]
             Some(Runtime::AsyncStd1) => conn_props.with_executor(async_executor_trait::AsyncStd),
+            #[allow(unreachable_patterns)]
+            _ => unreachable!(),
         };
 
         let mut builder = Pool::builder(Manager::new(url, conn_props)).config(pool_config);
