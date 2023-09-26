@@ -3,9 +3,9 @@
 use deadpool_redis::Runtime;
 use futures::FutureExt;
 use redis::cmd;
-use serde_1::Deserialize;
+use serde_1::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 #[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
@@ -14,10 +14,12 @@ struct Config {
 
 impl Config {
     pub fn from_env() -> Self {
-        let mut cfg = config::Config::default();
-        cfg.merge(config::Environment::new().separator("__"))
-            .unwrap();
-        cfg.try_into().unwrap()
+        config::Config::builder()
+            .add_source(config::Environment::default().separator("__"))
+            .build()
+            .unwrap()
+            .try_deserialize()
+            .unwrap()
     }
 }
 
@@ -49,7 +51,9 @@ async fn test_high_level_commands() {
     use deadpool_redis::redis::AsyncCommands;
     let pool = create_pool();
     let mut conn = pool.get().await.unwrap();
-    let _: () = conn.set("deadpool/hlc_test_key", 42).await.unwrap();
+    conn.set::<_, _, ()>("deadpool/hlc_test_key", 42)
+        .await
+        .unwrap();
     let value: isize = conn.get("deadpool/hlc_test_key").await.unwrap();
     assert_eq!(value, 42);
 }
@@ -57,6 +61,7 @@ async fn test_high_level_commands() {
 #[tokio::test]
 async fn test_aborted_command() {
     let pool = create_pool();
+
     {
         let mut conn = pool.get().await.unwrap();
         // Poll the future once. This does execute the query but does not
@@ -78,5 +83,112 @@ async fn test_aborted_command() {
             .await
             .unwrap();
         assert_eq!(value, "right");
+    }
+}
+
+#[tokio::test]
+async fn test_recycled() {
+    let pool = create_pool();
+
+    let client_id = {
+        let mut conn = pool.get().await.unwrap();
+
+        cmd("CLIENT")
+            .arg("ID")
+            .query_async::<_, i64>(&mut conn)
+            .await
+            .unwrap()
+    };
+
+    {
+        let mut conn = pool.get().await.unwrap();
+
+        let new_client_id = cmd("CLIENT")
+            .arg("ID")
+            .query_async::<_, i64>(&mut conn)
+            .await
+            .unwrap();
+
+        assert_eq!(
+            client_id, new_client_id,
+            "the redis connection was not recycled"
+        );
+    }
+}
+
+#[tokio::test]
+async fn test_recycled_with_watch() {
+    use deadpool_redis::redis::{pipe, Value};
+
+    let pool = create_pool();
+
+    const WATCHED_KEY: &str = "deadpool/watched_test_key";
+    const TXN_KEY: &str = "deadpool/txn_test_key";
+
+    // Start transaction on one key and return connection to pool
+    let client_with_watch_id = {
+        let mut conn = pool.get().await.unwrap();
+
+        let client_id = cmd("CLIENT")
+            .arg("ID")
+            .query_async::<_, i64>(&mut conn)
+            .await
+            .unwrap();
+
+        cmd("WATCH")
+            .arg(WATCHED_KEY)
+            .query_async::<_, ()>(&mut conn)
+            .await
+            .unwrap();
+
+        client_id
+    };
+
+    {
+        let mut txn_conn = pool.get().await.unwrap();
+
+        let new_client_id = cmd("CLIENT")
+            .arg("ID")
+            .query_async::<_, i64>(&mut txn_conn)
+            .await
+            .unwrap();
+
+        // Ensure that's the same connection as the one in first transaction
+        assert_eq!(
+            client_with_watch_id, new_client_id,
+            "the redis connection with transaction was not recycled"
+        );
+
+        // Start transaction on another key
+        cmd("WATCH")
+            .arg(TXN_KEY)
+            .query_async::<_, ()>(&mut txn_conn)
+            .await
+            .unwrap();
+
+        {
+            let mut writer_conn = pool.get().await.unwrap();
+
+            // Overwrite key from first transaction from another connection
+            cmd("SET")
+                .arg(WATCHED_KEY)
+                .arg("v")
+                .query_async::<_, ()>(&mut writer_conn)
+                .await
+                .unwrap();
+        }
+
+        // Expect that new transaction is not aborted by irrelevant key
+        let txn_result = pipe()
+            .atomic()
+            .set(TXN_KEY, "foo")
+            .query_async::<_, Value>(&mut txn_conn)
+            .await
+            .unwrap();
+        assert_eq!(
+            txn_result,
+            Value::Bulk(vec![Value::Okay]),
+            "redis transaction in recycled connection aborted",
+        );
     }
 }

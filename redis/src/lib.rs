@@ -19,6 +19,7 @@
     unused_qualifications,
     unused_results
 )]
+#![allow(clippy::uninlined_format_args)]
 
 mod config;
 
@@ -35,7 +36,7 @@ use redis::{
 
 pub use redis;
 
-pub use self::config::{Config, ConfigError};
+pub use self::config::{Config, ConfigError, ConnectionAddr, ConnectionInfo, RedisConnectionInfo};
 
 pub use deadpool::managed::reexports::*;
 deadpool::managed_reexports!("redis", Manager, Connection, RedisError, ConfigError);
@@ -149,10 +150,15 @@ impl managed::Manager for Manager {
         Ok(conn)
     }
 
-    async fn recycle(&self, conn: &mut RedisConnection) -> RecycleResult {
+    async fn recycle(&self, conn: &mut RedisConnection, _: &Metrics) -> RecycleResult {
         let ping_number = self.ping_number.fetch_add(1, Ordering::Relaxed).to_string();
-        let n = redis::cmd(&format!("PING {}", ping_number))
-            .query_async::<_, String>(conn)
+        // Using pipeline to avoid roundtrip for UNWATCH
+        let (n,) = redis::Pipeline::with_capacity(2)
+            .cmd("UNWATCH")
+            .ignore()
+            .cmd("PING")
+            .arg(&ping_number)
+            .query_async::<_, (String,)>(conn)
             .await?;
         if n == ping_number {
             Ok(())

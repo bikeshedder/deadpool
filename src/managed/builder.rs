@@ -4,38 +4,32 @@ use crate::Runtime;
 
 use super::{
     hooks::{Hook, Hooks},
-    Manager, Object, Pool, PoolConfig, Timeouts,
+    Manager, Object, Pool, PoolConfig, QueueMode, Timeouts,
 };
 
 /// Possible errors returned when [`PoolBuilder::build()`] fails to build a
 /// [`Pool`].
-#[derive(Debug)]
-pub enum BuildError<E> {
-    /// Backend reported an error when creating a [`Pool`].
-    Backend(E),
-
-    /// [`Runtime`] is required.
-    NoRuntimeSpecified(String),
+#[derive(Copy, Clone, Debug)]
+pub enum BuildError {
+    /// [`Runtime`] is required du to configured timeouts.
+    NoRuntimeSpecified,
 }
 
-impl<E: std::fmt::Display> fmt::Display for BuildError<E> {
+impl fmt::Display for BuildError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Backend(e) => write!(f, "Error occurred while building the pool: Backend: {}", e),
-            Self::NoRuntimeSpecified(msg) => write!(
+            Self::NoRuntimeSpecified => write!(
                 f,
-                "Error occurred while building the pool: NoRuntimeSpecified: {}",
-                msg
+                "Error occurred while building the pool: Timeouts require a runtime",
             ),
         }
     }
 }
 
-impl<E: std::error::Error + 'static> std::error::Error for BuildError<E> {
+impl std::error::Error for BuildError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::Backend(e) => Some(e),
-            Self::NoRuntimeSpecified(_) => None,
+            Self::NoRuntimeSpecified => None,
         }
     }
 }
@@ -84,7 +78,7 @@ where
             config: PoolConfig::default(),
             runtime: None,
             hooks: Hooks::default(),
-            _wrapper: PhantomData::default(),
+            _wrapper: PhantomData,
         }
     }
 
@@ -93,14 +87,12 @@ where
     /// # Errors
     ///
     /// See [`BuildError`] for details.
-    pub fn build(self) -> Result<Pool<M, W>, BuildError<M::Error>> {
+    pub fn build(self) -> Result<Pool<M, W>, BuildError> {
         // Return an error if a timeout is configured without runtime.
         let t = &self.config.timeouts;
         if (t.wait.is_some() || t.create.is_some() || t.recycle.is_some()) && self.runtime.is_none()
         {
-            return Err(BuildError::NoRuntimeSpecified(
-                "Timeouts require a runtime".to_string(),
-            ));
+            return Err(BuildError::NoRuntimeSpecified);
         }
         Ok(Pool::from_builder(self))
     }
@@ -138,6 +130,12 @@ where
     /// Sets the [`Timeouts::recycle`] value of the [`PoolConfig::timeouts`].
     pub fn recycle_timeout(mut self, value: Option<Duration>) -> Self {
         self.config.timeouts.recycle = value;
+        self
+    }
+
+    /// Sets the [`PoolConfig::queue_mode`].
+    pub fn queue_mode(mut self, value: QueueMode) -> Self {
+        self.config.queue_mode = value;
         self
     }
 

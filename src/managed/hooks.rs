@@ -2,7 +2,7 @@
 
 use std::{fmt, future::Future, pin::Pin};
 
-use super::{Manager, Metrics, ObjectInner, PoolError};
+use super::{Manager, Metrics, ObjectInner};
 
 /// The result returned by hooks
 pub type HookResult<E> = Result<(), HookError<E>>;
@@ -60,31 +60,10 @@ impl<M: Manager> fmt::Debug for Hook<M> {
     }
 }
 
-/// Error structure which which can abort the creation and recycling
-/// of objects.
-///
-/// There are two variants [`HookError::Continue`] tells the pool
-/// to continue the running [`Pool`] operation ([`get`],
-/// [`timeout_get`] or [`try_get`]) while [`HookError::Abort`] does abort
-/// that operation with an error.
-///
-/// [`Pool`]: crate::managed::Pool
-/// [`get`]: crate::managed::Pool::get
-/// [`timeout_get`]: crate::managed::Pool::timeout_get
-/// [`try_get`]: crate::managed::Pool::try_get
+/// Error which is returned by `pre_create`, `pre_recycle` and
+/// `post_recycle` hooks.
 #[derive(Debug)]
 pub enum HookError<E> {
-    /// This variant can be returned by hooks if the object should be
-    /// discarded but the operation should be continued.
-    Continue(Option<HookErrorCause<E>>),
-    /// This variant causes the object to be discarded and aborts the
-    /// operation.
-    Abort(HookErrorCause<E>),
-}
-
-/// Possible errors returned by hooks
-#[derive(Debug)]
-pub enum HookErrorCause<E> {
     /// Hook failed for some other reason.
     Message(String),
 
@@ -95,34 +74,22 @@ pub enum HookErrorCause<E> {
     Backend(E),
 }
 
-impl<E> HookError<E> {
-    /// Get optional cause of this error
-    pub fn cause(&self) -> Option<&HookErrorCause<E>> {
-        match self {
-            Self::Continue(option) => option.as_ref(),
-            Self::Abort(cause) => Some(cause),
-        }
-    }
-}
-
 impl<E: fmt::Display> fmt::Display for HookError<E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.cause() {
-            Some(HookErrorCause::Message(msg)) => write!(f, "{}", msg),
-            Some(HookErrorCause::StaticMessage(msg)) => write!(f, "{}", msg),
-            Some(HookErrorCause::Backend(e)) => write!(f, "{}", e),
-            None => write!(f, "No cause given"),
+        match self {
+            Self::Message(msg) => write!(f, "{}", msg),
+            Self::StaticMessage(msg) => write!(f, "{}", msg),
+            Self::Backend(e) => write!(f, "{}", e),
         }
     }
 }
 
 impl<E: std::error::Error + 'static> std::error::Error for HookError<E> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self.cause() {
-            Some(HookErrorCause::Message(_)) => None,
-            Some(HookErrorCause::StaticMessage(_)) => None,
-            Some(HookErrorCause::Backend(e)) => Some(e),
-            None => None,
+        match self {
+            Self::Message(_) => None,
+            Self::StaticMessage(_) => None,
+            Self::Backend(e) => Some(e),
         }
     }
 }
@@ -151,22 +118,14 @@ impl<M: Manager> HookVec<M> {
     pub(crate) async fn apply(
         &self,
         inner: &mut ObjectInner<M>,
-        error: fn(e: HookError<M::Error>) -> PoolError<M::Error>,
-    ) -> Result<Option<HookError<M::Error>>, PoolError<M::Error>> {
+    ) -> Result<(), HookError<M::Error>> {
         for hook in &self.vec {
-            let result = match hook {
-                Hook::Fn(f) => f(&mut inner.obj, &inner.metrics),
-                Hook::AsyncFn(f) => f(&mut inner.obj, &inner.metrics).await,
+            match hook {
+                Hook::Fn(f) => f(&mut inner.obj, &inner.metrics)?,
+                Hook::AsyncFn(f) => f(&mut inner.obj, &inner.metrics).await?,
             };
-            match result {
-                Ok(()) => {}
-                Err(e) => match e {
-                    HookError::Continue(_) => return Ok(Some(e)),
-                    HookError::Abort(_) => return Err(error(e)),
-                },
-            }
         }
-        Ok(None)
+        Ok(())
     }
     pub(crate) fn push(&mut self, hook: Hook<M>) {
         self.vec.push(hook);

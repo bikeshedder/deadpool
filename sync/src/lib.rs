@@ -29,7 +29,7 @@ use std::{
     sync::{Arc, Mutex, MutexGuard, PoisonError, TryLockError},
 };
 
-use deadpool::{Runtime, SpawnBlockingError};
+use deadpool_runtime::{Runtime, SpawnBlockingError};
 
 /// Possible errors returned when [`SyncWrapper::interact()`] fails.
 #[derive(Debug)]
@@ -89,7 +89,7 @@ where
         F: FnOnce() -> Result<T, E> + Send + 'static,
         E: Send + 'static,
     {
-        let result = match runtime.spawn_blocking(move || f()).await {
+        let result = match runtime.spawn_blocking(f).await {
             // FIXME: Panicking when the creation panics is not nice.
             // In order to handle this properly the Manager::create
             // methods needs to support a custom error enum which
@@ -114,16 +114,18 @@ where
         R: Send + 'static,
     {
         let arc = self.obj.clone();
+        #[cfg(feature = "tracing")]
+        let span = tracing::Span::current();
         self.runtime
             .spawn_blocking(move || {
                 let mut guard = arc.lock().unwrap();
                 let conn = guard.as_mut().unwrap();
+                #[cfg(feature = "tracing")]
+                let _span = span.enter();
                 f(conn)
             })
             .await
-            .map_err(|e| match e {
-                SpawnBlockingError::Panic(p) => InteractError::Panic(p),
-            })
+            .map_err(|SpawnBlockingError::Panic(p)| InteractError::Panic(p))
     }
 
     /// Indicates whether the underlying [`Mutex`] has been poisoned.

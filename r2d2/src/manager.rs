@@ -2,7 +2,7 @@ use std::{fmt, sync::Arc};
 
 use deadpool::{
     async_trait,
-    managed::{self, RecycleError, RecycleResult},
+    managed::{self, Metrics, RecycleError, RecycleResult},
     Runtime,
 };
 use deadpool_sync::SyncWrapper;
@@ -54,7 +54,7 @@ where
         SyncWrapper::new(self.runtime, move || r2d2_manager.connect()).await
     }
 
-    async fn recycle(&self, obj: &mut Self::Type) -> RecycleResult<Self::Error> {
+    async fn recycle(&self, obj: &mut Self::Type, _: &Metrics) -> RecycleResult<Self::Error> {
         if obj.is_mutex_poisoned() {
             return Err(RecycleError::StaticMessage(
                 "Mutex is poisoned. Connection is considered unusable.",

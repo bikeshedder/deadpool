@@ -2,7 +2,9 @@ use std::{fmt, path::PathBuf};
 
 use redis::RedisError;
 #[cfg(feature = "serde")]
-use serde_1::Deserialize;
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "serde")]
+use serde_1 as serde;
 
 use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime};
 
@@ -20,7 +22,7 @@ use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime
 /// ```
 /// ```rust
 /// # use serde_1 as serde;
-/// #
+///
 /// #[derive(serde::Deserialize)]
 /// # #[serde(crate = "serde_1")]
 /// struct Config {
@@ -29,15 +31,16 @@ use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime
 ///
 /// impl Config {
 ///     pub fn from_env() -> Result<Self, config::ConfigError> {
-///         let mut cfg = config::Config::new();
-///         cfg.merge(config::Environment::new().separator("__")).unwrap();
-///         cfg.try_into()
+///         let mut cfg = config::Config::builder()
+///            .add_source(config::Environment::default().separator("__"))
+///            .build()?;
+///            cfg.try_deserialize()
 ///     }
 /// }
 /// ```
 #[derive(Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(serde_1::Deserialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde"))]
 pub struct Config {
     /// Redis URL.
     ///
@@ -98,6 +101,17 @@ impl Config {
             pool: None,
         }
     }
+
+    /// Creates a new [`Config`] from the given Redis ConnectionInfo
+    /// structure.
+    #[must_use]
+    pub fn from_connection_info<T: Into<ConnectionInfo>>(connection_info: T) -> Config {
+        Config {
+            url: None,
+            connection: Some(connection_info.into()),
+            pool: None,
+        }
+    }
 }
 
 impl Default for Config {
@@ -114,8 +128,8 @@ impl Default for Config {
 /// This is duplicated here in order to add support for the
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(Deserialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde"))]
 pub enum ConnectionAddr {
     /// Format for this is `(host, port)`.
     Tcp(String, u16),
@@ -189,8 +203,8 @@ impl From<redis::ConnectionAddr> for ConnectionAddr {
 /// This is duplicated here in order to add support for the
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(Deserialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde"))]
 pub struct ConnectionInfo {
     /// A connection address for where to connect to.
     pub addr: ConnectionAddr,
@@ -228,8 +242,8 @@ impl redis::IntoConnectionInfo for ConnectionInfo {
 /// This is duplicated here in order to add support for the
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(Deserialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde"))]
 pub struct RedisConnectionInfo {
     /// The database number to use. This is usually `0`.
     pub db: i64,

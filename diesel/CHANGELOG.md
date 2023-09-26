@@ -1,5 +1,21 @@
 # Change Log
 
+## v0.5.0
+
+* Update `deadpool` dependency to version `0.10`
+* Add `tracing` feature
+* Check for open transactions before recycling connections
+* Allow to configure a custom recycle check function to customize ping queries for different database backends
+* Bump up MSRV to `1.63` to match the one of `tokio`
+
+## v0.4.1
+
+* Fix error handling when recycling connections
+
+## v0.4.0
+
+* Update `diesel` dependency to version `2.0.0`
+
 ## v0.3.1
 
 * Add missing reexports from the `mysql` and `postgres` modules.

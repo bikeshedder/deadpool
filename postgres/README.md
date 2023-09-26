@@ -1,4 +1,4 @@
-# Deadpool for PostgreSQL [![Latest Version](https://img.shields.io/crates/v/deadpool-postgres.svg)](https://crates.io/crates/deadpool-postgres) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.54+](https://img.shields.io/badge/rustc-1.54+-lightgray.svg "Rust 1.54+")](https://blog.rust-lang.org/2021/07/29/Rust-1.54.0.html)
+# Deadpool for PostgreSQL [![Latest Version](https://img.shields.io/crates/v/deadpool-postgres.svg)](https://crates.io/crates/deadpool-postgres) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.63+](https://img.shields.io/badge/rustc-1.63+-lightgray.svg "Rust 1.63+")](https://blog.rust-lang.org/2022/08/11/Rust-1.63.0.html)
 
 Deadpool is a dead simple async pool for connections and objects
 of any type.
@@ -10,11 +10,11 @@ and `tokio_postgres::Transaction`.
 
 ## Features
 
-| Feature | Description | Extra dependencies | Default |
-| ------- | ----------- | ------------------ | ------- |
-| `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
-| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
-| `serde` | Enable support for [serde](https://crates.io/crates/serde) crate | `deadpool/serde`, `serde/derive` | no |
+| Feature          | Description                                                           | Extra dependencies               | Default |
+| ---------------- | --------------------------------------------------------------------- | -------------------------------- | ------- |
+| `rt_tokio_1`     | Enable support for [tokio](https://crates.io/crates/tokio) crate      | `deadpool/rt_tokio_1`            | yes     |
+| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1`        | no      |
+| `serde`          | Enable support for [serde](https://crates.io/crates/serde) crate      | `deadpool/serde`, `serde/derive` | no      |
 
 **Important:** `async-std` support is currently limited to the
 `async-std` specific timeout function. You still need to enable
@@ -22,6 +22,13 @@ the `tokio1` feature of `async-std` in order to use this crate
 with `async-std`.
 
 ## Example
+
+The following example assumes a PostgreSQL reachable via an unix domain
+socket and peer auth enabled for the local user in
+[pg\_hba.conf](https://www.postgresql.org/docs/current/auth-pg-hba-conf.html).
+If you're running Windows you probably want to specify the `host`, `user`
+and `password` in the connection config or use an alternative
+[authentication method](https://www.postgresql.org/docs/current/auth-methods.html).
 
 ```rust,no_run
 use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod, Runtime};
@@ -49,6 +56,7 @@ async fn main() {
 # .env
 PG__DBNAME=deadpool
 ```
+
 ```rust
 use deadpool_postgres::{Manager, Pool, Runtime};
 use dotenv::dotenv;
@@ -63,10 +71,10 @@ struct Config {
 
 impl Config {
     pub fn from_env() -> Result<Self, config::ConfigError> {
-        let mut cfg = config::Config::new();
-        cfg.set_default("pg.dbname", "deadpool");
-        cfg.merge(config::Environment::new().separator("__"))?;
-        cfg.try_into()
+        config::Config::builder()
+           .add_source(config::Environment::default().separator("__"))
+           .build()?
+           .try_deserialize()
     }
 }
 
@@ -159,6 +167,13 @@ async fn main() {
   `tokio-postgres` do not necessarily match. If they do it is just a
   coincidence that both crates have the same MAJOR and MINOR version
   number.
+
+  | deadpool-postgres | tokio-postgres |
+  | ----------------- | -------------- |
+  | 0.7 – 0.11        | 0.7            |
+  | 0.6               | 0.6            |
+  | 0.4 – 0.5         | 0.5            |
+  | 0.2 – 0.3         | 0.5.0-alpha    |
 
 - **How can I clear the statement cache?**
 

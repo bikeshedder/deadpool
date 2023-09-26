@@ -1,12 +1,13 @@
 [package]
 name = "deadpool"
-version = "0.9.1"
+version = "0.10.0"
 edition = "2018"
 resolver = "2"
+rust-version = "1.63"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool"
 keywords = ["async", "database", "pool"]
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/bikeshedder/deadpool"
 readme = "README.md"
 
@@ -36,9 +37,19 @@ tokio = { version = "1.0", features = ["sync"] }
 
 [dev-dependencies]
 async-std = { version = "1.0", features = ["attributes"] }
-config = { version = "0.11", default-features = false }
-criterion = "0.3"
-tokio = { version = "1.5.0", features = ["macros", "rt", "rt-multi-thread", "time"] }
+config = { version = "0.13", features = ["json"] }
+criterion = { version = "0.3.4", features = ["html_reports", "async_tokio"] }
+itertools = "0.10.3"
+tokio = { version = "1.5.0", features = [
+    "macros",
+    "rt",
+    "rt-multi-thread",
+    "time",
+] }
+
+[[bench]]
+name = "managed"
+harness = false
 
 [[bench]]
 name = "unmanaged"
@@ -49,11 +60,13 @@ members = [
     "arangodb",
     "diesel",
     "lapin",
+    "memcached",
     "postgres",
     "r2d2",
     "redis",
+    "redis-cluster",
     "runtime",
     "sqlite",
     "sync",
-    "examples/*"
+    "examples/*",
 ]

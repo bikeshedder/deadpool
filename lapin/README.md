@@ -1,4 +1,4 @@
-# Deadpool for Lapin [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.54+](https://img.shields.io/badge/rustc-1.54+-lightgray.svg "Rust 1.54+")](https://blog.rust-lang.org/2021/07/29/Rust-1.54.0.html)
+# Deadpool for Lapin [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.63+](https://img.shields.io/badge/rustc-1.63+-lightgray.svg "Rust 1.63+")](https://blog.rust-lang.org/2022/08/11/Rust-1.63.0.html)
 
 Deadpool is a dead simple async pool for connections and objects
 of any type.
@@ -8,11 +8,11 @@ manager for [`lapin`](https://crates.io/crates/lapin).
 
 ## Features
 
-| Feature | Description | Extra dependencies | Default |
-| ------- | ----------- | ------------------ | ------- |
-| `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `deadpool/rt_tokio_1` | yes |
-| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1` | no |
-| `serde` | Enable support for [serde](https://crates.io/crates/serde) crate | `deadpool/serde`, `serde/derive` | no |
+| Feature          | Description                                                           | Extra dependencies               | Default |
+| ---------------- | --------------------------------------------------------------------- | -------------------------------- | ------- |
+| `rt_tokio_1`     | Enable support for [tokio](https://crates.io/crates/tokio) crate      | `deadpool/rt_tokio_1`            | yes     |
+| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1`        | no      |
+| `serde`          | Enable support for [serde](https://crates.io/crates/serde) crate      | `deadpool/serde`, `serde/derive` | no      |
 
 ## Example with `tokio-amqp` crate
 
@@ -24,7 +24,6 @@ use deadpool_lapin::lapin::{
     options::BasicPublishOptions,
     BasicProperties,
 };
-use tokio_amqp::LapinTokioExt as _;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -38,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "",
             "hello",
             BasicPublishOptions::default(),
-            b"hello from deadpool".to_vec(),
+            b"hello from deadpool",
             BasicProperties::default(),
         ).await?;
     }
@@ -68,9 +67,10 @@ struct Config {
 
 impl Config {
     pub fn from_env() -> Result<Self, config::ConfigError> {
-        let mut cfg = config::Config::new();
-        cfg.merge(config::Environment::new().separator("__"))?;
-        cfg.try_into()
+         config::Config::builder()
+            .add_source(config::Environment::default().separator("__"))
+            .build()?
+            .try_deserialize()
     }
 }
 
@@ -86,7 +86,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "",
             "hello",
             BasicPublishOptions::default(),
-            b"hello from deadpool".to_vec(),
+            b"hello from deadpool",
             BasicProperties::default(),
         ).await?;
     }

@@ -17,21 +17,22 @@ use crate::{CreatePoolError, Manager, Pool, PoolBuilder, PoolConfig, Runtime};
 /// ```rust
 /// # use serde_1 as serde;
 /// #
-/// #[derive(serde::Deserialize)]
+/// #[derive(serde::Deserialize, serde::Serialize)]
 /// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     sqlite: deadpool_sqlite::Config,
 /// }
 /// impl Config {
 ///     pub fn from_env() -> Result<Self, config::ConfigError> {
-///         let mut cfg = config::Config::new();
-///         cfg.merge(config::Environment::new().separator("__")).unwrap();
-///         cfg.try_into()
+///         let mut cfg = config::Config::builder()
+///            .add_source(config::Environment::default().separator("__"))
+///            .build()?;
+///            cfg.try_deserialize()
 ///     }
 /// }
 /// ```
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(serde_1::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde_1::Deserialize, serde_1::Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct Config {
     /// Path to SQLite database file.

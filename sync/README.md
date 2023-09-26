@@ -1,4 +1,4 @@
-# Deadpool for synchroneous code [![Latest Version](https://img.shields.io/crates/v/deadpool-sync.svg)](https://crates.io/crates/deadpool-sync) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.54+](https://img.shields.io/badge/rustc-1.54+-lightgray.svg "Rust 1.54+")](https://blog.rust-lang.org/2021/07/29/Rust-1.54.0.html)
+# Deadpool for synchroneous code [![Latest Version](https://img.shields.io/crates/v/deadpool-sync.svg)](https://crates.io/crates/deadpool-sync) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.63+](https://img.shields.io/badge/rustc-1.63+-lightgray.svg "Rust 1.63+")](https://blog.rust-lang.org/2022/08/11/Rust-1.63.0.html)
 
 Deadpool is a dead simple async pool for connections and objects
 of any type.
@@ -10,6 +10,12 @@ support async and need to be run inside a thread.
 `deadpool-*` crates easier. Other libraries and binary projects
 normally should not use this directly and use some provided
 reexports by the crates using it.
+
+## Features
+
+| Feature | Description | Extra dependencies | Default |
+| ------- | ----------- | ------------------ | ------- |
+| `tracing` | Enable support for [tracing](https://github.com/tokio-rs/tracing) by propagating Spans in the `interact()` calls. Enable this if you use the `tracing` crate and you want to get useful traces from within `interact()` calls. | `tracing` | no |
 
 ## License
 

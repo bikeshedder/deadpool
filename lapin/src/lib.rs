@@ -19,6 +19,7 @@
     unused_qualifications,
     unused_results
 )]
+#![allow(clippy::uninlined_format_args)]
 
 mod config;
 
@@ -47,10 +48,21 @@ type RecycleError = managed::RecycleError<Error>;
 /// [`Manager`] for creating and recycling [`lapin::Connection`].
 ///
 /// [`Manager`]: managed::Manager
-#[derive(Debug)]
 pub struct Manager {
     addr: String,
     connection_properties: ConnectionProperties,
+}
+
+impl std::fmt::Debug for Manager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Manager")
+            .field("addr", &self.addr)
+            .field(
+                "connection_properties",
+                &self::config::ConnProps(&self.connection_properties),
+            )
+            .finish()
+    }
 }
 
 impl Manager {
@@ -77,7 +89,7 @@ impl managed::Manager for Manager {
         Ok(conn)
     }
 
-    async fn recycle(&self, conn: &mut lapin::Connection) -> RecycleResult {
+    async fn recycle(&self, conn: &mut lapin::Connection, _: &Metrics) -> RecycleResult {
         match conn.status().state() {
             lapin::ConnectionState::Connected => Ok(()),
             other_state => Err(RecycleError::Message(format!(

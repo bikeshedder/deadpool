@@ -35,21 +35,22 @@ use super::{Pool, PoolConfig};
 /// ```rust
 /// # use serde_1 as serde;
 /// #
-/// #[derive(serde::Deserialize)]
+/// #[derive(serde::Deserialize, serde::Serialize)]
 /// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     pg: deadpool_postgres::Config,
 /// }
 /// impl Config {
 ///     pub fn from_env() -> Result<Self, config::ConfigError> {
-///         let mut cfg = config::Config::new();
-///         cfg.merge(config::Environment::new().separator("__")).unwrap();
-///         cfg.try_into()
+///         let mut cfg = config::Config::builder()
+///            .add_source(config::Environment::default().separator("__"))
+///            .build()?;
+///            cfg.try_deserialize()
 ///     }
 /// }
 /// ```
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct Config {
     /// See [`tokio_postgres::Config::user`].
@@ -261,15 +262,13 @@ impl Config {
 
 /// Possible methods of how a connection is recycled.
 ///
-/// **Attention:** The current default is [`Verified`] but will be changed to
-/// [`Fast`] in the next minor release of [`deadpool-postgres`]. Please, make
-/// sure to explicitly state this if you want to keep using the [`Verified`]
-/// recycling method.
+/// The default is [`Fast`] which does not check the connection health or
+/// perform any clean-up queries.
 ///
 /// [`Fast`]: RecyclingMethod::Fast
 /// [`Verified`]: RecyclingMethod::Verified
 #[derive(Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub enum RecyclingMethod {
     /// Only run [`Client::is_closed()`][1] when recycling existing connections.
@@ -351,7 +350,7 @@ impl RecyclingMethod {
 ///
 /// [`Manager`]: super::Manager
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct ManagerConfig {
     /// Method of how a connection is recycled. See [`RecyclingMethod`].
@@ -364,7 +363,7 @@ pub struct ManagerConfig {
 /// This is duplicated here in order to add support for the
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 #[non_exhaustive]
 pub enum TargetSessionAttrs {
@@ -390,7 +389,7 @@ impl From<TargetSessionAttrs> for PgTargetSessionAttrs {
 /// This is duplicated here in order to add support for the
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 #[non_exhaustive]
 pub enum SslMode {
@@ -420,7 +419,7 @@ impl From<SslMode> for PgSslMode {
 /// This is duplicated here in order to add support for the
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 #[non_exhaustive]
 pub enum ChannelBinding {

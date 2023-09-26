@@ -1,12 +1,12 @@
 use std::{collections::HashMap, env, time::Duration};
 
 use futures::future;
-use serde_1::Deserialize;
+use serde_1::{Deserialize, Serialize};
 use tokio_postgres::{types::Type, IsolationLevel};
 
 use deadpool_postgres::{ManagerConfig, Pool, RecyclingMethod, Runtime};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
@@ -15,19 +15,22 @@ struct Config {
 
 impl Config {
     pub fn from_env() -> Self {
-        let mut cfg = config::Config::new();
-        cfg.merge(config::Environment::new().separator("__"))
+        let cfg = config::Config::builder()
+            .add_source(config::Environment::default().separator("__"))
+            .build()
             .unwrap();
-        let mut cfg = cfg.try_into::<Self>().unwrap();
+
+        let mut cfg = cfg.try_deserialize::<Self>().unwrap();
         cfg.pg.dbname.get_or_insert("deadpool".to_string());
         cfg
     }
 
     pub fn from_env_with_prefix(prefix: &str) -> Self {
-        let mut cfg = config::Config::new();
-        cfg.merge(config::Environment::with_prefix(prefix).separator("__"))
+        let cfg = config::Config::builder()
+            .add_source(config::Environment::with_prefix(prefix).separator("__"))
+            .build()
             .unwrap();
-        let mut cfg = cfg.try_into::<Self>().unwrap();
+        let mut cfg = cfg.try_deserialize::<Self>().unwrap();
         cfg.pg.dbname.get_or_insert("deadpool".to_string());
         cfg
     }
@@ -122,8 +125,8 @@ async fn transaction_pipeline() {
         });
     }
     let results = future::join_all(futures).await;
-    for i in 0..100 {
-        assert_eq!(results[i], (i as i32) + 1);
+    for (i, &result) in results.iter().enumerate() {
+        assert_eq!(result, (i as i32) + 1);
     }
 }
 
@@ -244,18 +247,18 @@ fn config_from_env() {
     // This test must not use "PG" as prefix as this can cause the other
     // tests which also use the "PG" prefix to fail.
     let mut env = Env::new();
-    env.set("ENV_TEST_PG__HOST", "pg.example.com");
-    env.set("ENV_TEST_PG__PORT", "5433");
-    env.set("ENV_TEST_PG__USER", "john_doe");
-    env.set("ENV_TEST_PG__PASSWORD", "topsecret");
-    env.set("ENV_TEST_PG__DBNAME", "example");
-    env.set("ENV_TEST_PG__POOL__MAX_SIZE", "42");
-    env.set("ENV_TEST_PG__POOL__TIMEOUTS__WAIT__SECS", "1");
-    env.set("ENV_TEST_PG__POOL__TIMEOUTS__WAIT__NANOS", "0");
-    env.set("ENV_TEST_PG__POOL__TIMEOUTS__CREATE__SECS", "2");
-    env.set("ENV_TEST_PG__POOL__TIMEOUTS__CREATE__NANOS", "0");
-    env.set("ENV_TEST_PG__POOL__TIMEOUTS__RECYCLE__SECS", "3");
-    env.set("ENV_TEST_PG__POOL__TIMEOUTS__RECYCLE__NANOS", "0");
+    env.set("ENV_TEST__PG__HOST", "pg.example.com");
+    env.set("ENV_TEST__PG__PORT", "5433");
+    env.set("ENV_TEST__PG__USER", "john_doe");
+    env.set("ENV_TEST__PG__PASSWORD", "topsecret");
+    env.set("ENV_TEST__PG__DBNAME", "example");
+    env.set("ENV_TEST__PG__POOL__MAX_SIZE", "42");
+    env.set("ENV_TEST__PG__POOL__TIMEOUTS__WAIT__SECS", "1");
+    env.set("ENV_TEST__PG__POOL__TIMEOUTS__WAIT__NANOS", "0");
+    env.set("ENV_TEST__PG__POOL__TIMEOUTS__CREATE__SECS", "2");
+    env.set("ENV_TEST__PG__POOL__TIMEOUTS__CREATE__NANOS", "0");
+    env.set("ENV_TEST__PG__POOL__TIMEOUTS__RECYCLE__SECS", "3");
+    env.set("ENV_TEST__PG__POOL__TIMEOUTS__RECYCLE__NANOS", "0");
     let cfg = Config::from_env_with_prefix("ENV_TEST");
     // `tokio_postgres::Config` does not provide any read access to its
     // internals, so we can only check if the environment was actually read

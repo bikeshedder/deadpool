@@ -9,12 +9,12 @@ async fn use_pool() {
     let pool = Pool::new(16);
     pool.add(()).await.unwrap();
     for _ in 0..ITERATIONS {
-        pool.get().await.unwrap();
+        let _ = pool.get().await.unwrap();
     }
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("use_pool", |b| b.iter(|| use_pool()));
+    c.bench_function("use_pool", |b| b.iter(use_pool));
 }
 
 criterion_group!(benches, criterion_benchmark);

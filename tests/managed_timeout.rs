@@ -8,7 +8,7 @@ use std::{convert::Infallible, future::Future, pin::Pin, task, time::Duration};
 use async_trait::async_trait;
 
 use deadpool::{
-    managed::{self, Object, PoolConfig, PoolError, RecycleResult, Timeouts},
+    managed::{self, Metrics, Object, PoolConfig, PoolError, RecycleResult, Timeouts},
     Runtime,
 };
 
@@ -36,7 +36,7 @@ impl managed::Manager for Manager {
         unreachable!();
     }
 
-    async fn recycle(&self, _conn: &mut usize) -> RecycleResult<Infallible> {
+    async fn recycle(&self, _conn: &mut usize, _: &Metrics) -> RecycleResult<Infallible> {
         Never.await;
         unreachable!();
     }
@@ -51,6 +51,7 @@ async fn test_managed_timeout(runtime: Runtime) {
             wait: Some(Duration::from_millis(0)),
             recycle: Some(Duration::from_millis(0)),
         },
+        ..Default::default()
     };
     let pool = Pool::builder(mgr)
         .config(cfg)

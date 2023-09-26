@@ -1,12 +1,13 @@
 [package]
 name = "deadpool-sqlite"
-version = "0.3.0"
-edition = "2018"
+version = "0.6.0"
+edition = "2021"
 resolver = "2"
+rust-version = "1.63"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for rusqlite"
 keywords = ["async", "database", "pool", "sqlite"]
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/bikeshedder/deadpool"
 readme = "README.md"
 
@@ -19,14 +20,19 @@ default = ["rt_tokio_1"]
 rt_tokio_1 = ["deadpool/rt_tokio_1"]
 rt_async-std_1 = ["deadpool/rt_async-std_1"]
 serde = ["deadpool/serde", "serde_1"]
+tracing = ["deadpool-sync/tracing"]
 
 [dependencies]
-deadpool = { path = "../", version = "0.9.1", default-features = false, features = ["managed"] }
-deadpool-sync = { path = "../sync", version = "0.1" }
-rusqlite = "0.25"
-serde_1 = { package = "serde", version = "1.0", features = ["derive"], optional = true }
+deadpool = { path = "../", version = "0.10.0", default-features = false, features = [
+    "managed",
+] }
+deadpool-sync = { path = "../sync", version = "0.1.1" }
+rusqlite = "0.29"
+serde_1 = { package = "serde", version = "1.0", features = [
+    "derive",
+], optional = true }
 
 [dev-dependencies]
-config = { version = "0.11", default-features = false }
+config = { version = "0.13", features = ["json"] }
 dotenv = "0.15"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }

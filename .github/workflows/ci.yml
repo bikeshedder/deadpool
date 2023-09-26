@@ -17,34 +17,48 @@ jobs:
   ##########################
 
   clippy:
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+          - deadpool-runtime
+          - deadpool-sync
+          - deadpool
+          - deadpool-diesel
+          - deadpool-lapin
+          - deadpool-memcached
+          - deadpool-postgres
+          - deadpool-r2d2
+          - deadpool-redis
+          - deadpool-redis-cluster
+          - deadpool-sqlite
+          # Examples
+          - example-postgres-actix-web
+          - example-postgres-benchmark
+          - example-postgres-hyper
+          - example-redis-actix-web
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           components: clippy
 
-      - run: cargo clippy --workspace --all-features -- -D warnings
+      - run: cargo clippy -p ${{ matrix.crate }} --no-deps --all-features -- -D warnings
 
   rustfmt:
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           components: rustfmt
 
-      - run: cargo fmt --all -- --check
+      - run: cargo fmt --all --check
 
 
 
@@ -55,9 +69,6 @@ jobs:
 
   check-deadpool:
     name: Check deadpool
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
       fail-fast: false
       matrix:
@@ -70,7 +81,7 @@ jobs:
           - serde
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -82,9 +93,6 @@ jobs:
 
   check-integration:
     name: Check integration
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
       fail-fast: false
       matrix:
@@ -94,6 +102,7 @@ jobs:
           - lapin
           - postgres
           - redis
+          - redis-cluster
           - sqlite
         feature:
           - rt_tokio_1
@@ -111,7 +120,7 @@ jobs:
             feature: serde
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -124,29 +133,23 @@ jobs:
 
   msrv:
     name: MSRV
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { crate: deadpool, msrv: '1.54.0' }
-          # TODO: Doesn't work with `pq-sys = 0.3.0` because of
-          #       `rustc-serialize = 0.3.19`. Try re-enable it on next `diesel`
-          #       major version upgrade.
-          #- { crate: deadpool-diesel, msrv: '1.54.0' }
-          # TODO: Doesn't work with `lexical-core = 0.7.0` because of
-          #       `nom = 6.0.0`. Try re-enable it on next `lapin` major version
-          #        upgrade.
-          #- { crate: deadpool-lapin, msrv: '1.54.0' }
-          - { crate: deadpool-arangodb, msrv: '1.54.0' }
-          - { crate: deadpool-postgres, msrv: '1.54.0' }
-          - { crate: deadpool-redis, msrv: '1.54.0' }
-          - { crate: deadpool-sqlite, msrv: '1.54.0' }
+          - { crate: deadpool-runtime, msrv: '1.63.0' }
+          - { crate: deadpool-sync, msrv: '1.63.0' }
+          - { crate: deadpool, msrv: '1.63.0' }
+          - { crate: deadpool-arangodb, msrv: '1.63.0' }
+          - { crate: deadpool-diesel, msrv: '1.63.0' }
+          - { crate: deadpool-lapin, msrv: '1.63.0' }
+          - { crate: deadpool-postgres, msrv: '1.63.0' }
+          - { crate: deadpool-redis, msrv: '1.63.0' }
+          - { crate: deadpool-redis-cluster, msrv: '1.63.0' }
+          - { crate: deadpool-sqlite, msrv: '1.63.0' }
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -162,19 +165,19 @@ jobs:
       - run: cargo check -p ${{ matrix.crate }} --all-features
 
   test:
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
       fail-fast: false
       matrix:
         crate:
+          - deadpool-runtime
+          - deadpool-sync
           - deadpool
           - deadpool-arangodb
           - deadpool-diesel
           - deadpool-lapin
           - deadpool-postgres
           - deadpool-redis
+          - deadpool-redis-cluster
           - deadpool-sqlite
     runs-on: ubuntu-latest
     services:
@@ -186,7 +189,7 @@ jobs:
           ARANGO_ROOT_PASSWORD: deadpool
           ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY: 500M
       postgres:
-        image: postgres
+        image: postgres:15.3-alpine
         ports:
           - 5432:5432
         env:
@@ -200,11 +203,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       redis:
-        image: redis
+        image: redis:7.0-alpine
         ports:
           - 6379:6379
+      redis-cluster:
+        image: grokzen/redis-cluster:7.0.10
+        ports:
+          - 7000-7005:7000-7005
       rabbitmq:
-        image: rabbitmq:3.8  # 3.9 and above doesn't support env vars
+        image: rabbitmq:3.11-alpine
         ports:
           - 5672:5672
         env:
@@ -212,7 +219,7 @@ jobs:
           RABBITMQ_DEFAULT_PASS: deadpool
           RABBITMQ_DEFAULT_VHOST: deadpool
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -230,6 +237,7 @@ jobs:
           PG__PASSWORD: deadpool
           PG__DBNAME: deadpool
           REDIS__URL: redis://127.0.0.1/
+          REDIS_CLUSTER__URLS: redis://127.0.0.1:7000,redis://127.0.0.1:7001
           AMQP__URL: amqp://deadpool:deadpool@127.0.0.1/deadpool
 
 
@@ -241,25 +249,25 @@ jobs:
 
   rustdoc:
     name: Docs
-    if: ${{ github.ref == 'refs/heads/master'
-            || startsWith(github.ref, 'refs/tags/deadpool-')
-            || !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
       matrix:
         crate:
+          - deadpool-runtime
+          - deadpool-sync
           - deadpool
           - deadpool-arangodb
           - deadpool-diesel
           - deadpool-lapin
           - deadpool-postgres
           - deadpool-redis
+          - deadpool-redis-cluster
           - deadpool-sqlite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
 
-      - run: cargo doc -p ${{ matrix.crate }} --all-features
+      - run: cargo doc -p ${{ matrix.crate }} --no-deps --all-features

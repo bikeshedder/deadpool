@@ -21,10 +21,12 @@
 )]
 
 mod config;
+mod generic_client;
 
 use std::{
     borrow::Cow,
     collections::HashMap,
+    fmt,
     ops::{Deref, DerefMut},
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -33,7 +35,7 @@ use std::{
 };
 
 use deadpool::{async_trait, managed};
-use tokio::spawn;
+use tokio::{spawn, task::JoinHandle};
 use tokio_postgres::{
     tls::MakeTlsConnect, tls::TlsConnect, types::Type, Client as PgClient, Config as PgConfig,
     Error, IsolationLevel, Socket, Statement, Transaction as PgTransaction,
@@ -42,7 +44,12 @@ use tokio_postgres::{
 
 pub use tokio_postgres;
 
-pub use self::config::{Config, ConfigError, ManagerConfig, RecyclingMethod, SslMode};
+pub use self::config::{
+    ChannelBinding, Config, ConfigError, ManagerConfig, RecyclingMethod, SslMode,
+    TargetSessionAttrs,
+};
+
+pub use self::generic_client::GenericClient;
 
 pub use deadpool::managed::reexports::*;
 deadpool::managed_reexports!(
@@ -62,7 +69,6 @@ type RecycleError = deadpool::managed::RecycleError<Error>;
 /// [`Manager`] for creating and recycling PostgreSQL connections.
 ///
 /// [`Manager`]: managed::Manager
-#[allow(missing_debug_implementations)] // due to `StatementCaches`
 pub struct Manager {
     config: ManagerConfig,
     pg_config: PgConfig,
@@ -102,29 +108,40 @@ impl Manager {
     }
 }
 
+impl fmt::Debug for Manager {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Manager")
+            .field("config", &self.config)
+            .field("pg_config", &self.pg_config)
+            //.field("connect", &self.connect)
+            .field("statement_caches", &self.statement_caches)
+            .finish()
+    }
+}
+
 #[async_trait]
 impl managed::Manager for Manager {
     type Type = ClientWrapper;
     type Error = Error;
 
     async fn create(&self) -> Result<ClientWrapper, Error> {
-        let client = self.connect.connect(&self.pg_config).await?;
-        let client_wrapper = ClientWrapper::new(client);
+        let (client, conn_task) = self.connect.connect(&self.pg_config).await?;
+        let client_wrapper = ClientWrapper::new(client, conn_task);
         self.statement_caches
             .attach(&client_wrapper.statement_cache);
         Ok(client_wrapper)
     }
 
-    async fn recycle(&self, client: &mut ClientWrapper) -> RecycleResult {
+    async fn recycle(&self, client: &mut ClientWrapper, _: &Metrics) -> RecycleResult {
         if client.is_closed() {
-            log::info!(target: "deadpool.postgres", "Connection could not be recycled: Connection closed");
+            tracing::warn!(target: "deadpool.postgres", "Connection could not be recycled: Connection closed");
             return Err(RecycleError::StaticMessage("Connection closed"));
         }
         match self.config.recycling_method.query() {
             Some(sql) => match client.simple_query(sql).await {
                 Ok(_) => Ok(()),
                 Err(e) => {
-                    log::info!(target: "deadpool.postgres", "Connection could not be recycled: {}", e);
+                    tracing::warn!(target: "deadpool.postgres", "Connection could not be recycled: {}", e);
                     Err(e.into())
                 }
             },
@@ -139,7 +156,7 @@ impl managed::Manager for Manager {
 
 #[async_trait]
 trait Connect: Sync + Send {
-    async fn connect(&self, pg_config: &PgConfig) -> Result<PgClient, Error>;
+    async fn connect(&self, pg_config: &PgConfig) -> Result<(PgClient, JoinHandle<()>), Error>;
 }
 
 struct ConnectImpl<T>
@@ -160,21 +177,20 @@ where
     T::TlsConnect: Sync + Send,
     <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
 {
-    async fn connect(&self, pg_config: &PgConfig) -> Result<PgClient, Error> {
+    async fn connect(&self, pg_config: &PgConfig) -> Result<(PgClient, JoinHandle<()>), Error> {
         let (client, connection) = pg_config.connect(self.tls.clone()).await?;
-        drop(spawn(async move {
+        let conn_task = spawn(async move {
             if let Err(e) = connection.await {
-                log::warn!(target: "deadpool.postgres", "Connection error: {}", e);
+                tracing::warn!(target: "deadpool.postgres", "Connection error: {}", e);
             }
-        }));
-        Ok(client)
+        });
+        Ok((client, conn_task))
     }
 }
 
 /// Structure holding a reference to all [`StatementCache`]s and providing
 /// access for clearing all caches and removing single statements from them.
-#[derive(Default)]
-#[allow(missing_debug_implementations)] // due to `StatementCache`
+#[derive(Default, Debug)]
 pub struct StatementCaches {
     caches: Mutex<Vec<Weak<StatementCache>>>,
 }
@@ -213,6 +229,15 @@ impl StatementCaches {
     }
 }
 
+impl fmt::Debug for StatementCache {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ClientWrapper")
+            //.field("map", &self.map)
+            .field("size", &self.size)
+            .finish()
+    }
+}
+
 // Allows us to use owned keys in a `HashMap`, but still be able to call `get`
 // with borrowed keys instead of allocating them each time.
 #[derive(Debug, Eq, Hash, PartialEq)]
@@ -240,7 +265,6 @@ struct StatementCacheKey<'a> {
 /// Normally, you probably want to use the [`ClientWrapper::prepare_cached()`]
 /// and [`ClientWrapper::prepare_typed_cached()`] methods instead (or the
 /// similar ones on [`Transaction`]).
-#[allow(missing_debug_implementations)] // due to `Statement`
 pub struct StatementCache {
     map: RwLock<HashMap<StatementCacheKey<'static>, Statement>>,
     size: AtomicUsize,
@@ -340,10 +364,14 @@ impl StatementCache {
 }
 
 /// Wrapper around [`tokio_postgres::Client`] with a [`StatementCache`].
-#[allow(missing_debug_implementations)] // due to `StatementCache`
+#[derive(Debug)]
 pub struct ClientWrapper {
     /// Original [`PgClient`].
     client: PgClient,
+
+    /// A handle to the connection task that should be aborted when the client
+    /// wrapper is dropped.
+    conn_task: JoinHandle<()>,
 
     /// [`StatementCache`] of this client.
     pub statement_cache: Arc<StatementCache>,
@@ -351,22 +379,23 @@ pub struct ClientWrapper {
 
 impl ClientWrapper {
     /// Create a new [`ClientWrapper`] instance using the given
-    /// [`tokio_postgres::Client`].
+    /// [`tokio_postgres::Client`] and handle to the connection task.
     #[must_use]
-    pub fn new(client: PgClient) -> Self {
+    pub fn new(client: PgClient, conn_task: JoinHandle<()>) -> Self {
         Self {
             client,
+            conn_task,
             statement_cache: Arc::new(StatementCache::new()),
         }
     }
 
-    /// Like [`tokio_postgres::Transaction::prepare()`], but uses an existing
+    /// Like [`tokio_postgres::Client::prepare()`], but uses an existing
     /// [`Statement`] from the [`StatementCache`] if possible.
     pub async fn prepare_cached(&self, query: &str) -> Result<Statement, Error> {
         self.statement_cache.prepare(&self.client, query).await
     }
 
-    /// Like [`tokio_postgres::Transaction::prepare_typed()`], but uses an
+    /// Like [`tokio_postgres::Client::prepare_typed()`], but uses an
     /// existing [`Statement`] from the [`StatementCache`] if possible.
     pub async fn prepare_typed_cached(
         &self,
@@ -412,15 +441,20 @@ impl DerefMut for ClientWrapper {
     }
 }
 
+impl Drop for ClientWrapper {
+    fn drop(&mut self) {
+        self.conn_task.abort()
+    }
+}
+
 /// Wrapper around [`tokio_postgres::Transaction`] with a [`StatementCache`]
 /// from the [`Client`] object it was created by.
-#[allow(missing_debug_implementations)] // due to `StatementCache`
 pub struct Transaction<'a> {
     /// Original [`PgTransaction`].
     txn: PgTransaction<'a>,
 
     /// [`StatementCache`] of this [`Transaction`].
-    statement_cache: Arc<StatementCache>,
+    pub statement_cache: Arc<StatementCache>,
 }
 
 impl<'a> Transaction<'a> {
@@ -476,6 +510,15 @@ impl<'a> Transaction<'a> {
     }
 }
 
+impl<'a> fmt::Debug for Transaction<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Transaction")
+            //.field("txn", &self.txn)
+            .field("statement_cache", &self.statement_cache)
+            .finish()
+    }
+}
+
 impl<'a> Deref for Transaction<'a> {
     type Target = PgTransaction<'a>;
 
@@ -492,7 +535,6 @@ impl<'a> DerefMut for Transaction<'a> {
 
 /// Wrapper around [`tokio_postgres::TransactionBuilder`] with a
 /// [`StatementCache`] from the [`Client`] object it was created by.
-#[allow(missing_debug_implementations)] // due to `StatementCache`
 #[must_use = "builder does nothing itself, use `.start()` to use it"]
 pub struct TransactionBuilder<'a> {
     /// Original [`PgTransactionBuilder`].
@@ -549,6 +591,15 @@ impl<'a> TransactionBuilder<'a> {
             txn: self.builder.start().await?,
             statement_cache: self.statement_cache,
         })
+    }
+}
+
+impl<'a> fmt::Debug for TransactionBuilder<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TransactionBuilder")
+            //.field("builder", &self.builder)
+            .field("statement_cache", &self.statement_cache)
+            .finish()
     }
 }
 

@@ -1,3 +1,22 @@
+## v0.6.0
+
+* Update `deadpool` dependency to version `0.10`
+* Update `rusqlite` dependency to version `0.29`
+* Add `tracing` feature
+* Bump up MSRV to `1.63` to match the one of `tokio`
+
+## v0.5.0
+
+- Update `rusqlite` dependency to version `0.28`
+
+## v0.4.0
+
+- Update `rusqlite` dependency to version `0.27`
+
+## v0.3.1
+
+* Config structs now implement `Serialize`
+
 ## v0.3.0
 
 * __Breaking:__ Replace `deadpool::managed::sync` by

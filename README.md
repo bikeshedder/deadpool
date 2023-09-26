@@ -1,4 +1,4 @@
-# Deadpool [![Latest Version](https://img.shields.io/crates/v/deadpool.svg)](https://crates.io/crates/deadpool) [![Build Status](https://img.shields.io/github/workflow/status/bikeshedder/deadpool/Rust)](https://github.com/bikeshedder/deadpool/actions?query=workflow%3ARust) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.54+](https://img.shields.io/badge/rustc-1.54+-lightgray.svg "Rust 1.54+")](https://blog.rust-lang.org/2021/07/29/Rust-1.54.0.html)
+# Deadpool [![Latest Version](https://img.shields.io/crates/v/deadpool.svg)](https://crates.io/crates/deadpool) [![Build Status](https://img.shields.io/github/actions/workflow/status/bikeshedder/deadpool/ci.yml?branch=master)](https://github.com/bikeshedder/deadpool/actions?query=workflow%3ARust) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.63+](https://img.shields.io/badge/rustc-1.63+-lightgray.svg "Rust 1.63+")](https://blog.rust-lang.org/2022/08/11/Rust-1.63.0.html)
 
 
 Deadpool is a dead simple async pool for connections and objects
@@ -24,7 +24,7 @@ This crate provides two implementations:
 | `managed` | Enable managed pool implementation | `async-trait` | yes |
 | `unmanaged` | Enable unmanaged pool implementation | - | yes |
 | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `tokio/time` | no |
-| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `async-std` | no |
+| `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/async-std) crate | `async-std` | no |
 | `serde` | Enable support for deserializing pool config | `serde/derive` | no |
 
 The runtime features (`rt_*`) are only needed if you need support for
@@ -65,8 +65,8 @@ impl managed::Manager for Manager {
     async fn create(&self) -> Result<Computer, Error> {
         Ok(Computer {})
     }
-
-    async fn recycle(&self, _: &mut Computer) -> managed::RecycleResult<Error> {
+    
+    async fn recycle(&self, _: &mut Computer, _: &managed::Metrics) -> managed::RecycleResult<Error> {
         Ok(())
     }
 }
@@ -91,13 +91,17 @@ currently supported:
 
 Backend | Crate | Latest Version |
 ------- | ----- | -------------- |
+[bolt-client](https://crates.io/crates/bolt-client) | [deadpool-bolt](https://crates.io/crates/deadpool-bolt) | [![Latest Version](https://img.shields.io/crates/v/deadpool-bolt.svg)](https://crates.io/crates/deadpool-bolt) |
 [tokio-postgres](https://crates.io/crates/tokio-postgres) | [deadpool-postgres](https://crates.io/crates/deadpool-postgres) | [![Latest Version](https://img.shields.io/crates/v/deadpool-postgres.svg)](https://crates.io/crates/deadpool-postgres) |
 [lapin](https://crates.io/crates/lapin) (AMQP) | [deadpool-lapin](https://crates.io/crates/deadpool-lapin) | [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin) |
 [redis](https://crates.io/crates/redis) | [deadpool-redis](https://crates.io/crates/deadpool-redis) | [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis) |
+[redis_cluster_async](https://crates.io/crates/redis_cluster_async) | [deadpool-redis-cluster](https://crates.io/crates/deadpool-redis-cluster) | [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis-cluster) |
 [async-memcached](https://crates.io/crates/async-memcached) | [deadpool-memcached](https://crates.io/crates/deadpool-memcached) | [![Latest Version](https://img.shields.io/crates/v/deadpool-memcached.svg)](https://crates.io/crates/deadpool-memcached) |
 [rusqlite](https://crates.io/crates/rusqlite) | [deadpool-sqlite](https://crates.io/crates/deadpool-sqlite) | [![Latest Version](https://img.shields.io/crates/v/deadpool-sqlite.svg)](https://crates.io/crates/deadpool-sqlite) |
 [diesel](https://crates.io/crates/diesel) | [deadpool-diesel](https://crates.io/crates/deadpool-diesel) | [![Latest Version](https://img.shields.io/crates/v/deadpool-diesel.svg)](https://crates.io/crates/deadpool-diesel) |
+[tiberius](https://crates.io/crates/tiberius) | [deadpool-tiberius](https://crates.io/crates/deadpool-tiberius) | [![Latest Version](https://img.shields.io/crates/v/deadpool-tiberius.svg)](https://crates.io/crates/deadpool-tiberius) |
 [r2d2](https://crates.io/crates/r2d2) | [deadpool-r2d2](https://crates.io/crates/deadpool-r2d2) | [![Latest Version](https://img.shields.io/crates/v/deadpool-r2d2.svg)](https://crates.io/crates/deadpool-r2d2) |
+[rbatis](https://crates.io/crates/rbatis) | [rbatis](https://crates.io/crates/rbatis) | [![Latest Version](https://img.shields.io/crates/v/rbatis.svg)](https://crates.io/crates/rbatis) |
 [arangors](https://crates.io/crates/arangors) | [deadpool-arangodb](https://crates.io/crates/deadpool-arangodb) | [![Latest Version](https://img.shields.io/crates/v/deadpool-arangodb.svg)](https://crates.io/crates/deadpool-arangodb) |
 
 ### Reasons for yet another connection pool

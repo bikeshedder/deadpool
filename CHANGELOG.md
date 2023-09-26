@@ -1,5 +1,43 @@
 # Change Log
 
+## v0.10.0
+
+- Remove unreachable enum variant `BuildError::Backend`
+- Split `Status.available` into `available` and `waiting`.
+- Add `QueueMode` configuration option for choosing between
+  a `FIFO` (default) and `LIFO` queue.
+- Remove `HookError::Continue` and `HookError::Abort` variants
+  replacing it with the contents of `HookErrorCause`. Returning
+  a `HookError` from a `post_create` hook causes the `Pool::get`
+  operation to fail while returning it from a `pre_recycle` or
+  `post_recycle` hook the operation continues.
+- Add `metrics` argument to `Manager::recycle` method.
+- Remove deprecated `managed::sync` module.
+- Remove deprecated `managed::Pool::try_get` method.
+- Bump up MSRV to `1.63` to match the one of `tokio`.
+
+## v0.9.5
+
+- Fix bug causing the pool to exceed its `max_size` in the
+  case of a recycling error.
+- Fix panic caused by an integer overflow in the case of
+  a failing `post_create` hook.
+
+## v0.9.4
+
+- Fix `HookError` and `HookErrorCause` in re-exports
+
+## v0.9.3
+
+* Add `Pool::retain` method
+* Fix `Pool::get_timeouts` method
+* Deprecate `managed::Pool::try_get`
+* Add `Pool::timeouts` method
+
+## v0.9.2
+
+* `PoolConfig` now implements `Serialize`
+
 ## v0.9.1
 
 * Deprecate `managed::sync` module in favor of `deadpool-sync` crate

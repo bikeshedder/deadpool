@@ -1,5 +1,18 @@
 # Change Log
 
+## v0.11.0
+
+* Update `deadpool` dependency to version `0.10`
+* Bump up MSRV to `1.63` to match the one of `tokio`
+
+## v0.10.0
+
+* Update `lapin` dependency to version `2.0`
+
+## v0.9.1
+
+* Config structs now implement `Serialize`
+
 ## v0.9.0
 
 * __Breaking:__ Replace `config` feature with `serde` (opted out by default)
