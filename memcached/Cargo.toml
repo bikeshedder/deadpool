@@ -30,3 +30,8 @@ deadpool = { path = "../", version = "0.10.0", default-features = false, feature
 ] }
 futures = { version = "0.3", features = ["compat"] }
 log = "0.4"
+# This crate doesn't directly depend on tokio but async-memcached 0.1.7
+# broke the build by forgetting to add the "net" feature to the tokio
+# dependency. Once async-memcached is fixed this dependency can be removed
+# again.
+tokio = { version = "1.0", default-features = false, features = ["net"] }
