@@ -1,4 +1,4 @@
-## v0.1.3 (unreleased)
+## v0.1.3
 
 * Bump up MSRV to `1.63` to match the one of `tokio`
 

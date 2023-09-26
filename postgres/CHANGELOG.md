@@ -1,6 +1,6 @@
 # Change Log
 
-## v0.11.0 (unreleased)
+## v0.11.0
 
 - **BREAKING:** Disconnect immediately from the database when dropping
   clients. This is considered a breaking change as in previous versions
