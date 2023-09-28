@@ -501,7 +501,10 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     ///
     /// The following example starts a background task that
     /// runs every 30 seconds and removes objects from the pool
-    /// that haven't been used for more than one minute.
+    /// that are more than one minute old.
+    ///
+    /// Note that tokio-postgres has been known to leak memory,
+    /// so pruning old database connections is good practice.
     ///
     /// ```rust,ignore
     /// let interval = Duration::from_secs(30);
@@ -509,7 +512,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     /// tokio::spawn(async move {
     ///     loop {
     ///         tokio::time::sleep(interval).await;
-    ///         pool.retain(|_, metrics| metrics.last_used() < max_age);
+    ///         pool.retain(|_, metrics| metrics.age() < max_age);
     ///     }
     /// });
     /// ```
