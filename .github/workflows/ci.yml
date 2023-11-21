@@ -97,6 +97,7 @@ jobs:
       fail-fast: false
       matrix:
         crate:
+          - arangodb
           - diesel
           - lapin
           - postgres
@@ -114,6 +115,9 @@ jobs:
             feature: postgres
           - crate: diesel
             feature: sqlite
+        exclude:
+          - crate: arangodb
+            feature: serde
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -136,6 +140,7 @@ jobs:
           - { crate: deadpool-runtime, msrv: '1.63.0' }
           - { crate: deadpool-sync, msrv: '1.63.0' }
           - { crate: deadpool, msrv: '1.63.0' }
+          - { crate: deadpool-arangodb, msrv: '1.63.0' }
           - { crate: deadpool-diesel, msrv: '1.63.0' }
           - { crate: deadpool-lapin, msrv: '1.63.0' }
           - { crate: deadpool-postgres, msrv: '1.63.0' }
@@ -167,6 +172,7 @@ jobs:
           - deadpool-runtime
           - deadpool-sync
           - deadpool
+          - deadpool-arangodb
           - deadpool-diesel
           - deadpool-lapin
           - deadpool-postgres
@@ -175,6 +181,13 @@ jobs:
           - deadpool-sqlite
     runs-on: ubuntu-latest
     services:
+      arangodb:
+        image: arangodb
+        ports:
+          - 8529:8529
+        env:
+          ARANGO_ROOT_PASSWORD: deadpool
+          ARANGODB_OVERRIDE_DETECTED_TOTAL_MEMORY: 500M
       postgres:
         image: postgres:15.3-alpine
         ports:
@@ -214,6 +227,10 @@ jobs:
 
       - run: cargo test -p ${{ matrix.crate }} --all-features
         env:
+          ARANGODB__URL: http://127.0.0.1:8529
+          ARANGODB__USERNAME: root
+          ARANGODB__PASSWORD: deadpool
+          ARANGODB__USE_JWT: "true"
           PG__HOST: 127.0.0.1
           PG__PORT: 5432
           PG__USER: deadpool
@@ -238,6 +255,7 @@ jobs:
           - deadpool-runtime
           - deadpool-sync
           - deadpool
+          - deadpool-arangodb
           - deadpool-diesel
           - deadpool-lapin
           - deadpool-postgres
