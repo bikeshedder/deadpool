@@ -175,6 +175,7 @@ impl From<ConnectionAddr> for redis::ConnectionAddr {
                 host,
                 port,
                 insecure,
+                tls_params: None,
             },
             ConnectionAddr::Unix(path) => Self::Unix(path),
         }
@@ -189,6 +190,7 @@ impl From<redis::ConnectionAddr> for ConnectionAddr {
                 host,
                 port,
                 insecure,
+                tls_params,
             } => ConnectionAddr::TcpTls {
                 host,
                 port,
