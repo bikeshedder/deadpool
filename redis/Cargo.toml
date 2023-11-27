@@ -25,7 +25,9 @@ serde = ["deadpool/serde", "serde_1"]
 deadpool = { path = "../", version = "0.10.0", default-features = false, features = [
     "managed",
 ] }
-redis = { version = "0.23", default-features = false, features = ["aio"] }
+redis = { version = ">=0.23.4, <0.24", default-features = false, features = [
+    "aio",
+] }
 serde_1 = { package = "serde", version = "1.0", features = [
     "derive",
 ], optional = true }
@@ -34,7 +36,7 @@ serde_1 = { package = "serde", version = "1.0", features = [
 config = { version = "0.13", features = ["json"] }
 dotenv = "0.15.0"
 futures = "0.3.15"
-redis = { version = "0.23", default-features = false, features = [
+redis = { version = ">=0.23.4, <0.24", default-features = false, features = [
     "tokio-comp",
 ] }
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
