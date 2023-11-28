@@ -1,6 +1,6 @@
 #![cfg(feature = "serde")]
 
-use deadpool_redis_cluster::Runtime;
+use deadpool_redis::cluster::Runtime;
 use futures::FutureExt;
 use redis::cmd;
 use serde_1::{Deserialize, Serialize};
@@ -9,7 +9,7 @@ use serde_1::{Deserialize, Serialize};
 #[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
-    redis_cluster: deadpool_redis_cluster::Config,
+    redis_cluster: deadpool_redis::cluster::Config,
 }
 
 impl Config {
@@ -28,7 +28,7 @@ impl Config {
     }
 }
 
-fn create_pool() -> deadpool_redis_cluster::Pool {
+fn create_pool() -> deadpool_redis::cluster::Pool {
     let cfg = Config::from_env();
     cfg.redis_cluster
         .create_pool(Some(Runtime::Tokio1))
@@ -37,7 +37,7 @@ fn create_pool() -> deadpool_redis_cluster::Pool {
 
 #[tokio::test]
 async fn test_pipeline() {
-    use deadpool_redis_cluster::redis::pipe;
+    use deadpool_redis::cluster::redis::pipe;
     let pool = create_pool();
     let mut conn = pool.get().await.unwrap();
     let (value,): (String,) = pipe()
@@ -55,7 +55,7 @@ async fn test_pipeline() {
 
 #[tokio::test]
 async fn test_high_level_commands() {
-    use deadpool_redis_cluster::redis::AsyncCommands;
+    use deadpool_redis::redis::AsyncCommands;
     let pool = create_pool();
     let mut conn = pool.get().await.unwrap();
     let _: () = conn.set("deadpool/hlc_test_key", 42).await.unwrap();

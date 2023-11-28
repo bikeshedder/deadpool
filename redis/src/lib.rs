@@ -21,6 +21,8 @@
 )]
 #![allow(clippy::uninlined_format_args)]
 
+#[cfg(feature = "cluster")]
+pub mod cluster;
 mod config;
 
 use std::{

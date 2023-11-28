@@ -4,7 +4,7 @@ use redis::RedisError;
 #[cfg(feature = "serde")]
 use serde_1::{Deserialize, Serialize};
 
-use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime};
+use super::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime};
 
 /// Configuration object.
 ///
@@ -79,10 +79,10 @@ impl Config {
     pub fn builder(&self) -> Result<PoolBuilder, ConfigError> {
         let manager = match (&self.urls, &self.connections) {
             (Some(urls), None) => {
-                crate::Manager::new(urls.iter().map(|url| url.as_str()).collect())?
+                super::Manager::new(urls.iter().map(|url| url.as_str()).collect())?
             }
-            (None, Some(connections)) => crate::Manager::new(connections.clone())?,
-            (None, None) => crate::Manager::new(vec![ConnectionInfo::default()])?,
+            (None, Some(connections)) => super::Manager::new(connections.clone())?,
+            (None, None) => super::Manager::new(vec![ConnectionInfo::default()])?,
             (Some(_), Some(_)) => return Err(ConfigError::UrlAndConnectionSpecified),
         };
         let pool_config = self.get_pool_config();
