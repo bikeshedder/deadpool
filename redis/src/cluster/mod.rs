@@ -1,6 +1,3 @@
-#![deprecated(since = "0.1.1", note="The functionality of `redis_cluster_async` has been merged into the 
-`redis` crate rendering this crate obsolete. Please use `deadpool-redis` instead.")]
-#![doc = include_str!("../README.md")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(
     nonstandard_style,
@@ -33,8 +30,9 @@ use std::{
 use deadpool::{async_trait, managed};
 use redis::{aio::ConnectionLike, IntoConnectionInfo, RedisError, RedisResult};
 
-pub use redis;
-pub use redis_cluster_async::{Client, Connection as RedisConnection};
+use redis;
+pub use redis::cluster::ClusterClient;
+pub use redis::cluster_async::ClusterConnection;
 
 pub use self::config::{Config, ConfigError};
 
@@ -49,11 +47,11 @@ deadpool::managed_reexports!(
 
 type RecycleResult = managed::RecycleResult<RedisError>;
 
-/// Wrapper around [`redis_cluster_async::Connection`].
+/// Wrapper around [`redis::cluster_async::ClusterConnection`].
 ///
 /// This structure implements [`redis::aio::ConnectionLike`] and can therefore
-/// be used just like a regular [`redis_cluster_async::Connection`].
-#[allow(missing_debug_implementations)] // `redis_cluster_async::Connection: !Debug`
+/// be used just like a regular [`redis::cluster_async::ClusterConnection`].
+#[allow(missing_debug_implementations)] // `redis::cluster_async::ClusterConnection: !Debug`
 pub struct Connection {
     conn: Object,
 }
@@ -63,7 +61,7 @@ impl Connection {
     ///
     /// This reduces the size of the [`Pool`].
     #[must_use]
-    pub fn take(this: Self) -> RedisConnection {
+    pub fn take(this: Self) -> ClusterConnection {
         Object::take(this.conn)
     }
 }
@@ -75,27 +73,27 @@ impl From<Object> for Connection {
 }
 
 impl Deref for Connection {
-    type Target = RedisConnection;
+    type Target = ClusterConnection;
 
-    fn deref(&self) -> &RedisConnection {
+    fn deref(&self) -> &ClusterConnection {
         &self.conn
     }
 }
 
 impl DerefMut for Connection {
-    fn deref_mut(&mut self) -> &mut RedisConnection {
+    fn deref_mut(&mut self) -> &mut ClusterConnection {
         &mut self.conn
     }
 }
 
-impl AsRef<RedisConnection> for Connection {
-    fn as_ref(&self) -> &RedisConnection {
+impl AsRef<ClusterConnection> for Connection {
+    fn as_ref(&self) -> &ClusterConnection {
         &self.conn
     }
 }
 
-impl AsMut<RedisConnection> for Connection {
-    fn as_mut(&mut self) -> &mut RedisConnection {
+impl AsMut<ClusterConnection> for Connection {
+    fn as_mut(&mut self) -> &mut ClusterConnection {
         &mut self.conn
     }
 }
@@ -122,15 +120,15 @@ impl ConnectionLike for Connection {
     }
 }
 
-/// [`Manager`] for creating and recycling [`redis_cluster_async`] connections.
+/// [`Manager`] for creating and recycling [`redis::cluster_async`] connections.
 ///
 /// [`Manager`]: managed::Manager
 pub struct Manager {
-    client: Client,
+    client: ClusterClient,
     ping_number: AtomicUsize,
 }
 
-// `redis_cluster_async::Client: !Debug`
+// `redis::cluster_async::ClusterClient: !Debug`
 impl std::fmt::Debug for Manager {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Manager")
@@ -145,10 +143,10 @@ impl Manager {
     ///
     /// # Errors
     ///
-    /// If establishing a new [`Client`] fails.
+    /// If establishing a new [`ClusterClient`] fails.
     pub fn new<T: IntoConnectionInfo>(params: Vec<T>) -> RedisResult<Self> {
         Ok(Self {
-            client: Client::open(params)?,
+            client: ClusterClient::new(params)?,
             ping_number: AtomicUsize::new(0),
         })
     }
@@ -156,15 +154,15 @@ impl Manager {
 
 #[async_trait]
 impl managed::Manager for Manager {
-    type Type = RedisConnection;
+    type Type = ClusterConnection;
     type Error = RedisError;
 
-    async fn create(&self) -> Result<RedisConnection, RedisError> {
-        let conn = self.client.get_connection().await?;
+    async fn create(&self) -> Result<ClusterConnection, RedisError> {
+        let conn = self.client.get_async_connection().await?;
         Ok(conn)
     }
 
-    async fn recycle(&self, conn: &mut RedisConnection, _: &Metrics) -> RecycleResult {
+    async fn recycle(&self, conn: &mut ClusterConnection, _: &Metrics) -> RecycleResult {
         let ping_number = self.ping_number.fetch_add(1, Ordering::Relaxed).to_string();
         let n = redis::cmd("PING")
             .arg(&ping_number)
