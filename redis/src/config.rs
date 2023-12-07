@@ -124,7 +124,8 @@ impl Default for Config {
     }
 }
 
-/// This is a 1:1 copy of the [`redis::ConnectionAddr`] enumeration.
+/// This is a 1:1 copy of the [`redis::ConnectionAddr`] enumeration (excluding `tls_params` since it is entirely opaque to consumers).
+///
 /// This is duplicated here in order to add support for the
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Debug)]
@@ -175,6 +176,7 @@ impl From<ConnectionAddr> for redis::ConnectionAddr {
                 host,
                 port,
                 insecure,
+                tls_params: None,
             },
             ConnectionAddr::Unix(path) => Self::Unix(path),
         }
@@ -189,6 +191,7 @@ impl From<redis::ConnectionAddr> for ConnectionAddr {
                 host,
                 port,
                 insecure,
+                ..
             } => ConnectionAddr::TcpTls {
                 host,
                 port,
