@@ -30,7 +30,6 @@ jobs:
           - deadpool-postgres
           - deadpool-r2d2
           - deadpool-redis
-          - deadpool-redis-cluster
           - deadpool-sqlite
           # Examples
           - example-postgres-actix-web
@@ -101,7 +100,6 @@ jobs:
           - lapin
           - postgres
           - redis
-          - redis-cluster
           - sqlite
         feature:
           - rt_tokio_1
@@ -140,7 +138,6 @@ jobs:
           - { crate: deadpool-lapin, msrv: '1.63.0' }
           - { crate: deadpool-postgres, msrv: '1.63.0' }
           - { crate: deadpool-redis, msrv: '1.63.0' }
-          - { crate: deadpool-redis-cluster, msrv: '1.63.0' }
           - { crate: deadpool-sqlite, msrv: '1.63.0' }
     runs-on: ubuntu-latest
     steps:
@@ -171,7 +168,6 @@ jobs:
           - deadpool-lapin
           - deadpool-postgres
           - deadpool-redis
-          - deadpool-redis-cluster
           - deadpool-sqlite
     runs-on: ubuntu-latest
     services:
@@ -242,7 +238,6 @@ jobs:
           - deadpool-lapin
           - deadpool-postgres
           - deadpool-redis
-          - deadpool-redis-cluster
           - deadpool-sqlite
     runs-on: ubuntu-latest
     steps:
