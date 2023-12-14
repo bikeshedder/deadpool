@@ -1,6 +1,6 @@
 # Change Log
 
-## unreleased
+## v0.1.1
 
 * Deprecated this crate
 
