@@ -28,7 +28,7 @@ serde_1 = { package = "serde", version = "1.0", features = [
     "derive",
 ], optional = true }
 tokio = { version = "1", features = ["rt"] }
-tokio-postgres = "0.7.2"
+tokio-postgres = "0.7.9"
 tracing = "0.1.37"
 
 [dev-dependencies]
