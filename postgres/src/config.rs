@@ -1,6 +1,6 @@
 //! Configuration used for [`Pool`] creation.
 
-use std::{env, fmt, str::FromStr, time::Duration};
+use std::{env, fmt, net::IpAddr, str::FromStr, time::Duration};
 
 #[cfg(feature = "serde")]
 use serde_1 as serde;
@@ -81,6 +81,10 @@ pub struct Config {
     pub host: Option<String>,
     /// See [`tokio_postgres::Config::host`].
     pub hosts: Option<Vec<String>>,
+    /// See [`tokio_postgres::Config::hostaddr`].
+    pub hostaddr: Option<IpAddr>,
+    /// See [`tokio_postgres::Config::hostaddr`].
+    pub hostaddrs: Option<Vec<IpAddr>>,
     /// This is similar to [`Config::ports`] but only allows one port to be
     /// specified.
     ///
@@ -235,6 +239,14 @@ impl Config {
             // Windows and other systems use 127.0.0.1 instead.
             #[cfg(not(unix))]
             cfg.host("127.0.0.1");
+        }
+        if let Some(hostaddr) = self.hostaddr {
+            cfg.hostaddr(hostaddr);
+        }
+        if let Some(hostaddrs) = &self.hostaddrs {
+            for hostaddr in hostaddrs {
+                cfg.hostaddr(*hostaddr);
+            }
         }
         if let Some(port) = self.port {
             cfg.port(port);
