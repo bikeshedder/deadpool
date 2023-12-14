@@ -134,10 +134,10 @@ jobs:
           - { crate: deadpool-runtime, msrv: '1.63.0' }
           - { crate: deadpool-sync, msrv: '1.63.0' }
           - { crate: deadpool, msrv: '1.63.0' }
-          - { crate: deadpool-diesel, msrv: '1.63.0' }
+          - { crate: deadpool-diesel, msrv: '1.65.0' }
           - { crate: deadpool-lapin, msrv: '1.63.0' }
           - { crate: deadpool-postgres, msrv: '1.63.0' }
-          - { crate: deadpool-redis, msrv: '1.63.0' }
+          - { crate: deadpool-redis, msrv: '1.65.0' }
           - { crate: deadpool-sqlite, msrv: '1.63.0' }
     runs-on: ubuntu-latest
     steps:
