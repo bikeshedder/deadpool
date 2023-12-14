@@ -1,3 +1,5 @@
+#![deprecated(since = "0.1.1", note="The functionality of `redis_cluster_async` has been merged into the 
+`redis` crate rendering this crate obsolete. Please use `deadpool-redis` instead.")]
 #![doc = include_str!("../README.md")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(

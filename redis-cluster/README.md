@@ -1,5 +1,14 @@
 # Deadpool for Redis Cluster [![Latest Version](https://img.shields.io/crates/v/deadpool-redis-cluster.svg)](https://crates.io/crates/deadpool-redis-cluster) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.63+](https://img.shields.io/badge/rustc-1.63+-lightgray.svg "Rust 1.63+")](https://blog.rust-lang.org/2022/08/11/Rust-1.63.0.html)
 
+# ⚠️  DEPRECATED! ⚠️
+
+The functionality of `redis_cluster_async` has been merged into the
+`redis` crate rendering this crate obsolete.
+
+Please use [`deadpool-redis`](https://crates.io/crates/deadpool-redis) instead.
+
+# ⚠️  DEPRECATED! ⚠️
+
 Deadpool is a dead simple async pool for connections and objects
 of any type.
 
