@@ -1,5 +1,9 @@
 # Change Log
 
+## Unreleased
+
+- Add support for configuration option `load_balance_hosts`
+
 ## v0.11.0
 
 - **BREAKING:** Disconnect immediately from the database when dropping

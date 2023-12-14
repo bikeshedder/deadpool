@@ -6,8 +6,8 @@ use std::{env, fmt, time::Duration};
 use serde_1 as serde;
 use tokio_postgres::{
     config::{
-        ChannelBinding as PgChannelBinding, SslMode as PgSslMode,
-        TargetSessionAttrs as PgTargetSessionAttrs,
+        ChannelBinding as PgChannelBinding, LoadBalanceHosts as PgLoadBalanceHosts,
+        SslMode as PgSslMode, TargetSessionAttrs as PgTargetSessionAttrs,
     },
     tls::{MakeTlsConnect, TlsConnect},
     Socket,
@@ -97,6 +97,8 @@ pub struct Config {
     pub target_session_attrs: Option<TargetSessionAttrs>,
     /// See [`tokio_postgres::Config::channel_binding`].
     pub channel_binding: Option<ChannelBinding>,
+    /// See [`tokio_postgres::Config::load_balance_hosts`].
+    pub load_balance_hosts: Option<LoadBalanceHosts>,
 
     /// [`Manager`] configuration.
     ///
@@ -439,6 +441,31 @@ impl From<ChannelBinding> for PgChannelBinding {
             ChannelBinding::Disable => Self::Disable,
             ChannelBinding::Prefer => Self::Prefer,
             ChannelBinding::Require => Self::Require,
+        }
+    }
+}
+
+/// Load balancing configuration.
+///
+/// This is a 1:1 copy of the [`PgLoadBalanceHosts`] enumeration.
+/// This is duplicated here in order to add support for the
+/// [`serde::Deserialize`] trait which is required for the [`serde`] support.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[non_exhaustive]
+pub enum LoadBalanceHosts {
+    /// Make connection attempts to hosts in the order provided.
+    Disable,
+    /// Make connection attempts to hosts in a random order.
+    Random,
+}
+
+impl From<LoadBalanceHosts> for PgLoadBalanceHosts {
+    fn from(cb: LoadBalanceHosts) -> Self {
+        match cb {
+            LoadBalanceHosts::Disable => Self::Disable,
+            LoadBalanceHosts::Random => Self::Random,
         }
     }
 }
