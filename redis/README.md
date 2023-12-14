@@ -127,7 +127,7 @@ async fn main() {
 ### Example with `config` and `dotenv` crate
 
 ```rust
-use deadpool_redis::redis::{cmd, FromRedisValue}, 
+use deadpool_redis::redis::{cmd, FromRedisValue};
 use deadpool_redis::cluster::{Runtime};
 use dotenv::dotenv;
 # use serde_1 as serde;

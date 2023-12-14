@@ -21,7 +21,7 @@ use super::{CreatePoolError, Pool, PoolBuilder, PoolConfig, Runtime};
 /// #[derive(serde::Deserialize)]
 /// # #[serde(crate = "serde_1")]
 /// struct Config {
-///     redis_cluster: deadpool_redis_cluster::Config,
+///     redis_cluster: deadpool_redis::cluster::Config,
 /// }
 ///
 /// impl Config {
