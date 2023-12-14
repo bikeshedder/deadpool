@@ -1,5 +1,9 @@
 # Change Log
 
+## unreleased
+
+* Bump up MSRV to `1.65` to match the one of `diesel`
+
 ## v0.5.0
 
 * Update `deadpool` dependency to version `0.10`
