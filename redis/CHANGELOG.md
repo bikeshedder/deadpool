@@ -2,9 +2,10 @@
 
 ## unreleased
 
-* Merge `deadpool-redis-cluster` into `deadpool-redis`.
-* Remove `redis_cluster_async` dependency in favor of `redis::cluster` / `redis::cluster_async`.
+- Merge `deadpool-redis-cluster` into `deadpool-redis`.
+- Remove `redis_cluster_async` dependency in favor of `redis::cluster` / `redis::cluster_async`.
 - Update `redis` dependency to version `0.23`
+- Bump up MSRV to `1.63` to match the one of `redis`
 
 ## v0.13.0
 
