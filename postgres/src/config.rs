@@ -1,6 +1,6 @@
 //! Configuration used for [`Pool`] creation.
 
-use std::{env, fmt, time::Duration};
+use std::{env, fmt, str::FromStr, time::Duration};
 
 #[cfg(feature = "serde")]
 use serde_1 as serde;
@@ -53,6 +53,11 @@ use super::{Pool, PoolConfig};
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct Config {
+    /// Initialize the configuration by parsing the URL first.
+    /// **Note**: All the other options override settings defined
+    /// by the URL except for the `host` and `hosts` options which
+    /// are additive!
+    pub url: Option<String>,
     /// See [`tokio_postgres::Config::user`].
     pub user: Option<String>,
     /// See [`tokio_postgres::Config::password`].
@@ -110,8 +115,10 @@ pub struct Config {
 }
 
 /// This error is returned if there is something wrong with the configuration
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug)]
 pub enum ConfigError {
+    /// This variant is returned if the `url` is invalid
+    InvalidUrl(tokio_postgres::Error),
     /// This variant is returned if the `dbname` is missing from the config
     DbnameMissing,
     /// This variant is returned if the `dbname` contains an empty string
@@ -121,6 +128,7 @@ pub enum ConfigError {
 impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidUrl(e) => write!(f, "configuration property \"url\" is invalid: {}", e),
             Self::DbnameMissing => write!(f, "configuration property \"dbname\" not found"),
             Self::DbnameEmpty => write!(
                 f,
@@ -182,7 +190,11 @@ impl Config {
     /// the database.
     #[allow(unused_results)]
     pub fn get_pg_config(&self) -> Result<tokio_postgres::Config, ConfigError> {
-        let mut cfg = tokio_postgres::Config::new();
+        let mut cfg = if let Some(url) = &self.url {
+            tokio_postgres::Config::from_str(url).map_err(ConfigError::InvalidUrl)?
+        } else {
+            tokio_postgres::Config::new()
+        };
         if let Some(user) = &self.user {
             cfg.user(user.as_str());
         } else if let Ok(user) = env::var("USER") {

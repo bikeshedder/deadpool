@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- Add support for configuration option `load_balance_hosts`
+- Add `load_balance_hosts` to `Config` struct.
+- Add `url` field to `Config` struct. This enables parsing of
+  connection URLs.
 
 ## v0.11.0
 
