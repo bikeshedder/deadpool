@@ -1,6 +1,6 @@
 # Change Log
 
-## Unreleased
+## v0.12.0
 
 - Add `load_balance_hosts` to `Config` struct.
 - Add `hostaddr` and `hostaddrs` to `Config` struct.

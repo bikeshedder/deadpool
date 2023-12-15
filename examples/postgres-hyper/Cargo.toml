@@ -8,7 +8,7 @@ publish = false
 
 [dependencies]
 config = "0.13"
-deadpool-postgres = { version = "0.11.0", path = "../../postgres", features = [
+deadpool-postgres = { version = "0.12.0", path = "../../postgres", features = [
     "serde",
 ] }
 dotenv = "0.15"
