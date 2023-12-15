@@ -27,7 +27,7 @@ deadpool = { path = "../", version = "0.10.0", default-features = false, feature
 serde_1 = { package = "serde", version = "1.0", features = [
     "derive",
 ], optional = true }
-tokio = { version = "1", features = ["rt"] }
+tokio = { version = "1.29", features = ["rt"] }
 tokio-postgres = "0.7.9"
 tracing = "0.1.37"
 
