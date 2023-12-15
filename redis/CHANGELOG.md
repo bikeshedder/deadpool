@@ -1,6 +1,6 @@
 # Change Log
 
-## unreleased
+## v0.14.0
 
 - Merge `deadpool-redis-cluster` into `deadpool-redis`.
 - Remove `redis_cluster_async` dependency in favor of `redis::cluster` / `redis::cluster_async`.
