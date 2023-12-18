@@ -1,6 +1,6 @@
 # Change Log
 
-## unreleased
+## v0.12.1
 
 - Fix `Config::url` handling
 
