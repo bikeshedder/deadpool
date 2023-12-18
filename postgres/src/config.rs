@@ -199,21 +199,29 @@ impl Config {
         } else {
             tokio_postgres::Config::new()
         };
-        if let Some(user) = &self.user {
+        if let Some(user) = self.user.as_ref().filter(|s| !s.is_empty()) {
             cfg.user(user.as_str());
-        } else if let Ok(user) = env::var("USER") {
-            cfg.user(user.as_str());
+        }
+        if !cfg.get_user().is_some_and(|s| !s.is_empty()) {
+            if let Ok(user) = env::var("USER") {
+                cfg.user(&user);
+            }
         }
         if let Some(password) = &self.password {
             cfg.password(password);
         }
-        match &self.dbname {
-            Some(dbname) => match dbname.as_str() {
-                "" => return Err(ConfigError::DbnameMissing),
-                dbname => cfg.dbname(dbname),
-            },
-            None => return Err(ConfigError::DbnameEmpty),
-        };
+        if let Some(dbname) = self.dbname.as_ref().filter(|s| !s.is_empty()) {
+            cfg.dbname(dbname);
+        }
+        match cfg.get_dbname() {
+            None => {
+                return Err(ConfigError::DbnameMissing);
+            }
+            Some(s) if s.is_empty() => {
+                return Err(ConfigError::DbnameEmpty);
+            }
+            _ => {}
+        }
         if let Some(options) = &self.options {
             cfg.options(options.as_str());
         }
@@ -228,7 +236,7 @@ impl Config {
                 cfg.host(host.as_str());
             }
         }
-        if self.host.is_none() && self.hosts.is_none() {
+        if cfg.get_hosts().is_empty() {
             // Systems that support it default to unix domain sockets.
             #[cfg(unix)]
             {

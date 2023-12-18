@@ -1,5 +1,9 @@
 # Change Log
 
+## unreleased
+
+- Fix `Config::url` handling
+
 ## v0.12.0
 
 - Add `load_balance_hosts` to `Config` struct.
