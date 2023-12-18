@@ -50,6 +50,51 @@ async fn main() {
 }
 ```
 
+## Example for a long-lived process
+
+```rust,no_run
+pub static DB_POOL_SIZE: Lazy<usize> = Lazy::new(|| {
+    env::var("DB_POOL").map(|v| v.parse().unwrap()).unwrap_or(1)
+});
+
+pub static DB_POOL: Lazy<Arc<deadpool_postgres::Pool>> = Lazy::new(|| {
+    Arc::new(db_pool(&env::var("DB_URL").unwrap()))
+});
+
+fn db_pool(url: &str) -> deadpool_postgres::Pool {
+    let mut pg_config = tokio_postgres::Config::from_str(url).unwrap();
+    pg_config.options("-c timezone=UTC -c statement_timeout=120s");
+    pg_config.connect_timeout(Duration::from_secs(30));
+    pg_config.keepalives_idle(Duration::from_secs(5 * 60));
+
+    // Allow TLS connections but don't verify the certificate (not yet supported by tokio-postgres)
+    let mut ssl_builder = openssl::ssl::SslConnector::builder(openssl::ssl::SslMethod::tls()).unwrap();
+    ssl_builder.set_verify(openssl::ssl::SslVerifyMode::NONE);
+    let tls = postgres_openssl::MakeTlsConnector::new(ssl_builder.build());
+
+    let mgr_config = deadpool_postgres::ManagerConfig { recycling_method: deadpool_postgres::RecyclingMethod::Fast };
+    let mgr = deadpool_postgres::Manager::from_config(pg_config, tls, mgr_config);
+    deadpool_postgres::Pool::builder(mgr).max_size(*DB_POOL_SIZE).build().unwrap()
+}
+
+// your code calls DB_POOL.get().await? to get a database connection
+```
+
+Note that tokio-postgres has been known to leak memory, so it's good practice to prune old database connections:
+
+```rust,no_run
+fn main() {
+    std::thread::spawn(|| prune_db_connections());
+}
+
+fn prune_db_connections() {
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(60));
+        DB_POOL.retain(|_, metrics| metrics.age().as_secs() < 120);
+    }
+}
+```
+
 ## Example with `config` and `dotenv` crate
 
 ```env
