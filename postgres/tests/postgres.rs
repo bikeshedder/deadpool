@@ -274,3 +274,36 @@ fn config_from_env() {
     assert_eq!(pool_cfg.timeouts.create, Some(Duration::from_secs(2)));
     assert_eq!(pool_cfg.timeouts.recycle, Some(Duration::from_secs(3)));
 }
+
+#[test]
+fn config_url() {
+    let mut cfg = deadpool_postgres::Config {
+        url: Some("postgresql://zombie@localhost/deadpool".into()),
+        ..Default::default()
+    };
+    {
+        let pg_cfg = cfg.get_pg_config().unwrap();
+        assert_eq!(pg_cfg.get_dbname(), Some("deadpool"));
+        assert_eq!(pg_cfg.get_user(), Some("zombie"));
+        assert_eq!(
+            pg_cfg.get_hosts(),
+            &[tokio_postgres::config::Host::Tcp("localhost".into())]
+        );
+    }
+    // now apply some overrides
+    {
+        cfg.dbname = Some("livepool".into());
+        cfg.host = Some("remotehost".into());
+        cfg.user = Some("human".into());
+        let pg_cfg = cfg.get_pg_config().unwrap();
+        assert_eq!(pg_cfg.get_dbname(), Some("livepool"));
+        assert_eq!(pg_cfg.get_user(), Some("human"));
+        assert_eq!(
+            pg_cfg.get_hosts(),
+            &[
+                tokio_postgres::config::Host::Tcp("localhost".into()),
+                tokio_postgres::config::Host::Tcp("remotehost".into()),
+            ]
+        );
+    }
+}
