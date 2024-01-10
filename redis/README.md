@@ -44,11 +44,11 @@ async fn main() {
 }
 ```
 
-### Example with `config` and `dotenv` crate
+### Example with `config` and `dotenvy` crate
 
 ```rust
 use deadpool_redis::{redis::{cmd, FromRedisValue}, Runtime};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 # use serde_1 as serde;
 
 #[derive(Debug, serde::Deserialize)]
@@ -124,12 +124,12 @@ async fn main() {
 }
 ```
 
-### Example with `config` and `dotenv` crate
+### Example with `config` and `dotenvy` crate
 
 ```rust
 use deadpool_redis::redis::{cmd, FromRedisValue};
 use deadpool_redis::cluster::{Runtime};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 # use serde_1 as serde;
 
 #[derive(Debug, serde::Deserialize)]

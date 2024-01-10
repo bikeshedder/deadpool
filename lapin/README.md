@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Example with `config`, `dotenv` and `tokio-amqp` crate
+## Example with `config`, `dotenvy` and `tokio-amqp` crate
 
 ```rust
 use std::sync::Arc;
@@ -55,7 +55,7 @@ use deadpool_lapin::lapin::{
     options::BasicPublishOptions,
     BasicProperties,
 };
-use dotenv::dotenv;
+use dotenvy::dotenv;
 # use serde_1 as serde;
 
 #[derive(Debug, serde::Deserialize)]

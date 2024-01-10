@@ -31,17 +31,19 @@ and `password` in the connection config or use an alternative
 [authentication method](https://www.postgresql.org/docs/current/auth-methods.html).
 
 ```rust,no_run
-use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod, Runtime};
+use deadpool_postgres::{Config, ManagerConfig, RecyclingMethod, Runtime};
 use tokio_postgres::NoTls;
 
 #[tokio::main]
 async fn main() {
     let mut cfg = Config::new();
     cfg.dbname = Some("deadpool".to_string());
-    cfg.manager = Some(ManagerConfig { recycling_method: RecyclingMethod::Fast });
+    cfg.manager = Some(ManagerConfig {
+        recycling_method: RecyclingMethod::Fast,
+    });
     let pool = cfg.create_pool(Some(Runtime::Tokio1), NoTls).unwrap();
-    for i in 1..10 {
-        let mut client = pool.get().await.unwrap();
+    for i in 1..10i32 {
+        let client = pool.get().await.unwrap();
         let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
         let rows = client.query(&stmt, &[&i]).await.unwrap();
         let value: i32 = rows[0].get(0);
@@ -50,7 +52,7 @@ async fn main() {
 }
 ```
 
-## Example with `config` and `dotenv` crate
+## Example with `config` and `dotenvy` crate
 
 ```env
 # .env
@@ -58,33 +60,31 @@ PG__DBNAME=deadpool
 ```
 
 ```rust
-use deadpool_postgres::{Manager, Pool, Runtime};
-use dotenv::dotenv;
-# use serde_1 as serde;
+use deadpool_postgres::Runtime;
+use dotenvy::dotenv;
 use tokio_postgres::NoTls;
 
 #[derive(Debug, serde::Deserialize)]
-# #[serde(crate = "serde_1")]
 struct Config {
-    pg: deadpool_postgres::Config
+    pg: deadpool_postgres::Config,
 }
 
 impl Config {
     pub fn from_env() -> Result<Self, config::ConfigError> {
         config::Config::builder()
-           .add_source(config::Environment::default().separator("__"))
-           .build()?
-           .try_deserialize()
+            .add_source(config::Environment::default().separator("__"))
+            .build()?
+            .try_deserialize()
     }
 }
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let mut cfg = Config::from_env().unwrap();
+    let cfg = Config::from_env().unwrap();
     let pool = cfg.pg.create_pool(Some(Runtime::Tokio1), NoTls).unwrap();
-    for i in 1..10 {
-        let mut client = pool.get().await.unwrap();
+    for i in 1..10i32 {
+        let client = pool.get().await.unwrap();
         let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
         let rows = client.query(&stmt, &[&i]).await.unwrap();
         let value: i32 = rows[0].get(0);
@@ -101,8 +101,8 @@ In your own code you will probably want to use `::config::ConfigError` and
 ## Example using an existing `tokio_postgres::Config` object
 
 ```rust,no_run
-use std::env;
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
+use std::env;
 use tokio_postgres::NoTls;
 
 #[tokio::main]
@@ -113,12 +113,12 @@ async fn main() {
     pg_config.user(env::var("USER").unwrap().as_str());
     pg_config.dbname("deadpool");
     let mgr_config = ManagerConfig {
-        recycling_method: RecyclingMethod::Fast
+        recycling_method: RecyclingMethod::Fast,
     };
     let mgr = Manager::from_config(pg_config, NoTls, mgr_config);
     let pool = Pool::builder(mgr).max_size(16).build().unwrap();
-    for i in 1..10 {
-        let mut client = pool.get().await.unwrap();
+    for i in 1..10i32 {
+        let client = pool.get().await.unwrap();
         let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
         let rows = client.query(&stmt, &[&i]).await.unwrap();
         let value: i32 = rows[0].get(0);
