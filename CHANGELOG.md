@@ -1,5 +1,10 @@
 # Change Log
 
+## unreleased
+
+- Remove `async_trait` dependency
+- Bump up MSRV to `1.75`
+
 ## v0.10.0
 
 - Remove unreachable enum variant `BuildError::Backend`

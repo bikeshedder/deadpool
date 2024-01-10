@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-header -->
 
+## unreleased
+
+### Changed
+
+* Update `deadpool` dependency to version `0.11`
+* Remove `async_trait` dependency
+* Bump up MSRV to `1.75`
+
 ## [0.2.0] - 2023-09-25
 
 ### Changed

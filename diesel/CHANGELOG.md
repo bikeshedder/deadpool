@@ -2,7 +2,9 @@
 
 ## unreleased
 
-* Bump up MSRV to `1.65` to match the one of `diesel`
+* Update `deadpool` dependency to version `0.11`
+* Remove `async_trait` dependency
+* Bump up MSRV to `1.75`
 
 ## v0.5.0
 
