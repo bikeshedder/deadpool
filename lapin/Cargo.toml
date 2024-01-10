@@ -39,5 +39,5 @@ async-global-executor = { version = "2.3.1", optional = true, default-features =
 
 [dev-dependencies]
 config = { version = "0.13", features = ["json"] }
-dotenv = "0.15"
+dotenvy = "0.15"
 tokio = { version = "1.0", features = ["sync", "macros", "rt-multi-thread"] }
