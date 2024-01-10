@@ -114,7 +114,7 @@ async fn transaction_pipeline() {
     let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
     let txn = client.transaction().await.unwrap();
     let mut futures = vec![];
-    for i in 0..100 {
+    for i in 0..100i32 {
         let stmt = stmt.clone();
         let txn = &txn;
         futures.push(async move {
