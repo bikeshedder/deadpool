@@ -10,7 +10,6 @@
 use std::convert::Infallible;
 
 use async_memcached::{Client, Error};
-use async_trait::async_trait;
 
 /// Type alias for using [`deadpool::managed::RecycleResult`] with [`redis`].
 type RecycleResult = deadpool::managed::RecycleResult<Error>;
@@ -32,7 +31,6 @@ impl Manager {
     }
 }
 
-#[async_trait]
 impl deadpool::managed::Manager for Manager {
     type Type = Client;
     type Error = Error;

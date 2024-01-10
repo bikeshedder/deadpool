@@ -1,7 +1,6 @@
 use std::{borrow::Cow, fmt, marker::PhantomData, sync::Arc};
 
 use deadpool::{
-    async_trait,
     managed::{self, Metrics, RecycleError, RecycleResult},
     Runtime,
 };
@@ -129,7 +128,6 @@ where
     }
 }
 
-#[async_trait]
 impl<C> managed::Manager for Manager<C>
 where
     C: diesel::Connection + 'static,

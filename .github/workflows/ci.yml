@@ -131,7 +131,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { crate: deadpool-runtime, msrv: '1.63.0' }
+          - { crate: deadpool-runtime, msrv: '1.74.0' }
           - { crate: deadpool-sync, msrv: '1.63.0' }
           - { crate: deadpool, msrv: '1.63.0' }
           - { crate: deadpool-diesel, msrv: '1.65.0' }

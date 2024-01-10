@@ -17,15 +17,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 default = ["managed", "unmanaged"]
-managed = ["async-trait"]
+managed = []
 unmanaged = []
 rt_tokio_1 = ["deadpool-runtime/tokio_1"]
 rt_async-std_1 = ["deadpool-runtime/async-std_1"]
 
 [dependencies]
 num_cpus = "1.11.1"
-# `managed` feature
-async-trait = { version = "0.1.17", optional = true }
 # `serde` feature
 serde = { version = "1.0.103", features = ["derive"], optional = true }
 # `rt_async-std_1` feature
@@ -34,6 +32,7 @@ deadpool-runtime = { version = "0.1", path = "./runtime" }
 # `tokio::sync::Semaphore`. No other features of `tokio` are enabled or used
 # unless the `rt_tokio_1` feature is enabled.
 tokio = { version = "1.0", features = ["sync"] }
+console = "0.15.7"
 
 [dev-dependencies]
 async-std = { version = "1.0", features = ["attributes"] }

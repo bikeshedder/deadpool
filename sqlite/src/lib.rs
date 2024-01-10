@@ -25,10 +25,7 @@ mod config;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use deadpool::{
-    async_trait,
-    managed::{self, RecycleError},
-};
+use deadpool::managed::{self, RecycleError};
 use deadpool_sync::SyncWrapper;
 
 pub use deadpool::managed::reexports::*;
@@ -71,7 +68,6 @@ impl Manager {
     }
 }
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = SyncWrapper<rusqlite::Connection>;
     type Error = rusqlite::Error;

@@ -23,7 +23,7 @@
 
 mod config;
 
-use deadpool::{async_trait, managed};
+use deadpool::managed;
 use lapin::{ConnectionProperties, Error};
 
 pub use lapin;
@@ -77,7 +77,6 @@ impl Manager {
     }
 }
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = lapin::Connection;
     type Error = Error;

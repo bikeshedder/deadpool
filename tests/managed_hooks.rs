@@ -2,8 +2,6 @@
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use async_trait::async_trait;
-
 use deadpool::managed::{Hook, HookError, Manager, Metrics, Pool, RecycleResult};
 
 struct Computer {
@@ -18,7 +16,6 @@ impl Computer {
     }
 }
 
-#[async_trait]
 impl Manager for Computer {
     type Type = usize;
     type Error = ();
