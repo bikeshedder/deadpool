@@ -1,9 +1,8 @@
 [package]
 name = "deadpool"
 version = "0.10.0"
-edition = "2018"
-resolver = "2"
-rust-version = "1.63"
+edition = "2021"
+rust-version = "1.75"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool"
 keywords = ["async", "database", "pool"]
