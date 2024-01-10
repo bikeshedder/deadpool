@@ -1,5 +1,11 @@
 # Change Log
 
+## unreleased
+
+* Update `deadpool` dependency to version `0.11`
+* Remove `async_trait` dependency
+* Bump up MSRV to `1.75`
+
 ## v0.3.0
 
 * Update `deadpool` dependency to version `0.10`
