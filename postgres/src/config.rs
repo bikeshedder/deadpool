@@ -2,8 +2,6 @@
 
 use std::{env, fmt, net::IpAddr, str::FromStr, time::Duration};
 
-#[cfg(feature = "serde")]
-use serde_1 as serde;
 use tokio_postgres::{
     config::{
         ChannelBinding as PgChannelBinding, LoadBalanceHosts as PgLoadBalanceHosts,
@@ -33,10 +31,7 @@ use super::{Pool, PoolConfig};
 /// PG__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
-/// # use serde_1 as serde;
-/// #
 /// #[derive(serde::Deserialize, serde::Serialize)]
-/// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     pg: deadpool_postgres::Config,
 /// }
@@ -51,7 +46,6 @@ use super::{Pool, PoolConfig};
 /// ```
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct Config {
     /// Initialize the configuration by parsing the URL first.
     /// **Note**: All the other options override settings defined
@@ -303,7 +297,6 @@ impl Config {
 /// [`Verified`]: RecyclingMethod::Verified
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub enum RecyclingMethod {
     /// Only run [`Client::is_closed()`][1] when recycling existing connections.
     ///
@@ -385,7 +378,6 @@ impl RecyclingMethod {
 /// [`Manager`]: super::Manager
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct ManagerConfig {
     /// Method of how a connection is recycled. See [`RecyclingMethod`].
     pub recycling_method: RecyclingMethod,
@@ -398,7 +390,6 @@ pub struct ManagerConfig {
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 #[non_exhaustive]
 pub enum TargetSessionAttrs {
     /// No special properties are required.
@@ -424,7 +415,6 @@ impl From<TargetSessionAttrs> for PgTargetSessionAttrs {
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 #[non_exhaustive]
 pub enum SslMode {
     /// Do not use TLS.
@@ -454,7 +444,6 @@ impl From<SslMode> for PgSslMode {
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 #[non_exhaustive]
 pub enum ChannelBinding {
     /// Do not use channel binding.
@@ -484,7 +473,6 @@ impl From<ChannelBinding> for PgChannelBinding {
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 #[non_exhaustive]
 pub enum LoadBalanceHosts {
     /// Make connection attempts to hosts in the order provided.

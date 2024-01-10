@@ -15,10 +15,7 @@ use crate::{CreatePoolError, Manager, Pool, PoolBuilder, PoolConfig, Runtime};
 /// AMQP__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
-/// # use serde_1 as serde;
-/// #
 /// #[derive(serde::Deserialize)]
-/// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     amqp: deadpool_lapin::Config,
 /// }
@@ -33,8 +30,7 @@ use crate::{CreatePoolError, Manager, Pool, PoolBuilder, PoolConfig, Runtime};
 /// }
 /// ```
 #[derive(Clone, Default)]
-#[cfg_attr(feature = "serde", derive(serde_1::Deserialize, serde_1::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct Config {
     /// AMQP server URL.
     pub url: Option<String>,

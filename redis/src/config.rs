@@ -3,8 +3,6 @@ use std::{fmt, path::PathBuf};
 use redis::RedisError;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "serde")]
-use serde_1 as serde;
 
 use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime};
 
@@ -21,10 +19,7 @@ use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime
 /// REDIS__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
-/// # use serde_1 as serde;
-///
 /// #[derive(serde::Deserialize)]
-/// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     redis: deadpool_redis::Config,
 /// }

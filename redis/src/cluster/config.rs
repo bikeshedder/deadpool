@@ -16,10 +16,7 @@ use super::{CreatePoolError, Pool, PoolBuilder, PoolConfig, Runtime};
 /// REDIS_CLUSTER__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
-/// # use serde_1 as serde;
-/// #
 /// #[derive(serde::Deserialize)]
-/// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     redis_cluster: deadpool_redis::cluster::Config,
 /// }
@@ -39,8 +36,7 @@ use super::{CreatePoolError, Pool, PoolBuilder, PoolConfig, Runtime};
 /// }
 /// ```
 #[derive(Clone, Debug)]
-#[cfg_attr(feature = "serde", derive(serde_1::Deserialize, serde_1::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct Config {
     /// Redis URLs.
     ///

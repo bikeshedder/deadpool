@@ -21,7 +21,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["rt_tokio_1"]
 rt_tokio_1 = ["deadpool/rt_tokio_1", "redis/tokio-comp"]
 rt_async-std_1 = ["deadpool/rt_async-std_1", "redis/async-std-comp"]
-serde = ["deadpool/serde", "serde_1"]
+serde = ["deadpool/serde", "dep:serde"]
 cluster = ["redis/cluster-async"]
 
 [dependencies]
@@ -29,7 +29,7 @@ deadpool = { path = "../", version = "0.10.0", default-features = false, feature
     "managed",
 ] }
 redis = { version = "0.24", default-features = false, features = ["aio"] }
-serde_1 = { package = "serde", version = "1.0", features = [
+serde = { package = "serde", version = "1.0", features = [
     "derive",
 ], optional = true }
 

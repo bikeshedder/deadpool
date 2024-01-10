@@ -56,10 +56,8 @@ use deadpool_lapin::lapin::{
     BasicProperties,
 };
 use dotenvy::dotenv;
-# use serde_1 as serde;
 
 #[derive(Debug, serde::Deserialize)]
-# #[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
     amqp: deadpool_lapin::Config
