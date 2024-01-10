@@ -1,7 +1,5 @@
 #![cfg(feature = "managed")]
 
-use async_trait::async_trait;
-
 use deadpool::{Manager, Pool, RecycleResult};
 use deadpool_runtime::Runtime;
 use deadpool_sync::SyncWrapper;
@@ -12,7 +10,6 @@ struct Computer {
 
 struct ComputerManager {}
 
-#[async_trait]
 impl Manager for ComputerManager {
     type Type = SyncWrapper<Computer>;
     type Error = ();

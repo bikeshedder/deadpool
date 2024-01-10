@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use async_trait::async_trait;
 use deadpool::managed::{Hook, HookError, Manager, Metrics, Pool, RecycleResult};
 use itertools::Itertools;
 use tokio::time::{sleep, timeout};
@@ -96,7 +95,6 @@ struct GatedManager {
     gates: Gates,
 }
 
-#[async_trait]
 impl Manager for GatedManager {
     type Type = ();
     type Error = ();

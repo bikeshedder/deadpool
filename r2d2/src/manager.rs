@@ -1,7 +1,6 @@
 use std::{fmt, sync::Arc};
 
 use deadpool::{
-    async_trait,
     managed::{self, Metrics, RecycleError, RecycleResult},
     Runtime,
 };
@@ -41,7 +40,6 @@ impl<M: r2d2::ManageConnection> Manager<M> {
     }
 }
 
-#[async_trait]
 impl<M: r2d2::ManageConnection> managed::Manager for Manager<M>
 where
     M::Error: Send,

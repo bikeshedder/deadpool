@@ -6,7 +6,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use deadpool::{async_trait, managed};
+use deadpool::managed;
 use redis::{aio::ConnectionLike, IntoConnectionInfo, RedisError, RedisResult};
 
 use redis;
@@ -131,7 +131,6 @@ impl Manager {
     }
 }
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = ClusterConnection;
     type Error = RedisError;

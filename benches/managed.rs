@@ -44,7 +44,6 @@ const CONFIGS: &[Config] = &[
 
 struct Manager {}
 
-#[async_trait::async_trait]
 impl deadpool::managed::Manager for Manager {
     type Type = ();
     type Error = ();

@@ -30,7 +30,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use deadpool::{async_trait, managed};
+use deadpool::managed;
 use redis::{
     aio::{Connection as RedisConnection, ConnectionLike},
     Client, IntoConnectionInfo, RedisError, RedisResult,
@@ -142,7 +142,6 @@ impl Manager {
     }
 }
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = RedisConnection;
     type Error = RedisError;

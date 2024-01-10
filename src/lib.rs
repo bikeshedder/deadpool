@@ -29,11 +29,6 @@ pub mod managed;
 #[cfg_attr(docsrs, doc(cfg(feature = "unmanaged")))]
 pub mod unmanaged;
 
-// For handy re-usage in integration crates.
-#[cfg(feature = "managed")]
-#[doc(hidden)]
-pub use async_trait::async_trait;
-
 pub use deadpool_runtime::{Runtime, SpawnBlockingError};
 
 /// The current pool status.

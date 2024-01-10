@@ -5,8 +5,6 @@
 
 use std::{convert::Infallible, future::Future, pin::Pin, task, time::Duration};
 
-use async_trait::async_trait;
-
 use deadpool::{
     managed::{self, Metrics, Object, PoolConfig, PoolError, RecycleResult, Timeouts},
     Runtime,
@@ -26,7 +24,6 @@ impl Future for Never {
     }
 }
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = usize;
     type Error = Infallible;

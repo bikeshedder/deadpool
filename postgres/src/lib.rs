@@ -27,14 +27,16 @@ use std::{
     borrow::Cow,
     collections::HashMap,
     fmt,
+    future::Future,
     ops::{Deref, DerefMut},
+    pin::Pin,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc, Mutex, RwLock, Weak,
     },
 };
 
-use deadpool::{async_trait, managed};
+use deadpool::managed;
 use tokio::{spawn, task::JoinHandle};
 use tokio_postgres::{
     tls::MakeTlsConnect, tls::TlsConnect, types::Type, Client as PgClient, Config as PgConfig,
@@ -59,6 +61,8 @@ deadpool::managed_reexports!(
     Error,
     ConfigError
 );
+
+type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 /// Type alias for [`Object`]
 pub type Client = Object;
@@ -119,7 +123,6 @@ impl fmt::Debug for Manager {
     }
 }
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = ClientWrapper;
     type Error = Error;
@@ -154,9 +157,11 @@ impl managed::Manager for Manager {
     }
 }
 
-#[async_trait]
 trait Connect: Sync + Send {
-    async fn connect(&self, pg_config: &PgConfig) -> Result<(PgClient, JoinHandle<()>), Error>;
+    fn connect(
+        &self,
+        pg_config: &PgConfig,
+    ) -> BoxFuture<'_, Result<(PgClient, JoinHandle<()>), Error>>;
 }
 
 struct ConnectImpl<T>
@@ -169,7 +174,6 @@ where
     tls: T,
 }
 
-#[async_trait]
 impl<T> Connect for ConnectImpl<T>
 where
     T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
@@ -177,14 +181,22 @@ where
     T::TlsConnect: Sync + Send,
     <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
 {
-    async fn connect(&self, pg_config: &PgConfig) -> Result<(PgClient, JoinHandle<()>), Error> {
-        let (client, connection) = pg_config.connect(self.tls.clone()).await?;
-        let conn_task = spawn(async move {
-            if let Err(e) = connection.await {
-                tracing::warn!(target: "deadpool.postgres", "Connection error: {}", e);
-            }
-        });
-        Ok((client, conn_task))
+    fn connect(
+        &self,
+        pg_config: &PgConfig,
+    ) -> BoxFuture<'_, Result<(PgClient, JoinHandle<()>), Error>> {
+        let tls = self.tls.clone();
+        let pg_config = pg_config.clone();
+        Box::pin(async move {
+            let fut = pg_config.connect(tls);
+            let (client, connection) = fut.await?;
+            let conn_task = spawn(async move {
+                if let Err(e) = connection.await {
+                    tracing::warn!(target: "deadpool.postgres", "Connection error: {}", e);
+                }
+            });
+            Ok((client, conn_task))
+        })
     }
 }
 

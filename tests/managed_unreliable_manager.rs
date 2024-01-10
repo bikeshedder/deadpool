@@ -5,7 +5,6 @@ use std::{
     time::Duration,
 };
 
-use async_trait::async_trait;
 use tokio::time;
 
 use deadpool::managed::{self, Metrics, RecycleError, RecycleResult};
@@ -18,7 +17,6 @@ struct Manager {
     detached: AtomicUsize,
 }
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = ();
     type Error = ();

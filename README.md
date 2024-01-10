@@ -21,7 +21,7 @@ This crate provides two implementations:
 
 | Feature | Description | Extra dependencies | Default |
 | ------- | ----------- | ------------------ | ------- |
-| `managed` | Enable managed pool implementation | `async-trait` | yes |
+| `managed` | Enable managed pool implementation | - | yes |
 | `unmanaged` | Enable unmanaged pool implementation | - | yes |
 | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `tokio/time` | no |
 | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/async-std) crate | `async-std` | no |
@@ -41,7 +41,6 @@ which work out of the box.
 ### Example
 
 ```rust
-use async_trait::async_trait;
 use deadpool::managed;
 
 #[derive(Debug)]
@@ -57,7 +56,6 @@ impl Computer {
 
 struct Manager {}
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = Computer;
     type Error = Error;

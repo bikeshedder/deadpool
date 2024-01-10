@@ -24,7 +24,6 @@ tcp = ["async-memcached/tcp"]
 
 [dependencies]
 async-memcached = { version = "0.1", default-features = false }
-async-trait = "0.1"
 deadpool = { path = "../", version = "0.10.0", default-features = false, features = [
     "managed",
 ] }
