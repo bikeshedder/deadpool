@@ -9,7 +9,7 @@ deadpool::managed_reexports!(
     "diesel",
     Manager,
     deadpool::managed::Object<Manager>,
-    diesel::ConnectionError,
+    crate::Error,
     std::convert::Infallible
 );
 
