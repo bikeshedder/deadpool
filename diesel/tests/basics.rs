@@ -3,7 +3,7 @@
 use tokio::sync::mpsc;
 
 use deadpool_diesel::{
-    sqlite::{Manager, Pool, Runtime},
+    sqlite::{Hook, HookError, Manager, Metrics, Pool, PoolError, Runtime},
     InteractError,
 };
 
@@ -48,7 +48,8 @@ async fn pooled_connection_impls_connection() {
     use diesel::sql_types::Text;
 
     let pool = create_pool(1);
-    let conn = pool.get().await.unwrap();
+    let conn_result: Result<_, PoolError> = pool.get().await;
+    let conn = conn_result.unwrap();
     let result: Result<Result<String, diesel::result::Error>, InteractError> = conn
         .interact(|conn| {
             let query = select("foo".into_sql::<Text>());
@@ -75,4 +76,15 @@ async fn lock() {
     .unwrap()
     .unwrap();
     assert_eq!("foo", &result);
+}
+
+#[tokio::test]
+async fn hooks() {
+    let manager = Manager::new(":memory:", Runtime::Tokio1);
+    Pool::builder(manager)
+        .post_create(Hook::sync_fn(|_conn, _metrics: &Metrics| {
+            Err(HookError::StaticMessage("This is a static message"))
+        }))
+        .build()
+        .unwrap();
 }
