@@ -211,7 +211,7 @@ impl Config {
             None => {
                 return Err(ConfigError::DbnameMissing);
             }
-            Some(s) if s.is_empty() => {
+            Some("") => {
                 return Err(ConfigError::DbnameEmpty);
             }
             _ => {}
