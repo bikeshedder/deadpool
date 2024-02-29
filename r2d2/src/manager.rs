@@ -54,19 +54,19 @@ where
 
     async fn recycle(&self, obj: &mut Self::Type, _: &Metrics) -> RecycleResult<Self::Error> {
         if obj.is_mutex_poisoned() {
-            return Err(RecycleError::StaticMessage(
+            return Err(RecycleError::message(
                 "Mutex is poisoned. Connection is considered unusable.",
             ));
         }
         let r2d2_manager = self.r2d2_manager.clone();
         obj.interact::<_, RecycleResult<Self::Error>>(move |obj| {
             if r2d2_manager.has_broken(obj) {
-                Err(RecycleError::StaticMessage("Connection is broken"))
+                Err(RecycleError::message("Connection is broken"))
             } else {
                 r2d2_manager.is_valid(obj).map_err(RecycleError::Backend)
             }
         })
         .await
-        .map_err(|e| RecycleError::Message(format!("Interaction failed: {}", e)))?
+        .map_err(|e| RecycleError::message(format!("Interaction failed: {}", e)))?
     }
 }

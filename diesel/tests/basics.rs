@@ -83,7 +83,7 @@ async fn hooks() {
     let manager = Manager::new(":memory:", Runtime::Tokio1);
     Pool::builder(manager)
         .post_create(Hook::sync_fn(|_conn, _metrics: &Metrics| {
-            Err(HookError::StaticMessage("This is a static message"))
+            Err(HookError::message("This is a static message"))
         }))
         .build()
         .unwrap();

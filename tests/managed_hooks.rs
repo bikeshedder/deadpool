@@ -67,7 +67,7 @@ async fn post_create_err_abort() {
         .post_create(Hook::sync_fn(|obj, _| {
             (*obj % 2 == 0)
                 .then_some(())
-                .ok_or(HookError::StaticMessage("odd creation"))
+                .ok_or(HookError::message("odd creation"))
         }))
         .build()
         .unwrap();
@@ -105,7 +105,7 @@ async fn pre_recycle_err_continue() {
         .max_size(1)
         .pre_recycle(Hook::sync_fn(|_, metrics| {
             if metrics.recycle_count > 0 {
-                Err(HookError::StaticMessage("Fail!"))
+                Err(HookError::message("Fail!"))
             } else {
                 Ok(())
             }
@@ -156,7 +156,7 @@ async fn post_recycle_err_continue() {
         .max_size(1)
         .post_recycle(Hook::sync_fn(|_, metrics| {
             if metrics.recycle_count > 0 {
-                Err(HookError::StaticMessage("Fail!"))
+                Err(HookError::message("Fail!"))
             } else {
                 Ok(())
             }

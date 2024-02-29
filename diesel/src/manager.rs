@@ -148,14 +148,14 @@ where
 
     async fn recycle(&self, obj: &mut Self::Type, _: &Metrics) -> RecycleResult<Self::Error> {
         if obj.is_mutex_poisoned() {
-            return Err(RecycleError::StaticMessage(
+            return Err(RecycleError::message(
                 "Mutex is poisoned. Connection is considered unusable.",
             ));
         }
         let config = Arc::clone(&self.manager_config);
         obj.interact(move |conn| config.recycling_method.perform_recycle_check(conn))
             .await
-            .map_err(|e| RecycleError::Message(format!("Panic: {:?}", e)))
+            .map_err(|e| RecycleError::message(format!("Panic: {:?}", e)))
             .and_then(|r| r.map_err(RecycleError::Backend))
     }
 }
