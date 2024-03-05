@@ -13,7 +13,7 @@ use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime
 /// By enabling the `serde` feature you can read the configuration using the
 /// [`config`](https://crates.io/crates/config) crate as following:
 /// ```env
-/// REDIS__CONNECTION__ADDR=redis.example.com
+/// REDIS__URL=redis.example.com
 /// REDIS__POOL__MAX_SIZE=16
 /// REDIS__POOL__TIMEOUTS__WAIT__SECS=2
 /// REDIS__POOL__TIMEOUTS__WAIT__NANOS=0
