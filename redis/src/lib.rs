@@ -32,7 +32,7 @@ use std::{
 
 use deadpool::managed;
 use redis::{
-    aio::{Connection as RedisConnection, ConnectionLike},
+    aio::{ConnectionLike, MultiplexedConnection},
     Client, IntoConnectionInfo, RedisError, RedisResult,
 };
 
@@ -46,11 +46,11 @@ deadpool::managed_reexports!("redis", Manager, Connection, RedisError, ConfigErr
 /// Type alias for using [`deadpool::managed::RecycleResult`] with [`redis`].
 type RecycleResult = managed::RecycleResult<RedisError>;
 
-/// Wrapper around [`redis::aio::Connection`].
+/// Wrapper around [`redis::aio::MultiplexedConnection`].
 ///
 /// This structure implements [`redis::aio::ConnectionLike`] and can therefore
-/// be used just like a regular [`redis::aio::Connection`].
-#[allow(missing_debug_implementations)] // `redis::aio::Connection: !Debug`
+/// be used just like a regular [`redis::aio::MultiplexedConnection`].
+#[allow(missing_debug_implementations)] // `redis::aio::MultiplexedConnection: !Debug`
 pub struct Connection {
     conn: Object,
 }
@@ -60,7 +60,7 @@ impl Connection {
     ///
     /// This reduces the size of the [`Pool`].
     #[must_use]
-    pub fn take(this: Self) -> RedisConnection {
+    pub fn take(this: Self) -> MultiplexedConnection {
         Object::take(this.conn)
     }
 }
@@ -72,27 +72,27 @@ impl From<Object> for Connection {
 }
 
 impl Deref for Connection {
-    type Target = RedisConnection;
+    type Target = MultiplexedConnection;
 
-    fn deref(&self) -> &RedisConnection {
+    fn deref(&self) -> &MultiplexedConnection {
         &self.conn
     }
 }
 
 impl DerefMut for Connection {
-    fn deref_mut(&mut self) -> &mut RedisConnection {
+    fn deref_mut(&mut self) -> &mut MultiplexedConnection {
         &mut self.conn
     }
 }
 
-impl AsRef<redis::aio::Connection> for Connection {
-    fn as_ref(&self) -> &redis::aio::Connection {
+impl AsRef<MultiplexedConnection> for Connection {
+    fn as_ref(&self) -> &MultiplexedConnection {
         &self.conn
     }
 }
 
-impl AsMut<redis::aio::Connection> for Connection {
-    fn as_mut(&mut self) -> &mut redis::aio::Connection {
+impl AsMut<MultiplexedConnection> for Connection {
+    fn as_mut(&mut self) -> &mut MultiplexedConnection {
         &mut self.conn
     }
 }
@@ -143,15 +143,15 @@ impl Manager {
 }
 
 impl managed::Manager for Manager {
-    type Type = RedisConnection;
+    type Type = MultiplexedConnection;
     type Error = RedisError;
 
-    async fn create(&self) -> Result<RedisConnection, RedisError> {
-        let conn = self.client.get_async_connection().await?;
+    async fn create(&self) -> Result<MultiplexedConnection, RedisError> {
+        let conn = self.client.get_multiplexed_async_connection().await?;
         Ok(conn)
     }
 
-    async fn recycle(&self, conn: &mut RedisConnection, _: &Metrics) -> RecycleResult {
+    async fn recycle(&self, conn: &mut MultiplexedConnection, _: &Metrics) -> RecycleResult {
         let ping_number = self.ping_number.fetch_add(1, Ordering::Relaxed).to_string();
         // Using pipeline to avoid roundtrip for UNWATCH
         let (n,) = redis::Pipeline::with_capacity(2)
