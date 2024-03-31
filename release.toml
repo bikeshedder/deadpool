@@ -1,6 +1,3 @@
-no-dev-version = true
-sign-commit = true
-sign-tag = true
 pre-release-replacements = [
   { file = "CHANGELOG.md", search = "[Unreleased]", replace = "[{{version}}] {{date}}" },
   { file = "CHANGELOG.md", search = "\\.\\.\\.HEAD", replace = "...{{tag_name}}", exactly = 1 },
