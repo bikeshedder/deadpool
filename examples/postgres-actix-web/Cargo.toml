@@ -8,7 +8,7 @@ publish = false
 
 [dependencies]
 actix-web = "4.0.1"
-config = "0.13"
+config = "0.14"
 deadpool-postgres = { version = "0.12.0", path = "../../postgres", features = [
     "serde",
 ] }

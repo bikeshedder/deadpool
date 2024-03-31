@@ -34,7 +34,7 @@ serde = { package = "serde", version = "1.0", features = [
 ], optional = true }
 
 [dev-dependencies]
-config = { version = "0.13", features = ["json"] }
+config = { version = "0.14", features = ["json"] }
 dotenvy = "0.15.0"
 futures = "0.3.15"
 redis = { version = "0.25", default-features = false, features = [
