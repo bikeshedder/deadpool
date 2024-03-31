@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Update `redis` dependency to version `0.25`
 - Update `deadpool` dependency to version `0.11`
 - Remove `async_trait` dependency
 - Bump up MSRV to `1.75`
