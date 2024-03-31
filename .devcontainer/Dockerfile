@@ -9,3 +9,5 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 USER vscode
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain 1.75 --no-modify-path -y
+
+RUN /home/vscode/.cargo/bin/cargo install cargo-release
