@@ -176,6 +176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-url -->
 [Unreleased]: https://github.com/olivierlacan/keep-a-changelog/compare/deadpool-v0.10.0...HEAD
+[0.10.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.9.5...deadpool-v0.10.0
 [0.9.5]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.9.4...deadpool-v0.9.5
 [0.9.4]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.9.3...deadpool-v0.9.4
 [0.9.3]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.9.2...deadpool-v0.9.3
