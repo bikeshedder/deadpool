@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Update `rusqlite` dependency to version `0.31`
+
 ## [0.7.0] - 2023-11-14
 
 - Update `rusqlite` dependency to version `0.30`
