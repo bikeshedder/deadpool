@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2024-04-01
+
 - Update `rusqlite` dependency to version `0.31`
 - Remove `async_trait` dependency
 
@@ -54,7 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First release
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.6.0...HEAD
+[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.8.0...HEAD
+[0.8.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.7.0...deadpool-sqlite-v0.8.0
 [0.7.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.6.0...deadpool-sqlite-v0.7.0
 [0.6.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.5.0...deadpool-sqlite-v0.6.0
 [0.5.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.4.0...deadpool-sqlite-v0.5.0

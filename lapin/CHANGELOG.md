@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2024-04-01
+
 - Update `deadpool` dependency to version `0.11`
 - Remove `async_trait` dependency
 - Bump up MSRV to `1.75`
@@ -63,7 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First release
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-lapin-v0.11.0...HEAD
+[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-lapin-v0.12.0...HEAD
+[0.12.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-lapin-v0.11.0...deadpool-lapin-v0.12.0
 [0.11.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-lapin-v0.10.0...deadpool-lapin-v0.11.0
 [0.10.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-lapin-v0.9.1...deadpool-lapin-v0.10.0
 [0.9.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-lapin-v0.9.0...deadpool-lapin-v0.9.1
