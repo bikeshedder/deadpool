@@ -1,40 +1,61 @@
-## v0.7.0
+# Changelog
 
-* Update `rusqlite` dependency to version `0.30`
+All notable changes to this project will be documented in this file.
 
-## v0.6.0
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-* Update `deadpool` dependency to version `0.10`
-* Update `rusqlite` dependency to version `0.29`
-* Add `tracing` feature
-* Bump up MSRV to `1.63` to match the one of `tokio`
+<!-- next-header -->
 
-## v0.5.0
+## [Unreleased]
+
+## [0.7.0] - 2023-11-14
+
+- Update `rusqlite` dependency to version `0.30`
+
+## [0.6.0] - 2023-09-26
+
+- Update `deadpool` dependency to version `0.10`
+- Update `rusqlite` dependency to version `0.29`
+- Add `tracing` feature
+- Bump up MSRV to `1.63` to match the one of `tokio`
+
+## [0.5.0] - 2022-07-18
 
 - Update `rusqlite` dependency to version `0.28`
 
-## v0.4.0
+## [0.4.0] - 2022-04-04
 
 - Update `rusqlite` dependency to version `0.27`
 
-## v0.3.1
+## [0.3.1] - 2021-11-15
 
-* Config structs now implement `Serialize`
+- Config structs now implement `Serialize`
 
-## v0.3.0
+## [0.3.0] - 2021-10-26
 
-* __Breaking:__ Replace `deadpool::managed::sync` by
+- __Breaking:__ Replace `deadpool::managed::sync` by
   `deadpool-sync::SyncWrapper` which fixes the return type
   of the `interact` method.
 
-## v0.2.0
+## [0.2.0] - 2021-10-18
 
-* __Breaking:__ Replace `config` feature with `serde` (opted out by default)
-* Add support for multiple runtimes
-* Fix panic handling inside the `interact` method
-* Wrap blocking drop method of connections inside `spawn_blocking`
-* Remove unused `futures`, `tokio` and `log` dependencies
+- __Breaking:__ Replace `config` feature with `serde` (opted out by default)
+- Add support for multiple runtimes
+- Fix panic handling inside the `interact` method
+- Wrap blocking drop method of connections inside `spawn_blocking`
+- Remove unused `futures`, `tokio` and `log` dependencies
 
-## v0.1.0
+## [0.1.0] - 2021-05-30
 
-* First release
+- First release
+
+<!-- next-url -->
+[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.6.0...HEAD
+[0.7.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.6.0...deadpool-sqlite-v0.7.0
+[0.6.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.5.0...deadpool-sqlite-v0.6.0
+[0.5.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.4.0...deadpool-sqlite-v0.5.0
+[0.4.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.3.0...deadpool-sqlite-v0.4.0
+[0.3.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.2.0...deadpool-sqlite-v0.3.0
+[0.2.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.1.0...deadpool-sqlite-v0.2.0
+[0.1.0]: https://github.com/bikeshedder/deadpool/releases/tag/deadpool-sqlite-v0.1.0
