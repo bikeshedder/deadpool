@@ -31,7 +31,6 @@ deadpool-runtime = { version = "0.1", path = "./runtime" }
 # `tokio::sync::Semaphore`. No other features of `tokio` are enabled or used
 # unless the `rt_tokio_1` feature is enabled.
 tokio = { version = "1.0", features = ["sync"] }
-console = "0.15.7"
 
 [dev-dependencies]
 async-std = { version = "1.0", features = ["attributes"] }

@@ -41,3 +41,6 @@ async-global-executor = { version = "2.3.1", optional = true, default-features =
 config = { version = "0.14", features = ["json"] }
 dotenvy = "0.15"
 tokio = { version = "1.0", features = ["sync", "macros", "rt-multi-thread"] }
+
+[package.metadata.cargo-machete]
+ignored = ["async-global-executor"]
