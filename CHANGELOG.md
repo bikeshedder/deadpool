@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2024-04-10
+
+- Make `Timeouts::new` and `Timeouts::wait_millis` functions const fns
+
 ## [0.11.1] - 2024-04-06
 
 - Remove unused `console` dependency
@@ -181,8 +185,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First release
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.11.1...HEAD
-[0.11.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.11.0...deadpool-v0.11.1
+[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.11.2...HEAD
+[0.11.2]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.11.1...deadpool-v0.11.2
+[0.11.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.11.0...deadpool-v0.11.1
 [0.11.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.10.0...deadpool-v0.11.0
 [0.10.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.9.5...deadpool-v0.10.0
 [0.9.5]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.9.4...deadpool-v0.9.5
