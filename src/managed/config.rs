@@ -76,7 +76,11 @@ impl Timeouts {
     /// Create an empty [`Timeouts`] config (no timeouts set).
     #[must_use]
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            create: None,
+            wait: None,
+            recycle: None,
+        }
     }
 
     /// Creates a new [`Timeouts`] config with only the `wait` timeout being
@@ -95,11 +99,7 @@ impl Timeouts {
 impl Default for Timeouts {
     /// Creates an empty [`Timeouts`] config (no timeouts set).
     fn default() -> Self {
-        Self {
-            create: None,
-            wait: None,
-            recycle: None,
-        }
+        Self::new()
     }
 }
 
