@@ -14,7 +14,8 @@ readme = "README.md"
 all-features = true
 
 [features]
-default = ["rt_tokio_1"]
+default = ["runtime", "rt_tokio_1"]
+runtime = ["tokio-postgres/runtime"]
 rt_tokio_1 = ["deadpool/rt_tokio_1"]
 rt_async-std_1 = ["deadpool/rt_async-std_1"]
 serde = ["deadpool/serde", "dep:serde"]
@@ -27,7 +28,7 @@ serde = { package = "serde", version = "1.0", features = [
     "derive",
 ], optional = true }
 tokio = { version = "1.29", features = ["rt"] }
-tokio-postgres = "0.7.9"
+tokio-postgres = { version = "0.7.9", default-features = false }
 tracing = "0.1.37"
 
 [dev-dependencies]

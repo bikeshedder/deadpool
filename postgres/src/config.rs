@@ -2,18 +2,22 @@
 
 use std::{env, fmt, net::IpAddr, str::FromStr, time::Duration};
 
+use tokio_postgres::config::{
+    ChannelBinding as PgChannelBinding, LoadBalanceHosts as PgLoadBalanceHosts,
+    SslMode as PgSslMode, TargetSessionAttrs as PgTargetSessionAttrs,
+};
+
+#[cfg(feature = "runtime")]
+use super::Pool;
+#[cfg(feature = "runtime")]
+use crate::{CreatePoolError, PoolBuilder, Runtime};
+#[cfg(feature = "runtime")]
 use tokio_postgres::{
-    config::{
-        ChannelBinding as PgChannelBinding, LoadBalanceHosts as PgLoadBalanceHosts,
-        SslMode as PgSslMode, TargetSessionAttrs as PgTargetSessionAttrs,
-    },
     tls::{MakeTlsConnect, TlsConnect},
     Socket,
 };
 
-use crate::{CreatePoolError, PoolBuilder, Runtime};
-
-use super::{Pool, PoolConfig};
+use super::PoolConfig;
 
 /// Configuration object.
 ///
@@ -94,6 +98,7 @@ pub struct Config {
     pub connect_timeout: Option<Duration>,
     /// See [`tokio_postgres::Config::keepalives`].
     pub keepalives: Option<bool>,
+    #[cfg(not(target_arch = "wasm32"))]
     /// See [`tokio_postgres::Config::keepalives_idle`].
     pub keepalives_idle: Option<Duration>,
     /// See [`tokio_postgres::Config::target_session_attrs`].
@@ -146,6 +151,7 @@ impl Config {
         Self::default()
     }
 
+    #[cfg(feature = "runtime")]
     /// Creates a new [`Pool`] using this [`Config`].
     ///
     /// # Errors
@@ -165,6 +171,7 @@ impl Config {
         builder.build().map_err(CreatePoolError::Build)
     }
 
+    #[cfg(feature = "runtime")]
     /// Creates a new [`PoolBuilder`] using this [`Config`].
     ///
     /// # Errors
@@ -264,6 +271,7 @@ impl Config {
         if let Some(keepalives) = self.keepalives {
             cfg.keepalives(keepalives);
         }
+        #[cfg(not(target_arch = "wasm32"))]
         if let Some(keepalives_idle) = self.keepalives_idle {
             cfg.keepalives_idle(keepalives_idle);
         }

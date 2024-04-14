@@ -37,11 +37,18 @@ use std::{
 };
 
 use deadpool::managed;
-use tokio::{spawn, task::JoinHandle};
+#[cfg(feature = "runtime")]
+use tokio::spawn;
+use tokio::task::JoinHandle;
 use tokio_postgres::{
-    tls::MakeTlsConnect, tls::TlsConnect, types::Type, Client as PgClient, Config as PgConfig,
-    Error, IsolationLevel, Socket, Statement, Transaction as PgTransaction,
-    TransactionBuilder as PgTransactionBuilder,
+    types::Type, Client as PgClient, Config as PgConfig, Error, IsolationLevel, Statement,
+    Transaction as PgTransaction, TransactionBuilder as PgTransactionBuilder,
+};
+
+#[cfg(feature = "runtime")]
+use tokio_postgres::{
+    tls::{MakeTlsConnect, TlsConnect},
+    Socket,
 };
 
 pub use tokio_postgres;
@@ -82,6 +89,7 @@ pub struct Manager {
 }
 
 impl Manager {
+    #[cfg(feature = "runtime")]
     /// Creates a new [`Manager`] using the given [`tokio_postgres::Config`] and
     /// `tls` connector.
     pub fn new<T>(pg_config: tokio_postgres::Config, tls: T) -> Self
@@ -94,6 +102,7 @@ impl Manager {
         Self::from_config(pg_config, tls, ManagerConfig::default())
     }
 
+    #[cfg(feature = "runtime")]
     /// Create a new [`Manager`] using the given [`tokio_postgres::Config`], and
     /// `tls` connector and [`ManagerConfig`].
     pub fn from_config<T>(pg_config: tokio_postgres::Config, tls: T, config: ManagerConfig) -> Self
@@ -103,10 +112,20 @@ impl Manager {
         T::TlsConnect: Sync + Send,
         <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
     {
+        Self::from_connect(pg_config, ConfigConnectImpl { tls }, config)
+    }
+
+    /// Create a new [`Manager`] using the given [`tokio_postgres::Config`], and
+    /// `connect` impl and [`ManagerConfig`].
+    pub fn from_connect(
+        pg_config: tokio_postgres::Config,
+        connect: impl Connect + 'static,
+        config: ManagerConfig,
+    ) -> Self {
         Self {
             config,
             pg_config,
-            connect: Box::new(ConnectImpl { tls }),
+            connect: Box::new(connect),
             statement_caches: StatementCaches::default(),
         }
     }
@@ -157,24 +176,35 @@ impl managed::Manager for Manager {
     }
 }
 
-trait Connect: Sync + Send {
+/// Describes a mechanism for establishing a connection to a PostgreSQL
+/// server via `tokio_postgres`.
+pub trait Connect: Sync + Send {
+    /// Establishes a new `tokio_postgres` connection, returning
+    /// the associated `Client` and a `JoinHandle` to a tokio task
+    /// for processing the connection.
     fn connect(
         &self,
         pg_config: &PgConfig,
     ) -> BoxFuture<'_, Result<(PgClient, JoinHandle<()>), Error>>;
 }
 
-struct ConnectImpl<T>
+#[cfg(feature = "runtime")]
+/// Provides an implementation of [`Connect`] that establishes the connection
+/// using the `tokio_postgres` configuration itself.
+#[derive(Debug)]
+pub struct ConfigConnectImpl<T>
 where
     T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
     T::Stream: Sync + Send,
     T::TlsConnect: Sync + Send,
     <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
 {
-    tls: T,
+    /// The TLS connector to use for the connection.
+    pub tls: T,
 }
 
-impl<T> Connect for ConnectImpl<T>
+#[cfg(feature = "runtime")]
+impl<T> Connect for ConfigConnectImpl<T>
 where
     T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
     T::Stream: Sync + Send,
