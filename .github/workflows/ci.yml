@@ -125,6 +125,32 @@ jobs:
       - run: cargo check -p deadpool-${{ matrix.crate }}
                    --features ${{ matrix.feature }}
 
+  check-integration-wasm:
+    name: Check integration (WebAssembly)
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+          - postgres
+        feature:
+          - --features rt_tokio_1
+          - --features rt_async-std_1
+          - --features serde --features rt_tokio_1
+          - --features serde --features rt_async-std_1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+
+      - run: cargo check -p deadpool-${{ matrix.crate }}
+                   --no-default-features
+                   ${{ matrix.feature }}
+                   --target wasm32-unknown-unknown
+
   msrv:
     name: MSRV
     strategy:
