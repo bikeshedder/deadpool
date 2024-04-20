@@ -134,9 +134,7 @@ jobs:
           - postgres
         feature:
           - --features rt_tokio_1
-          - --features rt_async-std_1
           - --features serde --features rt_tokio_1
-          - --features serde --features rt_async-std_1
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
