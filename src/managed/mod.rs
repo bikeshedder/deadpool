@@ -66,8 +66,11 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Arc, Mutex, Weak,
     },
-    time::{Duration, Instant},
+    time::Duration,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
 
 use deadpool_runtime::Runtime;
 use tokio::sync::{Semaphore, TryAcquireError};
@@ -409,7 +412,10 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         }
 
         inner.metrics.recycle_count += 1;
-        inner.metrics.recycled = Some(Instant::now());
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            inner.metrics.recycled = Some(Instant::now());
+        }
 
         Ok(Some(unready_obj.ready()))
     }
