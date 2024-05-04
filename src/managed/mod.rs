@@ -89,13 +89,13 @@ pub type RecycleResult<E> = Result<(), RecycleError<E>>;
 /// Manager responsible for creating new [`Object`]s or recycling existing ones.
 pub trait Manager: Sync + Send {
     /// Type of [`Object`]s that this [`Manager`] creates and recycles.
-    type Type;
+    type Type: Send;
     /// Error that this [`Manager`] can return when creating and/or recycling
     /// [`Object`]s.
-    type Error;
+    type Error: Send;
 
     /// Creates a new instance of [`Manager::Type`].
-    fn create(&self) -> impl Future<Output = Result<Self::Type, Self::Error>>;
+    fn create(&self) -> impl Future<Output = Result<Self::Type, Self::Error>> + Send;
 
     /// Tries to recycle an instance of [`Manager::Type`].
     ///
@@ -106,7 +106,7 @@ pub trait Manager: Sync + Send {
         &self,
         obj: &mut Self::Type,
         metrics: &Metrics,
-    ) -> impl Future<Output = RecycleResult<Self::Error>>;
+    ) -> impl Future<Output = RecycleResult<Self::Error>> + Send;
 
     /// Detaches an instance of [`Manager::Type`] from this [`Manager`].
     ///

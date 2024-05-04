@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Add `Send` to `Manager::Type` and `Manager::Error` associated types
+- Add `Send` to `Manager::create` and `Manager::recycle` return types
+
 ## [0.11.2] - 2024-04-10
 
 - Make `Timeouts::new` and `Timeouts::wait_millis` functions const fns
