@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1] - 2024-05-04
+
+- Update `deadpool` dependency to version `0.12`
+- Add `LICENSE-APACHE` and `LICENSE-MIT` files to published crates
+
 ## [0.15.0] - 2024-04-01
 
 - Update `redis` dependency to version `0.25`
@@ -152,7 +157,8 @@ Release of 0.6 and 0.7 with the following feature backported:
 - First release
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.15.0...HEAD
+[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.15.1...HEAD
+[0.15.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.15.0...deadpool-redis-v0.15.1
 [0.15.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.14.0...deadpool-redis-v0.15.0
 [0.14.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.13.0...deadpool-redis-v0.14.0
 [0.13.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.12.0...deadpool-redis-v0.13.0
