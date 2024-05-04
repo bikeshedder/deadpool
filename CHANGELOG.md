@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Add WASM support
+
 ## [0.12.0] - 2024-05-04
 
 - Add `Send` to `Manager::Type` and `Manager::Error` associated types

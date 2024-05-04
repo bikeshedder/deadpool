@@ -7,11 +7,11 @@ use tokio_postgres::config::{
     SslMode as PgSslMode, TargetSessionAttrs as PgTargetSessionAttrs,
 };
 
-#[cfg(feature = "runtime")]
+#[cfg(not(target_arch = "wasm32"))]
 use super::Pool;
-#[cfg(feature = "runtime")]
+#[cfg(not(target_arch = "wasm32"))]
 use crate::{CreatePoolError, PoolBuilder, Runtime};
-#[cfg(feature = "runtime")]
+#[cfg(not(target_arch = "wasm32"))]
 use tokio_postgres::{
     tls::{MakeTlsConnect, TlsConnect},
     Socket,
@@ -151,7 +151,7 @@ impl Config {
         Self::default()
     }
 
-    #[cfg(feature = "runtime")]
+    #[cfg(not(target_arch = "wasm32"))]
     /// Creates a new [`Pool`] using this [`Config`].
     ///
     /// # Errors
@@ -171,7 +171,7 @@ impl Config {
         builder.build().map_err(CreatePoolError::Build)
     }
 
-    #[cfg(feature = "runtime")]
+    #[cfg(not(target_arch = "wasm32"))]
     /// Creates a new [`PoolBuilder`] using this [`Config`].
     ///
     /// # Errors

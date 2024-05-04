@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Add WASM support
+- Expose API for providing a custom `Connect` implementation.
+
 ## [0.13.1] - 2024-05-04
 
 - Update `deadpool` dependency to version `0.12`

@@ -37,7 +37,7 @@ use std::{
 };
 
 use deadpool::managed;
-#[cfg(feature = "runtime")]
+#[cfg(not(target_arch = "wasm32"))]
 use tokio::spawn;
 use tokio::task::JoinHandle;
 use tokio_postgres::{
@@ -45,7 +45,7 @@ use tokio_postgres::{
     Transaction as PgTransaction, TransactionBuilder as PgTransactionBuilder,
 };
 
-#[cfg(feature = "runtime")]
+#[cfg(not(target_arch = "wasm32"))]
 use tokio_postgres::{
     tls::{MakeTlsConnect, TlsConnect},
     Socket,
@@ -89,7 +89,7 @@ pub struct Manager {
 }
 
 impl Manager {
-    #[cfg(feature = "runtime")]
+    #[cfg(not(target_arch = "wasm32"))]
     /// Creates a new [`Manager`] using the given [`tokio_postgres::Config`] and
     /// `tls` connector.
     pub fn new<T>(pg_config: tokio_postgres::Config, tls: T) -> Self
@@ -102,7 +102,7 @@ impl Manager {
         Self::from_config(pg_config, tls, ManagerConfig::default())
     }
 
-    #[cfg(feature = "runtime")]
+    #[cfg(not(target_arch = "wasm32"))]
     /// Create a new [`Manager`] using the given [`tokio_postgres::Config`], and
     /// `tls` connector and [`ManagerConfig`].
     pub fn from_config<T>(pg_config: tokio_postgres::Config, tls: T, config: ManagerConfig) -> Self
@@ -188,7 +188,7 @@ pub trait Connect: Sync + Send {
     ) -> BoxFuture<'_, Result<(PgClient, JoinHandle<()>), Error>>;
 }
 
-#[cfg(feature = "runtime")]
+#[cfg(not(target_arch = "wasm32"))]
 /// Provides an implementation of [`Connect`] that establishes the connection
 /// using the `tokio_postgres` configuration itself.
 #[derive(Debug)]
@@ -203,7 +203,7 @@ where
     pub tls: T,
 }
 
-#[cfg(feature = "runtime")]
+#[cfg(not(target_arch = "wasm32"))]
 impl<T> Connect for ConfigConnectImpl<T>
 where
     T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
