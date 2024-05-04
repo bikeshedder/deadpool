@@ -34,7 +34,7 @@ pub use deadpool::managed::reexports::*;
 deadpool::managed_reexports!(
     "lapin",
     Manager,
-    deadpool::managed::Object<Manager>,
+    managed::Object<Manager>,
     Error,
     ConfigError
 );
@@ -59,7 +59,7 @@ impl std::fmt::Debug for Manager {
             .field("addr", &self.addr)
             .field(
                 "connection_properties",
-                &self::config::ConnProps(&self.connection_properties),
+                &config::ConnProps(&self.connection_properties),
             )
             .finish()
     }

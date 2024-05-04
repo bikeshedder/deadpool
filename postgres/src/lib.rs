@@ -57,7 +57,7 @@ pub use deadpool::managed::reexports::*;
 deadpool::managed_reexports!(
     "tokio_postgres",
     Manager,
-    deadpool::managed::Object<Manager>,
+    managed::Object<Manager>,
     Error,
     ConfigError
 );
@@ -67,8 +67,8 @@ type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 /// Type alias for [`Object`]
 pub type Client = Object;
 
-type RecycleResult = deadpool::managed::RecycleResult<Error>;
-type RecycleError = deadpool::managed::RecycleError<Error>;
+type RecycleResult = managed::RecycleResult<Error>;
+type RecycleError = managed::RecycleError<Error>;
 
 /// [`Manager`] for creating and recycling PostgreSQL connections.
 ///

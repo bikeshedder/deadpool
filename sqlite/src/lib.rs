@@ -35,7 +35,7 @@ pub use rusqlite;
 deadpool::managed_reexports!(
     "rusqlite",
     Manager,
-    deadpool::managed::Object<Manager>,
+    managed::Object<Manager>,
     rusqlite::Error,
     ConfigError
 );
