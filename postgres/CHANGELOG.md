@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.2] - 2024-05-07
+
 - Add WASM support
 - Expose API for providing a custom `Connect` implementation.
 - Add `+ Send` to futures returned by `GenericClient`
@@ -206,7 +208,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First release
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-postgres-v0.13.1...HEAD
+[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-postgres-v0.13.2...HEAD
+[0.13.2]: https://github.com/bikeshedder/deadpool/compare/deadpool-postgres-v0.13.1...deadpool-postgres-v0.13.2
 [0.13.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-postgres-v0.13.0...deadpool-postgres-v0.13.1
 [0.13.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-postgres-v0.12.1...deadpool-postgres-v0.13.0
 [0.12.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-postgres-v0.12.0...deadpool-postgres-v0.12.1
