@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add WASM support
 - Expose API for providing a custom `Connect` implementation.
+- Add `+ Send` to futures returned by `GenericClient`
 
 ## [0.13.1] - 2024-05-04
 

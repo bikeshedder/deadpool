@@ -24,7 +24,7 @@ pub trait GenericClient: Sync + private::Sealed {
         &self,
         query: &T,
         params: &[&(dyn ToSql + Sync)],
-    ) -> impl Future<Output = Result<u64, Error>>
+    ) -> impl Future<Output = Result<u64, Error>> + Send
     where
         T: ?Sized + ToStatement + Sync + Send;
 
@@ -33,7 +33,7 @@ pub trait GenericClient: Sync + private::Sealed {
         &self,
         statement: &T,
         params: I,
-    ) -> impl Future<Output = Result<u64, Error>>
+    ) -> impl Future<Output = Result<u64, Error>> + Send
     where
         T: ?Sized + ToStatement + Sync + Send,
         P: BorrowToSql,
@@ -45,7 +45,7 @@ pub trait GenericClient: Sync + private::Sealed {
         &self,
         query: &T,
         params: &[&(dyn ToSql + Sync)],
-    ) -> impl Future<Output = Result<Vec<Row>, Error>>
+    ) -> impl Future<Output = Result<Vec<Row>, Error>> + Send
     where
         T: ?Sized + ToStatement + Sync + Send;
 
@@ -54,7 +54,7 @@ pub trait GenericClient: Sync + private::Sealed {
         &self,
         statement: &T,
         params: &[&(dyn ToSql + Sync)],
-    ) -> impl Future<Output = Result<Row, Error>>
+    ) -> impl Future<Output = Result<Row, Error>> + Send
     where
         T: ?Sized + ToStatement + Sync + Send;
 
@@ -63,7 +63,7 @@ pub trait GenericClient: Sync + private::Sealed {
         &self,
         statement: &T,
         params: &[&(dyn ToSql + Sync)],
-    ) -> impl Future<Output = Result<Option<Row>, Error>>
+    ) -> impl Future<Output = Result<Option<Row>, Error>> + Send
     where
         T: ?Sized + ToStatement + Sync + Send;
 
@@ -72,7 +72,7 @@ pub trait GenericClient: Sync + private::Sealed {
         &self,
         statement: &T,
         params: I,
-    ) -> impl Future<Output = Result<RowStream, Error>>
+    ) -> impl Future<Output = Result<RowStream, Error>> + Send
     where
         T: ?Sized + ToStatement + Sync + Send,
         P: BorrowToSql,
@@ -80,30 +80,30 @@ pub trait GenericClient: Sync + private::Sealed {
         I::IntoIter: ExactSizeIterator;
 
     /// Like `Client::prepare`.
-    fn prepare(&self, query: &str) -> impl Future<Output = Result<Statement, Error>>;
+    fn prepare(&self, query: &str) -> impl Future<Output = Result<Statement, Error>> + Send;
 
     /// Like `Client::prepare_typed`.
     fn prepare_typed(
         &self,
         query: &str,
         parameter_types: &[Type],
-    ) -> impl Future<Output = Result<Statement, Error>>;
+    ) -> impl Future<Output = Result<Statement, Error>> + Send;
 
     /// Like [`Client::prepare_cached`].
-    fn prepare_cached(&self, query: &str) -> impl Future<Output = Result<Statement, Error>>;
+    fn prepare_cached(&self, query: &str) -> impl Future<Output = Result<Statement, Error>> + Send;
 
     /// Like [`Client::prepare_typed_cached`]
     fn prepare_typed_cached(
         &self,
         query: &str,
         types: &[Type],
-    ) -> impl Future<Output = Result<Statement, Error>>;
+    ) -> impl Future<Output = Result<Statement, Error>> + Send;
 
     /// Like `Client::transaction`.
-    fn transaction(&mut self) -> impl Future<Output = Result<Transaction<'_>, Error>>;
+    fn transaction(&mut self) -> impl Future<Output = Result<Transaction<'_>, Error>> + Send;
 
     /// Like `Client::batch_execute`.
-    fn batch_execute(&self, query: &str) -> impl Future<Output = Result<(), Error>>;
+    fn batch_execute(&self, query: &str) -> impl Future<Output = Result<(), Error>> + Send;
 }
 
 impl private::Sealed for Client {}
