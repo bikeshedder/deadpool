@@ -62,7 +62,8 @@ pub struct SyncWrapper<T>
 where
     T: Send + 'static,
 {
-    obj: Arc<Mutex<Option<T>>>,
+    // always Some except in drop()
+    obj: Option<Arc<Mutex<T>>>,
     runtime: Runtime,
 }
 
@@ -98,7 +99,7 @@ where
             Ok(obj) => obj,
         };
         result.map(|obj| Self {
-            obj: Arc::new(Mutex::new(Some(obj))),
+            obj: Some(Arc::new(Mutex::new(obj))),
             runtime,
         })
     }
@@ -113,16 +114,15 @@ where
         F: FnOnce(&mut T) -> R + Send + 'static,
         R: Send + 'static,
     {
-        let arc = self.obj.clone();
+        let arc = self.obj.as_ref().unwrap().clone();
         #[cfg(feature = "tracing")]
         let span = tracing::Span::current();
         self.runtime
             .spawn_blocking(move || {
                 let mut guard = arc.lock().unwrap();
-                let conn = guard.as_mut().unwrap();
                 #[cfg(feature = "tracing")]
                 let _span = span.enter();
-                f(conn)
+                f(&mut *guard)
             })
             .await
             .map_err(|SpawnBlockingError::Panic(p)| InteractError::Panic(p))
@@ -132,19 +132,19 @@ where
     ///
     /// This happens when a panic occurs while interacting with the object.
     pub fn is_mutex_poisoned(&self) -> bool {
-        self.obj.is_poisoned()
+        self.obj.as_ref().unwrap().is_poisoned()
     }
 
     /// Lock the underlying mutex and return a guard for the inner
     /// object.
-    pub fn lock(&self) -> Result<SyncGuard<'_, T>, PoisonError<MutexGuard<'_, Option<T>>>> {
-        self.obj.lock().map(SyncGuard)
+    pub fn lock(&self) -> Result<SyncGuard<'_, T>, PoisonError<MutexGuard<'_, T>>> {
+        self.obj.as_ref().unwrap().lock().map(SyncGuard)
     }
 
     /// Try to lock the underlying mutex and return a guard for the
     /// inner object.
-    pub fn try_lock(&self) -> Result<SyncGuard<'_, T>, TryLockError<MutexGuard<'_, Option<T>>>> {
-        self.obj.try_lock().map(SyncGuard)
+    pub fn try_lock(&self) -> Result<SyncGuard<'_, T>, TryLockError<MutexGuard<'_, T>>> {
+        self.obj.as_ref().unwrap().try_lock().map(SyncGuard)
     }
 }
 
@@ -153,14 +153,12 @@ where
     T: Send + 'static,
 {
     fn drop(&mut self) {
-        let arc = self.obj.clone();
-        // Drop the `rusqlite::Connection` inside a `spawn_blocking`
-        // as the `drop` function of it can block.
+        let arc = self.obj.take();
+        // If this may be the last arc reference, so drop the
+        // `rusqlite::Connection` inside a `spawn_blocking` as the `drop`
+        // function of it can block.
         self.runtime
-            .spawn_blocking_background(move || match arc.lock() {
-                Ok(mut guard) => drop(guard.take()),
-                Err(e) => drop(e.into_inner().take()),
-            })
+            .spawn_blocking_background(move || drop(arc))
             .unwrap();
     }
 }
@@ -172,29 +170,29 @@ where
 /// **Important:** Any blocking operation using this object
 /// should be executed on a separate thread (e.g. via `spawn_blocking`).
 #[derive(Debug)]
-pub struct SyncGuard<'a, T: Send>(MutexGuard<'a, Option<T>>);
+pub struct SyncGuard<'a, T: Send>(MutexGuard<'a, T>);
 
 impl<'a, T: Send> Deref for SyncGuard<'a, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        self.0.as_ref().unwrap()
+        &self.0
     }
 }
 
 impl<'a, T: Send> DerefMut for SyncGuard<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.0.as_mut().unwrap()
+        &mut self.0
     }
 }
 
 impl<'a, T: Send> AsRef<T> for SyncGuard<'a, T> {
     fn as_ref(&self) -> &T {
-        self.0.as_ref().unwrap()
+        &self.0
     }
 }
 
 impl<'a, T: Send> AsMut<T> for SyncGuard<'a, T> {
     fn as_mut(&mut self) -> &mut T {
-        self.0.as_mut().unwrap()
+        &mut self.0
     }
 }
