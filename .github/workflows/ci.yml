@@ -158,7 +158,7 @@ jobs:
           - { crate: deadpool-runtime, msrv: '1.75.0' }
           - { crate: deadpool-sync, msrv: '1.75.0' }
           - { crate: deadpool, msrv: '1.75.0' }
-          - { crate: deadpool-diesel, msrv: '1.75.0' }
+          - { crate: deadpool-diesel, msrv: '1.78.0' }
           - { crate: deadpool-lapin, msrv: '1.75.0' }
           - { crate: deadpool-postgres, msrv: '1.75.0' }
           - { crate: deadpool-redis, msrv: '1.75.0' }
