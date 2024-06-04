@@ -29,8 +29,8 @@ deadpool = { path = "../", version = "0.12.0", default-features = false, feature
     "managed",
 ] }
 deadpool-sync = { path = "../sync", version = "0.1.1" }
-diesel = { version = "2.0.0", default-features = false }
+diesel = { version = "2.2.0", default-features = false }
 
 [dev-dependencies]
-diesel = { version = "2.0.0", default-features = false, features = ["sqlite"] }
+diesel = { version = "2.2.0", default-features = false, features = ["sqlite"] }
 tokio = { version = "1.0", features = ["macros", "rt", "rt-multi-thread"] }

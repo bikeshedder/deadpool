@@ -131,7 +131,7 @@ where
 impl<C> managed::Manager for Manager<C>
 where
     C: diesel::Connection + 'static,
-    diesel::dsl::BareSelect<diesel::dsl::AsExprOf<i32, diesel::sql_types::Integer>>:
+    diesel::helper_types::select<diesel::dsl::AsExprOf<i32, diesel::sql_types::Integer>>:
         QueryFragment<C::Backend>,
     diesel::query_builder::SqlQuery: QueryFragment<C::Backend>,
 {
@@ -163,7 +163,7 @@ where
 impl<C> RecyclingMethod<C>
 where
     C: diesel::Connection,
-    diesel::dsl::BareSelect<diesel::dsl::AsExprOf<i32, diesel::sql_types::Integer>>:
+    diesel::helper_types::select<diesel::dsl::AsExprOf<i32, diesel::sql_types::Integer>>:
         QueryFragment<C::Backend>,
     diesel::query_builder::SqlQuery: QueryFragment<C::Backend>,
 {

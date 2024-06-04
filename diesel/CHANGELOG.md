@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Fix deprecation warning introduced in diesel `2.2.0`
+- Update `diesel` dependency to version `2.2.0`
+
 ## [0.6.1] - 2024-05-04
 
 - Update `deadpool` dependency to version `0.12`
