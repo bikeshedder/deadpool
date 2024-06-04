@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2024-06-04
+
 - Fix `panic` when dropping a `SyncWrapper` while it is still executing the `interact` method.
 
 ## [0.1.3] - 2024-05-24
@@ -31,7 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First release
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-sync-v0.1.3...HEAD
+[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-sync-v0.1.4...HEAD
+[0.1.4]: https://github.com/bikeshedder/deadpool/compare/deadpool-sync-v0.1.3...deadpool-sync-v0.1.4
 [0.1.3]: https://github.com/bikeshedder/deadpool/compare/deadpool-sync-v0.1.2...deadpool-sync-v0.1.3
 [0.1.2]: https://github.com/bikeshedder/deadpool/compare/deadpool-sync-v0.1.1...deadpool-sync-v0.1.2
 [0.1.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-sync-v0.1.0...deadpool-sync-v0.1.1
