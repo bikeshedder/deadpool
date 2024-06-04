@@ -15,3 +15,7 @@ readme = "README.md"
 [dependencies]
 deadpool-runtime = { version = "0.1.2", path = "../runtime" }
 tracing = { version = "0.1", optional = true }
+
+[dev-dependencies]
+deadpool = { version = "0.12", path = ".." }
+tokio = { version = "1.38.0", features = ["macros", "rt-multi-thread"] }
