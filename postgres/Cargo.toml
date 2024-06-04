@@ -20,6 +20,7 @@ rt_async-std_1 = ["deadpool/rt_async-std_1"]
 serde = ["deadpool/serde", "dep:serde"]
 
 [dependencies]
+async-trait = "0.1.80"
 deadpool = { path = "../", version = "0.12.0", default-features = false, features = [
     "managed",
 ] }

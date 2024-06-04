@@ -3,11 +3,11 @@
 //! - The `client()` method is not available.
 //! - The `prepare_cached()` and `prepare_typed_cached()` are
 //!   added.
-use std::future::Future;
-
 use tokio_postgres::types::{BorrowToSql, ToSql, Type};
 use tokio_postgres::RowStream;
 use tokio_postgres::{Error, Row, Statement, ToStatement};
+
+use async_trait::async_trait;
 
 use crate::{Client, ClientWrapper, Transaction};
 
@@ -18,22 +18,15 @@ mod private {
 /// A trait allowing abstraction over connections and transactions.
 ///
 /// This trait is "sealed", and cannot be implemented outside of this crate.
+#[async_trait]
 pub trait GenericClient: Sync + private::Sealed {
     /// Like `Client::execute`.
-    fn execute<T>(
-        &self,
-        query: &T,
-        params: &[&(dyn ToSql + Sync)],
-    ) -> impl Future<Output = Result<u64, Error>> + Send
+    async fn execute<T>(&self, query: &T, params: &[&(dyn ToSql + Sync)]) -> Result<u64, Error>
     where
         T: ?Sized + ToStatement + Sync + Send;
 
     /// Like `Client::execute_raw`.
-    fn execute_raw<P, I, T>(
-        &self,
-        statement: &T,
-        params: I,
-    ) -> impl Future<Output = Result<u64, Error>> + Send
+    async fn execute_raw<P, I, T>(&self, statement: &T, params: I) -> Result<u64, Error>
     where
         T: ?Sized + ToStatement + Sync + Send,
         P: BorrowToSql,
@@ -41,38 +34,30 @@ pub trait GenericClient: Sync + private::Sealed {
         I::IntoIter: ExactSizeIterator;
 
     /// Like `Client::query`.
-    fn query<T>(
-        &self,
-        query: &T,
-        params: &[&(dyn ToSql + Sync)],
-    ) -> impl Future<Output = Result<Vec<Row>, Error>> + Send
+    async fn query<T>(&self, query: &T, params: &[&(dyn ToSql + Sync)]) -> Result<Vec<Row>, Error>
     where
         T: ?Sized + ToStatement + Sync + Send;
 
     /// Like `Client::query_one`.
-    fn query_one<T>(
+    async fn query_one<T>(
         &self,
         statement: &T,
         params: &[&(dyn ToSql + Sync)],
-    ) -> impl Future<Output = Result<Row, Error>> + Send
+    ) -> Result<Row, Error>
     where
         T: ?Sized + ToStatement + Sync + Send;
 
     /// Like `Client::query_opt`.
-    fn query_opt<T>(
+    async fn query_opt<T>(
         &self,
         statement: &T,
         params: &[&(dyn ToSql + Sync)],
-    ) -> impl Future<Output = Result<Option<Row>, Error>> + Send
+    ) -> Result<Option<Row>, Error>
     where
         T: ?Sized + ToStatement + Sync + Send;
 
     /// Like `Client::query_raw`.
-    fn query_raw<T, P, I>(
-        &self,
-        statement: &T,
-        params: I,
-    ) -> impl Future<Output = Result<RowStream, Error>> + Send
+    async fn query_raw<T, P, I>(&self, statement: &T, params: I) -> Result<RowStream, Error>
     where
         T: ?Sized + ToStatement + Sync + Send,
         P: BorrowToSql,
@@ -80,34 +65,31 @@ pub trait GenericClient: Sync + private::Sealed {
         I::IntoIter: ExactSizeIterator;
 
     /// Like `Client::prepare`.
-    fn prepare(&self, query: &str) -> impl Future<Output = Result<Statement, Error>> + Send;
+    async fn prepare(&self, query: &str) -> Result<Statement, Error>;
 
     /// Like `Client::prepare_typed`.
-    fn prepare_typed(
+    async fn prepare_typed(
         &self,
         query: &str,
         parameter_types: &[Type],
-    ) -> impl Future<Output = Result<Statement, Error>> + Send;
+    ) -> Result<Statement, Error>;
 
     /// Like [`Client::prepare_cached`].
-    fn prepare_cached(&self, query: &str) -> impl Future<Output = Result<Statement, Error>> + Send;
+    async fn prepare_cached(&self, query: &str) -> Result<Statement, Error>;
 
     /// Like [`Client::prepare_typed_cached`]
-    fn prepare_typed_cached(
-        &self,
-        query: &str,
-        types: &[Type],
-    ) -> impl Future<Output = Result<Statement, Error>> + Send;
+    async fn prepare_typed_cached(&self, query: &str, types: &[Type]) -> Result<Statement, Error>;
 
     /// Like `Client::transaction`.
-    fn transaction(&mut self) -> impl Future<Output = Result<Transaction<'_>, Error>> + Send;
+    async fn transaction(&mut self) -> Result<Transaction<'_>, Error>;
 
     /// Like `Client::batch_execute`.
-    fn batch_execute(&self, query: &str) -> impl Future<Output = Result<(), Error>> + Send;
+    async fn batch_execute(&self, query: &str) -> Result<(), Error>;
 }
 
 impl private::Sealed for Client {}
 
+#[async_trait]
 impl GenericClient for Client {
     async fn execute<T>(&self, query: &T, params: &[&(dyn ToSql + Sync)]) -> Result<u64, Error>
     where
@@ -196,6 +178,7 @@ impl GenericClient for Client {
 
 impl private::Sealed for Transaction<'_> {}
 
+#[async_trait]
 #[allow(clippy::needless_lifetimes)]
 impl GenericClient for Transaction<'_> {
     async fn execute<T>(&self, query: &T, params: &[&(dyn ToSql + Sync)]) -> Result<u64, Error>

@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Add back `async_trait` to the `GenericClient` trait.
+  The removal of `async_trait` caused some errors for code using
+  the generic client interface. A test was added to ensure future
+  removals of `async_trait` will not cause this code to break.
+
 ## [0.13.2] - 2024-05-07
 
 - Add WASM support
