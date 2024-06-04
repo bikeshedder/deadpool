@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Fix `panic` when dropping a `SyncWrapper` while it is still executing the `interact` method.
+
 ## [0.1.3] - 2024-05-24
 
 - Add `LICENSE-APACHE` and `LICENSE-MIT` files to published crates
