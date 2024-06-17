@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, time::Duration};
+use std::{collections::HashMap, env, pin::Pin, time::Duration};
 
 use futures::future;
 use serde::{Deserialize, Serialize};
@@ -210,6 +210,27 @@ async fn statement_caches_clear() {
     pool.manager().statement_caches.clear();
     assert!(client0.statement_cache.size() == 0);
     assert!(client1.statement_cache.size() == 0);
+}
+
+#[tokio::test]
+async fn sync_trait_get() {
+    let pool = create_pool();
+
+    type ClosureFuture = Pin<Box<dyn std::future::Future<Output = ()> + Send + Sync>>;
+    async fn test_closure<T: Fn(String) -> ClosureFuture + Send + Sync + 'static>(_: T) {
+        return;
+    }
+
+    test_closure(move |_| Box::pin(async move {})).await;
+    assert!(true);
+
+    test_closure(move |_| {
+        let pool = pool.clone();
+        Box::pin(async move {
+            pool.get().await;
+        })
+    });
+    assert!(true);
 }
 
 struct Env {
