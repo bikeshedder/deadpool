@@ -2,7 +2,6 @@
 
 use std::{convert::Infallible, time::Duration};
 
-use async_trait::async_trait;
 use tokio::time;
 
 use deadpool::managed::{self, Metrics, Object, PoolError, RecycleResult, Timeouts};
@@ -11,7 +10,6 @@ type Pool = managed::Pool<Manager>;
 
 struct Manager {}
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = usize;
     type Error = Infallible;

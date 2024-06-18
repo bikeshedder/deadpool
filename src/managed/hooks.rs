@@ -1,6 +1,6 @@
 //! Hooks allowing to run code when creating and/or recycling objects.
 
-use std::{fmt, future::Future, pin::Pin};
+use std::{borrow::Cow, fmt, future::Future, pin::Pin};
 
 use super::{Manager, Metrics, ObjectInner};
 
@@ -65,20 +65,24 @@ impl<M: Manager> fmt::Debug for Hook<M> {
 #[derive(Debug)]
 pub enum HookError<E> {
     /// Hook failed for some other reason.
-    Message(String),
-
-    /// Hook failed for some other reason.
-    StaticMessage(&'static str),
+    Message(Cow<'static, str>),
 
     /// Error caused by the backend.
     Backend(E),
+}
+
+impl<E> HookError<E> {
+    /// Convenience constructor function for the `HookError::Message`
+    /// variant.
+    pub fn message(msg: impl Into<Cow<'static, str>>) -> Self {
+        Self::Message(msg.into())
+    }
 }
 
 impl<E: fmt::Display> fmt::Display for HookError<E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Message(msg) => write!(f, "{}", msg),
-            Self::StaticMessage(msg) => write!(f, "{}", msg),
             Self::Backend(e) => write!(f, "{}", e),
         }
     }
@@ -88,7 +92,6 @@ impl<E: std::error::Error + 'static> std::error::Error for HookError<E> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Message(_) => None,
-            Self::StaticMessage(_) => None,
             Self::Backend(e) => Some(e),
         }
     }

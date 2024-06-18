@@ -15,10 +15,7 @@ use crate::{CreatePoolError, Manager, Pool, PoolBuilder, PoolConfig, Runtime};
 /// SQLITE__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
-/// # use serde_1 as serde;
-/// #
 /// #[derive(serde::Deserialize, serde::Serialize)]
-/// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     sqlite: deadpool_sqlite::Config,
 /// }
@@ -32,8 +29,7 @@ use crate::{CreatePoolError, Manager, Pool, PoolBuilder, PoolConfig, Runtime};
 /// }
 /// ```
 #[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(serde_1::Deserialize, serde_1::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct Config {
     /// Path to SQLite database file.
     pub path: PathBuf,

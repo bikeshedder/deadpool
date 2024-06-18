@@ -75,14 +75,18 @@ pub struct Timeouts {
 impl Timeouts {
     /// Create an empty [`Timeouts`] config (no timeouts set).
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
+    pub const fn new() -> Self {
+        Self {
+            create: None,
+            wait: None,
+            recycle: None,
+        }
     }
 
     /// Creates a new [`Timeouts`] config with only the `wait` timeout being
     /// set.
     #[must_use]
-    pub fn wait_millis(wait: u64) -> Self {
+    pub const fn wait_millis(wait: u64) -> Self {
         Self {
             create: None,
             wait: Some(Duration::from_millis(wait)),
@@ -95,11 +99,7 @@ impl Timeouts {
 impl Default for Timeouts {
     /// Creates an empty [`Timeouts`] config (no timeouts set).
     fn default() -> Self {
-        Self {
-            create: None,
-            wait: None,
-            recycle: None,
-        }
+        Self::new()
     }
 }
 

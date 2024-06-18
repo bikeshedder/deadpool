@@ -1,8 +1,4 @@
-#![cfg(feature = "managed")]
-
-use async_trait::async_trait;
-
-use deadpool::{Manager, Pool, RecycleResult};
+use deadpool::managed::{Manager, Metrics, Pool, RecycleResult};
 use deadpool_runtime::Runtime;
 use deadpool_sync::SyncWrapper;
 
@@ -12,7 +8,6 @@ struct Computer {
 
 struct ComputerManager {}
 
-#[async_trait]
 impl Manager for ComputerManager {
     type Type = SyncWrapper<Computer>;
     type Error = ();
@@ -21,7 +16,11 @@ impl Manager for ComputerManager {
         SyncWrapper::new(Runtime::Tokio1, || Ok(Computer { answer: 42 })).await
     }
 
-    async fn recycle(&self, _: &mut Self::Type) -> RecycleResult<Self::Error> {
+    async fn recycle(
+        &self,
+        _obj: &mut Self::Type,
+        _metrics: &Metrics,
+    ) -> RecycleResult<Self::Error> {
         Ok(())
     }
 }

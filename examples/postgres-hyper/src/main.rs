@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use config::ConfigError;
 use deadpool_postgres::{Client, Pool, PoolError, Runtime};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{header, Body, Method, Request, Response, Server, StatusCode};
 use serde::{Deserialize, Serialize};

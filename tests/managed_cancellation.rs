@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use async_trait::async_trait;
 use deadpool::managed::{Hook, HookError, Manager, Metrics, Pool, RecycleResult};
 use itertools::Itertools;
 use tokio::time::{sleep, timeout};
@@ -63,7 +62,7 @@ fn pools(max_size: usize) -> impl Iterator<Item = Pool<GatedManager>> {
                         .post_create
                         .open()
                         .await
-                        .map_err(|_| HookError::StaticMessage("Fail"))?;
+                        .map_err(|_| HookError::message("Fail"))?;
                     Ok(())
                 })
             }))
@@ -73,7 +72,7 @@ fn pools(max_size: usize) -> impl Iterator<Item = Pool<GatedManager>> {
                         .pre_recycle
                         .open()
                         .await
-                        .map_err(|_| HookError::StaticMessage("pre_recycle gate set to error"))?;
+                        .map_err(|_| HookError::message("pre_recycle gate set to error"))?;
                     Ok(())
                 })
             }))
@@ -83,7 +82,7 @@ fn pools(max_size: usize) -> impl Iterator<Item = Pool<GatedManager>> {
                         .post_recycle
                         .open()
                         .await
-                        .map_err(|_| HookError::StaticMessage("post_recycle gate set to error"))?;
+                        .map_err(|_| HookError::message("post_recycle gate set to error"))?;
                     Ok(())
                 })
             }))
@@ -96,7 +95,6 @@ struct GatedManager {
     gates: Gates,
 }
 
-#[async_trait]
 impl Manager for GatedManager {
     type Type = ();
     type Error = ();

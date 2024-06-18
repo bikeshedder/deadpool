@@ -1,4 +1,4 @@
-# Deadpool for Lapin [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.63+](https://img.shields.io/badge/rustc-1.63+-lightgray.svg "Rust 1.63+")](https://blog.rust-lang.org/2022/08/11/Rust-1.63.0.html)
+# Deadpool for Lapin [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.75+](https://img.shields.io/badge/rustc-1.75+-lightgray.svg "Rust 1.75+")](https://blog.rust-lang.org/2023/12/28/Rust-1.75.0.html)
 
 Deadpool is a dead simple async pool for connections and objects
 of any type.
@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Example with `config`, `dotenv` and `tokio-amqp` crate
+## Example with `config`, `dotenvy` and `tokio-amqp` crate
 
 ```rust
 use std::sync::Arc;
@@ -55,11 +55,9 @@ use deadpool_lapin::lapin::{
     options::BasicPublishOptions,
     BasicProperties,
 };
-use dotenv::dotenv;
-# use serde_1 as serde;
+use dotenvy::dotenv;
 
 #[derive(Debug, serde::Deserialize)]
-# #[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
     amqp: deadpool_lapin::Config

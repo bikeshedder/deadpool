@@ -1,13 +1,12 @@
 use std::{collections::HashMap, env, time::Duration};
 
 use futures::future;
-use serde_1::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use tokio_postgres::{types::Type, IsolationLevel};
 
 use deadpool_postgres::{ManagerConfig, Pool, RecyclingMethod, Runtime};
 
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
     pg: deadpool_postgres::Config,
@@ -115,7 +114,7 @@ async fn transaction_pipeline() {
     let stmt = client.prepare_cached("SELECT 1 + $1").await.unwrap();
     let txn = client.transaction().await.unwrap();
     let mut futures = vec![];
-    for i in 0..100 {
+    for i in 0..100i32 {
         let stmt = stmt.clone();
         let txn = &txn;
         futures.push(async move {
@@ -273,4 +272,37 @@ fn config_from_env() {
     assert_eq!(pool_cfg.timeouts.wait, Some(Duration::from_secs(1)));
     assert_eq!(pool_cfg.timeouts.create, Some(Duration::from_secs(2)));
     assert_eq!(pool_cfg.timeouts.recycle, Some(Duration::from_secs(3)));
+}
+
+#[test]
+fn config_url() {
+    let mut cfg = deadpool_postgres::Config {
+        url: Some("postgresql://zombie@localhost/deadpool".into()),
+        ..Default::default()
+    };
+    {
+        let pg_cfg = cfg.get_pg_config().unwrap();
+        assert_eq!(pg_cfg.get_dbname(), Some("deadpool"));
+        assert_eq!(pg_cfg.get_user(), Some("zombie"));
+        assert_eq!(
+            pg_cfg.get_hosts(),
+            &[tokio_postgres::config::Host::Tcp("localhost".into())]
+        );
+    }
+    // now apply some overrides
+    {
+        cfg.dbname = Some("livepool".into());
+        cfg.host = Some("remotehost".into());
+        cfg.user = Some("human".into());
+        let pg_cfg = cfg.get_pg_config().unwrap();
+        assert_eq!(pg_cfg.get_dbname(), Some("livepool"));
+        assert_eq!(pg_cfg.get_user(), Some("human"));
+        assert_eq!(
+            pg_cfg.get_hosts(),
+            &[
+                tokio_postgres::config::Host::Tcp("localhost".into()),
+                tokio_postgres::config::Host::Tcp("remotehost".into()),
+            ]
+        );
+    }
 }

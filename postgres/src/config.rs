@@ -1,21 +1,23 @@
 //! Configuration used for [`Pool`] creation.
 
-use std::{env, fmt, time::Duration};
+use std::{env, fmt, net::IpAddr, str::FromStr, time::Duration};
 
-#[cfg(feature = "serde")]
-use serde_1 as serde;
+use tokio_postgres::config::{
+    ChannelBinding as PgChannelBinding, LoadBalanceHosts as PgLoadBalanceHosts,
+    SslMode as PgSslMode, TargetSessionAttrs as PgTargetSessionAttrs,
+};
+
+#[cfg(not(target_arch = "wasm32"))]
+use super::Pool;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::{CreatePoolError, PoolBuilder, Runtime};
+#[cfg(not(target_arch = "wasm32"))]
 use tokio_postgres::{
-    config::{
-        ChannelBinding as PgChannelBinding, SslMode as PgSslMode,
-        TargetSessionAttrs as PgTargetSessionAttrs,
-    },
     tls::{MakeTlsConnect, TlsConnect},
     Socket,
 };
 
-use crate::{CreatePoolError, PoolBuilder, Runtime};
-
-use super::{Pool, PoolConfig};
+use super::PoolConfig;
 
 /// Configuration object.
 ///
@@ -33,10 +35,7 @@ use super::{Pool, PoolConfig};
 /// PG__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
-/// # use serde_1 as serde;
-/// #
 /// #[derive(serde::Deserialize, serde::Serialize)]
-/// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     pg: deadpool_postgres::Config,
 /// }
@@ -51,8 +50,12 @@ use super::{Pool, PoolConfig};
 /// ```
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct Config {
+    /// Initialize the configuration by parsing the URL first.
+    /// **Note**: All the other options override settings defined
+    /// by the URL except for the `host` and `hosts` options which
+    /// are additive!
+    pub url: Option<String>,
     /// See [`tokio_postgres::Config::user`].
     pub user: Option<String>,
     /// See [`tokio_postgres::Config::password`].
@@ -76,6 +79,10 @@ pub struct Config {
     pub host: Option<String>,
     /// See [`tokio_postgres::Config::host`].
     pub hosts: Option<Vec<String>>,
+    /// See [`tokio_postgres::Config::hostaddr`].
+    pub hostaddr: Option<IpAddr>,
+    /// See [`tokio_postgres::Config::hostaddr`].
+    pub hostaddrs: Option<Vec<IpAddr>>,
     /// This is similar to [`Config::ports`] but only allows one port to be
     /// specified.
     ///
@@ -91,12 +98,15 @@ pub struct Config {
     pub connect_timeout: Option<Duration>,
     /// See [`tokio_postgres::Config::keepalives`].
     pub keepalives: Option<bool>,
+    #[cfg(not(target_arch = "wasm32"))]
     /// See [`tokio_postgres::Config::keepalives_idle`].
     pub keepalives_idle: Option<Duration>,
     /// See [`tokio_postgres::Config::target_session_attrs`].
     pub target_session_attrs: Option<TargetSessionAttrs>,
     /// See [`tokio_postgres::Config::channel_binding`].
     pub channel_binding: Option<ChannelBinding>,
+    /// See [`tokio_postgres::Config::load_balance_hosts`].
+    pub load_balance_hosts: Option<LoadBalanceHosts>,
 
     /// [`Manager`] configuration.
     ///
@@ -108,8 +118,10 @@ pub struct Config {
 }
 
 /// This error is returned if there is something wrong with the configuration
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug)]
 pub enum ConfigError {
+    /// This variant is returned if the `url` is invalid
+    InvalidUrl(tokio_postgres::Error),
     /// This variant is returned if the `dbname` is missing from the config
     DbnameMissing,
     /// This variant is returned if the `dbname` contains an empty string
@@ -119,6 +131,7 @@ pub enum ConfigError {
 impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidUrl(e) => write!(f, "configuration property \"url\" is invalid: {}", e),
             Self::DbnameMissing => write!(f, "configuration property \"dbname\" not found"),
             Self::DbnameEmpty => write!(
                 f,
@@ -138,6 +151,7 @@ impl Config {
         Self::default()
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Creates a new [`Pool`] using this [`Config`].
     ///
     /// # Errors
@@ -157,6 +171,7 @@ impl Config {
         builder.build().map_err(CreatePoolError::Build)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Creates a new [`PoolBuilder`] using this [`Config`].
     ///
     /// # Errors
@@ -180,22 +195,34 @@ impl Config {
     /// the database.
     #[allow(unused_results)]
     pub fn get_pg_config(&self) -> Result<tokio_postgres::Config, ConfigError> {
-        let mut cfg = tokio_postgres::Config::new();
-        if let Some(user) = &self.user {
+        let mut cfg = if let Some(url) = &self.url {
+            tokio_postgres::Config::from_str(url).map_err(ConfigError::InvalidUrl)?
+        } else {
+            tokio_postgres::Config::new()
+        };
+        if let Some(user) = self.user.as_ref().filter(|s| !s.is_empty()) {
             cfg.user(user.as_str());
-        } else if let Ok(user) = env::var("USER") {
-            cfg.user(user.as_str());
+        }
+        if !cfg.get_user().map_or(false, |u| !u.is_empty()) {
+            if let Ok(user) = env::var("USER") {
+                cfg.user(&user);
+            }
         }
         if let Some(password) = &self.password {
             cfg.password(password);
         }
-        match &self.dbname {
-            Some(dbname) => match dbname.as_str() {
-                "" => return Err(ConfigError::DbnameMissing),
-                dbname => cfg.dbname(dbname),
-            },
-            None => return Err(ConfigError::DbnameEmpty),
-        };
+        if let Some(dbname) = self.dbname.as_ref().filter(|s| !s.is_empty()) {
+            cfg.dbname(dbname);
+        }
+        match cfg.get_dbname() {
+            None => {
+                return Err(ConfigError::DbnameMissing);
+            }
+            Some("") => {
+                return Err(ConfigError::DbnameEmpty);
+            }
+            _ => {}
+        }
         if let Some(options) = &self.options {
             cfg.options(options.as_str());
         }
@@ -210,7 +237,7 @@ impl Config {
                 cfg.host(host.as_str());
             }
         }
-        if self.host.is_none() && self.hosts.is_none() {
+        if cfg.get_hosts().is_empty() {
             // Systems that support it default to unix domain sockets.
             #[cfg(unix)]
             {
@@ -221,6 +248,14 @@ impl Config {
             // Windows and other systems use 127.0.0.1 instead.
             #[cfg(not(unix))]
             cfg.host("127.0.0.1");
+        }
+        if let Some(hostaddr) = self.hostaddr {
+            cfg.hostaddr(hostaddr);
+        }
+        if let Some(hostaddrs) = &self.hostaddrs {
+            for hostaddr in hostaddrs {
+                cfg.hostaddr(*hostaddr);
+            }
         }
         if let Some(port) = self.port {
             cfg.port(port);
@@ -236,6 +271,7 @@ impl Config {
         if let Some(keepalives) = self.keepalives {
             cfg.keepalives(keepalives);
         }
+        #[cfg(not(target_arch = "wasm32"))]
         if let Some(keepalives_idle) = self.keepalives_idle {
             cfg.keepalives_idle(keepalives_idle);
         }
@@ -269,7 +305,6 @@ impl Config {
 /// [`Verified`]: RecyclingMethod::Verified
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub enum RecyclingMethod {
     /// Only run [`Client::is_closed()`][1] when recycling existing connections.
     ///
@@ -351,7 +386,6 @@ impl RecyclingMethod {
 /// [`Manager`]: super::Manager
 #[derive(Clone, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 pub struct ManagerConfig {
     /// Method of how a connection is recycled. See [`RecyclingMethod`].
     pub recycling_method: RecyclingMethod,
@@ -364,7 +398,6 @@ pub struct ManagerConfig {
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 #[non_exhaustive]
 pub enum TargetSessionAttrs {
     /// No special properties are required.
@@ -390,7 +423,6 @@ impl From<TargetSessionAttrs> for PgTargetSessionAttrs {
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 #[non_exhaustive]
 pub enum SslMode {
     /// Do not use TLS.
@@ -420,7 +452,6 @@ impl From<SslMode> for PgSslMode {
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(crate = "serde_1"))]
 #[non_exhaustive]
 pub enum ChannelBinding {
     /// Do not use channel binding.
@@ -439,6 +470,30 @@ impl From<ChannelBinding> for PgChannelBinding {
             ChannelBinding::Disable => Self::Disable,
             ChannelBinding::Prefer => Self::Prefer,
             ChannelBinding::Require => Self::Require,
+        }
+    }
+}
+
+/// Load balancing configuration.
+///
+/// This is a 1:1 copy of the [`PgLoadBalanceHosts`] enumeration.
+/// This is duplicated here in order to add support for the
+/// [`serde::Deserialize`] trait which is required for the [`serde`] support.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[non_exhaustive]
+pub enum LoadBalanceHosts {
+    /// Make connection attempts to hosts in the order provided.
+    Disable,
+    /// Make connection attempts to hosts in a random order.
+    Random,
+}
+
+impl From<LoadBalanceHosts> for PgLoadBalanceHosts {
+    fn from(cb: LoadBalanceHosts) -> Self {
+        match cb {
+            LoadBalanceHosts::Disable => Self::Disable,
+            LoadBalanceHosts::Random => Self::Random,
         }
     }
 }

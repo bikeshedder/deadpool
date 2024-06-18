@@ -1,7 +1,6 @@
 use std::{borrow::Cow, fmt, marker::PhantomData, sync::Arc};
 
 use deadpool::{
-    async_trait,
     managed::{self, Metrics, RecycleError, RecycleResult},
     Runtime,
 };
@@ -129,11 +128,10 @@ where
     }
 }
 
-#[async_trait]
 impl<C> managed::Manager for Manager<C>
 where
     C: diesel::Connection + 'static,
-    diesel::dsl::BareSelect<diesel::dsl::AsExprOf<i32, diesel::sql_types::Integer>>:
+    diesel::helper_types::select<diesel::dsl::AsExprOf<i32, diesel::sql_types::Integer>>:
         QueryFragment<C::Backend>,
     diesel::query_builder::SqlQuery: QueryFragment<C::Backend>,
 {
@@ -150,14 +148,14 @@ where
 
     async fn recycle(&self, obj: &mut Self::Type, _: &Metrics) -> RecycleResult<Self::Error> {
         if obj.is_mutex_poisoned() {
-            return Err(RecycleError::StaticMessage(
+            return Err(RecycleError::message(
                 "Mutex is poisoned. Connection is considered unusable.",
             ));
         }
         let config = Arc::clone(&self.manager_config);
         obj.interact(move |conn| config.recycling_method.perform_recycle_check(conn))
             .await
-            .map_err(|e| RecycleError::Message(format!("Panic: {:?}", e)))
+            .map_err(|e| RecycleError::message(format!("Panic: {:?}", e)))
             .and_then(|r| r.map_err(RecycleError::Backend))
     }
 }
@@ -165,7 +163,7 @@ where
 impl<C> RecyclingMethod<C>
 where
     C: diesel::Connection,
-    diesel::dsl::BareSelect<diesel::dsl::AsExprOf<i32, diesel::sql_types::Integer>>:
+    diesel::helper_types::select<diesel::dsl::AsExprOf<i32, diesel::sql_types::Integer>>:
         QueryFragment<C::Backend>,
     diesel::query_builder::SqlQuery: QueryFragment<C::Backend>,
 {

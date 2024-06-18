@@ -7,7 +7,7 @@ use tokio_postgres::types::{BorrowToSql, ToSql, Type};
 use tokio_postgres::RowStream;
 use tokio_postgres::{Error, Row, Statement, ToStatement};
 
-use deadpool::async_trait;
+use async_trait::async_trait;
 
 use crate::{Client, ClientWrapper, Transaction};
 

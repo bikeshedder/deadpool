@@ -1,9 +1,8 @@
 [package]
 name = "deadpool-postgres"
-version = "0.11.0"
-edition = "2018"
-resolver = "2"
-rust-version = "1.63"
+version = "0.14.0"
+edition = "2021"
+rust-version = "1.75"
 authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 description = "Dead simple async pool for tokio-postgres"
 keywords = ["async", "database", "pool", "postgres"]
@@ -18,21 +17,29 @@ all-features = true
 default = ["rt_tokio_1"]
 rt_tokio_1 = ["deadpool/rt_tokio_1"]
 rt_async-std_1 = ["deadpool/rt_async-std_1"]
-serde = ["deadpool/serde", "serde_1"]
+serde = ["deadpool/serde", "dep:serde"]
 
 [dependencies]
-deadpool = { path = "../", version = "0.10.0", default-features = false, features = [
+async-trait = "0.1.80"
+deadpool = { path = "../", version = "0.12.0", default-features = false, features = [
     "managed",
 ] }
-serde_1 = { package = "serde", version = "1.0", features = [
+serde = { package = "serde", version = "1.0", features = [
     "derive",
 ], optional = true }
-tokio = { version = "1", features = ["rt"] }
-tokio-postgres = "0.7.2"
+tokio = { version = "1.29", features = ["rt"] }
 tracing = "0.1.37"
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio-postgres = "0.7.9"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+tokio-postgres = { version = "0.7.9", default-features = false }
+
 [dev-dependencies]
-config = { version = "0.13", features = ["json"] }
-dotenv = "0.15.0"
+config = { version = "0.14", features = ["json"] }
+dotenvy = "0.15.0"
 futures = "0.3.1"
+futures-util = "0.3.30"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }

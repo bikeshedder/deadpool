@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use deadpool_postgres::Runtime;
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 

@@ -2,7 +2,6 @@
 
 use std::{sync::Arc, time::Duration};
 
-use async_trait::async_trait;
 use tokio::{
     sync::{mpsc, Mutex},
     task, time,
@@ -57,7 +56,6 @@ impl Manager {
     }
 }
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = ();
     type Error = ();

@@ -1,7 +1,7 @@
 use actix_web::{error, get, web, App, HttpResponse, HttpServer};
 use config::ConfigError;
 use deadpool_postgres::{Client, Pool, PoolError, Runtime};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

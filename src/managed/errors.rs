@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{borrow::Cow, fmt};
 
 use super::hooks::HookError;
 
@@ -8,13 +8,18 @@ use super::hooks::HookError;
 #[derive(Debug)]
 pub enum RecycleError<E> {
     /// Recycling failed for some other reason.
-    Message(String),
-
-    /// Recycling failed for some other reason.
-    StaticMessage(&'static str),
+    Message(Cow<'static, str>),
 
     /// Error caused by the backend.
     Backend(E),
+}
+
+impl<E> RecycleError<E> {
+    /// Convenience constructor function for the `HookError::Message`
+    /// variant.
+    pub fn message(msg: impl Into<Cow<'static, str>>) -> Self {
+        Self::Message(msg.into())
+    }
 }
 
 impl<E> From<E> for RecycleError<E> {
@@ -27,9 +32,6 @@ impl<E: fmt::Display> fmt::Display for RecycleError<E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Message(msg) => write!(f, "Error occurred while recycling an object: {}", msg),
-            Self::StaticMessage(msg) => {
-                write!(f, "Error occurred while recycling an object: {}", msg)
-            }
             Self::Backend(e) => write!(f, "Error occurred while recycling an object: {}", e),
         }
     }
@@ -39,7 +41,6 @@ impl<E: std::error::Error + 'static> std::error::Error for RecycleError<E> {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Message(_) => None,
-            Self::StaticMessage(_) => None,
             Self::Backend(e) => Some(e),
         }
     }

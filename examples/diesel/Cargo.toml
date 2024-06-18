@@ -7,17 +7,6 @@ authors = ["Michael P. Jung <michael.jung@terreon.de>"]
 publish = false
 
 [dependencies]
-actix-web = "4.0.1"
-anyhow = "1.0.65"
-config = "0.13"
-deadpool = { version = "0.10", path = "../.." }
-deadpool-diesel = { version = "0.5.0", path = "../../diesel", features = [
-    "postgres",
-] }
-diesel = { version = "2.0.0", features = ["postgres", "chrono"] }
+deadpool-diesel = { path = "../../diesel", features = ["postgres"] }
 dotenvy = "0.15"
-serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0"
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
-tokio-postgres = { version = "0.7", features = ["with-uuid-1"] }
-uuid = { version = "1", features = ["serde"] }

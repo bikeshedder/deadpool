@@ -3,8 +3,6 @@ use std::{fmt, path::PathBuf};
 use redis::RedisError;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "serde")]
-use serde_1 as serde;
 
 use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime};
 
@@ -15,16 +13,13 @@ use crate::{CreatePoolError, Pool, PoolBuilder, PoolConfig, RedisResult, Runtime
 /// By enabling the `serde` feature you can read the configuration using the
 /// [`config`](https://crates.io/crates/config) crate as following:
 /// ```env
-/// REDIS__CONNECTION__ADDR=redis.example.com
+/// REDIS__URL=redis.example.com
 /// REDIS__POOL__MAX_SIZE=16
 /// REDIS__POOL__TIMEOUTS__WAIT__SECS=2
 /// REDIS__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
-/// # use serde_1 as serde;
-///
 /// #[derive(serde::Deserialize)]
-/// # #[serde(crate = "serde_1")]
 /// struct Config {
 ///     redis: deadpool_redis::Config,
 /// }
@@ -124,7 +119,8 @@ impl Default for Config {
     }
 }
 
-/// This is a 1:1 copy of the [`redis::ConnectionAddr`] enumeration.
+/// This is a 1:1 copy of the [`redis::ConnectionAddr`] enumeration (excluding `tls_params` since it is entirely opaque to consumers).
+///
 /// This is duplicated here in order to add support for the
 /// [`serde::Deserialize`] trait which is required for the [`serde`] support.
 #[derive(Clone, Debug)]
@@ -175,6 +171,7 @@ impl From<ConnectionAddr> for redis::ConnectionAddr {
                 host,
                 port,
                 insecure,
+                tls_params: None,
             },
             ConnectionAddr::Unix(path) => Self::Unix(path),
         }
@@ -189,6 +186,7 @@ impl From<redis::ConnectionAddr> for ConnectionAddr {
                 host,
                 port,
                 insecure,
+                ..
             } => ConnectionAddr::TcpTls {
                 host,
                 port,

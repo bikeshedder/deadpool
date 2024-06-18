@@ -27,19 +27,28 @@ use std::{
     borrow::Cow,
     collections::HashMap,
     fmt,
+    future::Future,
     ops::{Deref, DerefMut},
+    pin::Pin,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc, Mutex, RwLock, Weak,
     },
 };
 
-use deadpool::{async_trait, managed};
-use tokio::{spawn, task::JoinHandle};
+use deadpool::managed;
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::spawn;
+use tokio::task::JoinHandle;
 use tokio_postgres::{
-    tls::MakeTlsConnect, tls::TlsConnect, types::Type, Client as PgClient, Config as PgConfig,
-    Error, IsolationLevel, Socket, Statement, Transaction as PgTransaction,
-    TransactionBuilder as PgTransactionBuilder,
+    types::Type, Client as PgClient, Config as PgConfig, Error, IsolationLevel, Statement,
+    Transaction as PgTransaction, TransactionBuilder as PgTransactionBuilder,
+};
+
+#[cfg(not(target_arch = "wasm32"))]
+use tokio_postgres::{
+    tls::{MakeTlsConnect, TlsConnect},
+    Socket,
 };
 
 pub use tokio_postgres;
@@ -55,16 +64,18 @@ pub use deadpool::managed::reexports::*;
 deadpool::managed_reexports!(
     "tokio_postgres",
     Manager,
-    deadpool::managed::Object<Manager>,
+    managed::Object<Manager>,
     Error,
     ConfigError
 );
 
+type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+
 /// Type alias for [`Object`]
 pub type Client = Object;
 
-type RecycleResult = deadpool::managed::RecycleResult<Error>;
-type RecycleError = deadpool::managed::RecycleError<Error>;
+type RecycleResult = managed::RecycleResult<Error>;
+type RecycleError = managed::RecycleError<Error>;
 
 /// [`Manager`] for creating and recycling PostgreSQL connections.
 ///
@@ -78,6 +89,7 @@ pub struct Manager {
 }
 
 impl Manager {
+    #[cfg(not(target_arch = "wasm32"))]
     /// Creates a new [`Manager`] using the given [`tokio_postgres::Config`] and
     /// `tls` connector.
     pub fn new<T>(pg_config: tokio_postgres::Config, tls: T) -> Self
@@ -90,6 +102,7 @@ impl Manager {
         Self::from_config(pg_config, tls, ManagerConfig::default())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// Create a new [`Manager`] using the given [`tokio_postgres::Config`], and
     /// `tls` connector and [`ManagerConfig`].
     pub fn from_config<T>(pg_config: tokio_postgres::Config, tls: T, config: ManagerConfig) -> Self
@@ -99,10 +112,20 @@ impl Manager {
         T::TlsConnect: Sync + Send,
         <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
     {
+        Self::from_connect(pg_config, ConfigConnectImpl { tls }, config)
+    }
+
+    /// Create a new [`Manager`] using the given [`tokio_postgres::Config`], and
+    /// `connect` impl and [`ManagerConfig`].
+    pub fn from_connect(
+        pg_config: tokio_postgres::Config,
+        connect: impl Connect + 'static,
+        config: ManagerConfig,
+    ) -> Self {
         Self {
             config,
             pg_config,
-            connect: Box::new(ConnectImpl { tls }),
+            connect: Box::new(connect),
             statement_caches: StatementCaches::default(),
         }
     }
@@ -119,7 +142,6 @@ impl fmt::Debug for Manager {
     }
 }
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = ClientWrapper;
     type Error = Error;
@@ -135,7 +157,7 @@ impl managed::Manager for Manager {
     async fn recycle(&self, client: &mut ClientWrapper, _: &Metrics) -> RecycleResult {
         if client.is_closed() {
             tracing::warn!(target: "deadpool.postgres", "Connection could not be recycled: Connection closed");
-            return Err(RecycleError::StaticMessage("Connection closed"));
+            return Err(RecycleError::message("Connection closed"));
         }
         match self.config.recycling_method.query() {
             Some(sql) => match client.simple_query(sql).await {
@@ -154,37 +176,57 @@ impl managed::Manager for Manager {
     }
 }
 
-#[async_trait]
-trait Connect: Sync + Send {
-    async fn connect(&self, pg_config: &PgConfig) -> Result<(PgClient, JoinHandle<()>), Error>;
+/// Describes a mechanism for establishing a connection to a PostgreSQL
+/// server via `tokio_postgres`.
+pub trait Connect: Sync + Send {
+    /// Establishes a new `tokio_postgres` connection, returning
+    /// the associated `Client` and a `JoinHandle` to a tokio task
+    /// for processing the connection.
+    fn connect(
+        &self,
+        pg_config: &PgConfig,
+    ) -> BoxFuture<'_, Result<(PgClient, JoinHandle<()>), Error>>;
 }
 
-struct ConnectImpl<T>
+#[cfg(not(target_arch = "wasm32"))]
+/// Provides an implementation of [`Connect`] that establishes the connection
+/// using the `tokio_postgres` configuration itself.
+#[derive(Debug)]
+pub struct ConfigConnectImpl<T>
 where
     T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
     T::Stream: Sync + Send,
     T::TlsConnect: Sync + Send,
     <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
 {
-    tls: T,
+    /// The TLS connector to use for the connection.
+    pub tls: T,
 }
 
-#[async_trait]
-impl<T> Connect for ConnectImpl<T>
+#[cfg(not(target_arch = "wasm32"))]
+impl<T> Connect for ConfigConnectImpl<T>
 where
     T: MakeTlsConnect<Socket> + Clone + Sync + Send + 'static,
     T::Stream: Sync + Send,
     T::TlsConnect: Sync + Send,
     <T::TlsConnect as TlsConnect<Socket>>::Future: Send,
 {
-    async fn connect(&self, pg_config: &PgConfig) -> Result<(PgClient, JoinHandle<()>), Error> {
-        let (client, connection) = pg_config.connect(self.tls.clone()).await?;
-        let conn_task = spawn(async move {
-            if let Err(e) = connection.await {
-                tracing::warn!(target: "deadpool.postgres", "Connection error: {}", e);
-            }
-        });
-        Ok((client, conn_task))
+    fn connect(
+        &self,
+        pg_config: &PgConfig,
+    ) -> BoxFuture<'_, Result<(PgClient, JoinHandle<()>), Error>> {
+        let tls = self.tls.clone();
+        let pg_config = pg_config.clone();
+        Box::pin(async move {
+            let fut = pg_config.connect(tls);
+            let (client, connection) = fut.await?;
+            let conn_task = spawn(async move {
+                if let Err(e) = connection.await {
+                    tracing::warn!(target: "deadpool.postgres", "Connection error: {}", e);
+                }
+            });
+            Ok((client, conn_task))
+        })
     }
 }
 

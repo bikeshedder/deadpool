@@ -23,7 +23,7 @@
 
 mod config;
 
-use deadpool::{async_trait, managed};
+use deadpool::managed;
 use lapin::{ConnectionProperties, Error};
 
 pub use lapin;
@@ -34,7 +34,7 @@ pub use deadpool::managed::reexports::*;
 deadpool::managed_reexports!(
     "lapin",
     Manager,
-    deadpool::managed::Object<Manager>,
+    managed::Object<Manager>,
     Error,
     ConfigError
 );
@@ -59,7 +59,7 @@ impl std::fmt::Debug for Manager {
             .field("addr", &self.addr)
             .field(
                 "connection_properties",
-                &self::config::ConnProps(&self.connection_properties),
+                &config::ConnProps(&self.connection_properties),
             )
             .finish()
     }
@@ -77,7 +77,6 @@ impl Manager {
     }
 }
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = lapin::Connection;
     type Error = Error;
@@ -92,7 +91,7 @@ impl managed::Manager for Manager {
     async fn recycle(&self, conn: &mut lapin::Connection, _: &Metrics) -> RecycleResult {
         match conn.status().state() {
             lapin::ConnectionState::Connected => Ok(()),
-            other_state => Err(RecycleError::Message(format!(
+            other_state => Err(RecycleError::message(format!(
                 "lapin connection is in state: {:?}",
                 other_state
             ))),

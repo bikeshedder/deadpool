@@ -1,4 +1,4 @@
-# Deadpool for Redis [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.63+](https://img.shields.io/badge/rustc-1.63+-lightgray.svg "Rust 1.63+")](https://blog.rust-lang.org/2022/08/11/Rust-1.63.0.html)
+# Deadpool for Redis [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.75+](https://img.shields.io/badge/rustc-1.75+-lightgray.svg "Rust 1.75+")](https://blog.rust-lang.org/2023/12/28/Rust-1.75.0.html)
 
 Deadpool is a dead simple async pool for connections and objects
 of any type.
@@ -13,6 +13,7 @@ manager for [`redis`](https://crates.io/crates/redis).
 | `rt_tokio_1`     | Enable support for [tokio](https://crates.io/crates/tokio) crate      | `deadpool/rt_tokio_1`, `redis/tokio-comp`         | yes     |
 | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/config) crate | `deadpool/rt_async-std_1`, `redis/async-std-comp` | no      |
 | `serde`          | Enable support for [serde](https://crates.io/crates/serde) crate      | `deadpool/serde`, `serde/derive`                  | no      |
+| `cluster`        | Enable support for Redis Cluster                                      | `redis/cluster-async`                             | no      |
 
 ## Example
 
@@ -43,15 +44,13 @@ async fn main() {
 }
 ```
 
-## Example with `config` and `dotenv` crate
+### Example with `config` and `dotenvy` crate
 
 ```rust
 use deadpool_redis::{redis::{cmd, FromRedisValue}, Runtime};
-use dotenv::dotenv;
-# use serde_1 as serde;
+use dotenvy::dotenv;
 
 #[derive(Debug, serde::Deserialize)]
-# #[serde(crate = "serde_1")]
 struct Config {
     #[serde(default)]
     redis: deadpool_redis::Config
@@ -71,6 +70,90 @@ async fn main() {
     dotenv().ok();
     let cfg = Config::from_env().unwrap();
     let pool = cfg.redis.create_pool(Some(Runtime::Tokio1)).unwrap();
+    {
+        let mut conn = pool.get().await.unwrap();
+        cmd("SET")
+            .arg(&["deadpool/test_key", "42"])
+            .query_async::<_, ()>(&mut conn)
+            .await.unwrap();
+    }
+    {
+        let mut conn = pool.get().await.unwrap();
+        let value: String = cmd("GET")
+            .arg(&["deadpool/test_key"])
+            .query_async(&mut conn)
+            .await.unwrap();
+        assert_eq!(value, "42".to_string());
+    }
+}
+```
+
+## Example (Cluster)
+
+```rust
+use std::env;
+use deadpool_redis::{redis::{cmd, FromRedisValue}};
+use deadpool_redis::cluster::{Config, Runtime};
+
+#[tokio::main]
+async fn main() {
+    let redis_urls = env::var("REDIS_CLUSTER__URLS")
+        .unwrap()
+        .split(',')
+        .map(String::from)
+        .collect::<Vec<_>>();
+    let mut cfg = Config::from_urls(redis_urls);
+    let pool = cfg.create_pool(Some(Runtime::Tokio1)).unwrap();
+    {
+        let mut conn = pool.get().await.unwrap();
+        cmd("SET")
+            .arg(&["deadpool/test_key", "42"])
+            .query_async::<_, ()>(&mut conn)
+            .await.unwrap();
+    }
+    {
+        let mut conn = pool.get().await.unwrap();
+        let value: String = cmd("GET")
+            .arg(&["deadpool/test_key"])
+            .query_async(&mut conn)
+            .await.unwrap();
+        assert_eq!(value, "42".to_string());
+    }
+}
+```
+
+### Example with `config` and `dotenvy` crate
+
+```rust
+use deadpool_redis::redis::{cmd, FromRedisValue};
+use deadpool_redis::cluster::{Runtime};
+use dotenvy::dotenv;
+
+#[derive(Debug, serde::Deserialize)]
+struct Config {
+    #[serde(default)]
+    redis_cluster: deadpool_redis::cluster::Config
+}
+
+impl Config {
+      pub fn from_env() -> Result<Self, config::ConfigError> {
+         config::Config::builder()
+            .add_source(
+                config::Environment::default()
+                .separator("__")
+                .try_parsing(true)
+                .list_separator(","),
+            )
+            .build()?
+            .try_deserialize()
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    dotenv().ok();
+    let cfg = Config::from_env().unwrap();
+    let pool = cfg.redis_cluster.create_pool(Some(Runtime::Tokio1)).unwrap();
     {
         let mut conn = pool.get().await.unwrap();
         cmd("SET")

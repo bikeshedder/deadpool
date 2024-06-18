@@ -1,4 +1,4 @@
-# Deadpool [![Latest Version](https://img.shields.io/crates/v/deadpool.svg)](https://crates.io/crates/deadpool) [![Build Status](https://img.shields.io/github/actions/workflow/status/bikeshedder/deadpool/ci.yml?branch=master)](https://github.com/bikeshedder/deadpool/actions?query=workflow%3ARust) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.63+](https://img.shields.io/badge/rustc-1.63+-lightgray.svg "Rust 1.63+")](https://blog.rust-lang.org/2022/08/11/Rust-1.63.0.html)
+# Deadpool [![Latest Version](https://img.shields.io/crates/v/deadpool.svg)](https://crates.io/crates/deadpool) [![Build Status](https://img.shields.io/github/actions/workflow/status/bikeshedder/deadpool/ci.yml?branch=master)](https://github.com/bikeshedder/deadpool/actions?query=workflow%3ARust) ![Unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden") [![Rust 1.75+](https://img.shields.io/badge/rustc-1.75+-lightgray.svg "Rust 1.75+")](https://blog.rust-lang.org/2023/12/28/Rust-1.75.0.html)
 
 
 Deadpool is a dead simple async pool for connections and objects
@@ -21,7 +21,7 @@ This crate provides two implementations:
 
 | Feature | Description | Extra dependencies | Default |
 | ------- | ----------- | ------------------ | ------- |
-| `managed` | Enable managed pool implementation | `async-trait` | yes |
+| `managed` | Enable managed pool implementation | - | yes |
 | `unmanaged` | Enable unmanaged pool implementation | - | yes |
 | `rt_tokio_1` | Enable support for [tokio](https://crates.io/crates/tokio) crate | `tokio/time` | no |
 | `rt_async-std_1` | Enable support for [async-std](https://crates.io/crates/async-std) crate | `async-std` | no |
@@ -41,7 +41,6 @@ which work out of the box.
 ### Example
 
 ```rust
-use async_trait::async_trait;
 use deadpool::managed;
 
 #[derive(Debug)]
@@ -57,7 +56,6 @@ impl Computer {
 
 struct Manager {}
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = Computer;
     type Error = Error;
@@ -95,7 +93,6 @@ Backend | Crate | Latest Version |
 [tokio-postgres](https://crates.io/crates/tokio-postgres) | [deadpool-postgres](https://crates.io/crates/deadpool-postgres) | [![Latest Version](https://img.shields.io/crates/v/deadpool-postgres.svg)](https://crates.io/crates/deadpool-postgres) |
 [lapin](https://crates.io/crates/lapin) (AMQP) | [deadpool-lapin](https://crates.io/crates/deadpool-lapin) | [![Latest Version](https://img.shields.io/crates/v/deadpool-lapin.svg)](https://crates.io/crates/deadpool-lapin) |
 [redis](https://crates.io/crates/redis) | [deadpool-redis](https://crates.io/crates/deadpool-redis) | [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis) |
-[redis_cluster_async](https://crates.io/crates/redis_cluster_async) | [deadpool-redis-cluster](https://crates.io/crates/deadpool-redis-cluster) | [![Latest Version](https://img.shields.io/crates/v/deadpool-redis.svg)](https://crates.io/crates/deadpool-redis-cluster) |
 [async-memcached](https://crates.io/crates/async-memcached) | [deadpool-memcached](https://crates.io/crates/deadpool-memcached) | [![Latest Version](https://img.shields.io/crates/v/deadpool-memcached.svg)](https://crates.io/crates/deadpool-memcached) |
 [rusqlite](https://crates.io/crates/rusqlite) | [deadpool-sqlite](https://crates.io/crates/deadpool-sqlite) | [![Latest Version](https://img.shields.io/crates/v/deadpool-sqlite.svg)](https://crates.io/crates/deadpool-sqlite) |
 [diesel](https://crates.io/crates/diesel) | [deadpool-diesel](https://crates.io/crates/deadpool-diesel) | [![Latest Version](https://img.shields.io/crates/v/deadpool-diesel.svg)](https://crates.io/crates/deadpool-diesel) |

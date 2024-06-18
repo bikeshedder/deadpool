@@ -37,7 +37,9 @@ pub enum InteractError {
     /// Provided callback has panicked.
     Panic(Box<dyn Any + Send + 'static>),
 
-    /// Callback was aborted.
+    /// Callback was aborted. This variant needs to exist for technical
+    /// reasons but you should never actually be able to get this as a
+    /// return value when calling `SyncWrapper::interact`.
     Aborted,
 }
 
@@ -119,13 +121,13 @@ where
         self.runtime
             .spawn_blocking(move || {
                 let mut guard = arc.lock().unwrap();
-                let conn = guard.as_mut().unwrap();
+                let conn: &mut T = guard.as_mut().ok_or(InteractError::Aborted)?;
                 #[cfg(feature = "tracing")]
                 let _span = span.enter();
-                f(conn)
+                Ok(f(conn))
             })
             .await
-            .map_err(|SpawnBlockingError::Panic(p)| InteractError::Panic(p))
+            .map_err(|SpawnBlockingError::Panic(p)| InteractError::Panic(p))?
     }
 
     /// Indicates whether the underlying [`Mutex`] has been poisoned.

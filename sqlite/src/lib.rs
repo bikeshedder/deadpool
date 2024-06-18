@@ -25,10 +25,7 @@ mod config;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use deadpool::{
-    async_trait,
-    managed::{self, RecycleError},
-};
+use deadpool::managed::{self, RecycleError};
 use deadpool_sync::SyncWrapper;
 
 pub use deadpool::managed::reexports::*;
@@ -38,7 +35,7 @@ pub use rusqlite;
 deadpool::managed_reexports!(
     "rusqlite",
     Manager,
-    deadpool::managed::Object<Manager>,
+    managed::Object<Manager>,
     rusqlite::Error,
     ConfigError
 );
@@ -71,7 +68,6 @@ impl Manager {
     }
 }
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = SyncWrapper<rusqlite::Connection>;
     type Error = rusqlite::Error;
@@ -95,11 +91,11 @@ impl managed::Manager for Manager {
         let n: usize = conn
             .interact(move |conn| conn.query_row("SELECT $1", [recycle_count], |row| row.get(0)))
             .await
-            .map_err(|e| RecycleError::Message(format!("{}", e)))??;
+            .map_err(|e| RecycleError::message(format!("{}", e)))??;
         if n == recycle_count {
             Ok(())
         } else {
-            Err(RecycleError::StaticMessage("Recycle count mismatch"))
+            Err(RecycleError::message("Recycle count mismatch"))
         }
     }
 }

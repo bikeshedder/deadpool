@@ -6,7 +6,6 @@
 //! # Example
 //!
 //! ```rust
-//! use async_trait::async_trait;
 //! use deadpool::managed;
 //!
 //! #[derive(Debug)]
@@ -22,7 +21,6 @@
 //!
 //! struct Manager {}
 //!
-//! #[async_trait]
 //! impl managed::Manager for Manager {
 //!     type Type = Computer;
 //!     type Error = Error;
@@ -68,10 +66,12 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Arc, Mutex, Weak,
     },
-    time::{Duration, Instant},
+    time::Duration,
 };
 
-use async_trait::async_trait;
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::Instant;
+
 use deadpool_runtime::Runtime;
 use tokio::sync::{Semaphore, TryAcquireError};
 
@@ -90,23 +90,26 @@ pub use self::{
 pub type RecycleResult<E> = Result<(), RecycleError<E>>;
 
 /// Manager responsible for creating new [`Object`]s or recycling existing ones.
-#[async_trait]
 pub trait Manager: Sync + Send {
     /// Type of [`Object`]s that this [`Manager`] creates and recycles.
-    type Type;
+    type Type: Send;
     /// Error that this [`Manager`] can return when creating and/or recycling
     /// [`Object`]s.
-    type Error;
+    type Error: Send;
 
     /// Creates a new instance of [`Manager::Type`].
-    async fn create(&self) -> Result<Self::Type, Self::Error>;
+    fn create(&self) -> impl Future<Output = Result<Self::Type, Self::Error>> + Send;
 
     /// Tries to recycle an instance of [`Manager::Type`].
     ///
     /// # Errors
     ///
     /// Returns [`Manager::Error`] if the instance couldn't be recycled.
-    async fn recycle(&self, obj: &mut Self::Type, metrics: &Metrics) -> RecycleResult<Self::Error>;
+    fn recycle(
+        &self,
+        obj: &mut Self::Type,
+        metrics: &Metrics,
+    ) -> impl Future<Output = RecycleResult<Self::Error>> + Send;
 
     /// Detaches an instance of [`Manager::Type`] from this [`Manager`].
     ///
@@ -409,7 +412,10 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         }
 
         inner.metrics.recycle_count += 1;
-        inner.metrics.recycled = Some(Instant::now());
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            inner.metrics.recycled = Some(Instant::now());
+        }
 
         Ok(Some(unready_obj.ready()))
     }
