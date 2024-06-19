@@ -25,7 +25,7 @@ mod config;
 use std::ops::{Deref, DerefMut};
 
 use arangors::{uclient::ClientExt, ClientError, Connection as ArangoConnection};
-use deadpool::{async_trait, managed};
+use deadpool::managed;
 use url::Url;
 
 pub use arangors;
@@ -36,7 +36,7 @@ pub use deadpool::managed::reexports::*;
 deadpool::managed_reexports!(
     "arangors",
     Manager,
-    deadpool::managed::Object<Manager>,
+    managed::Object<Manager>,
     ClientError,
     ConfigError
 );
@@ -134,7 +134,6 @@ impl Manager {
     }
 }
 
-#[async_trait]
 impl managed::Manager for Manager {
     type Type = ArangoConnection;
     type Error = ClientError;
@@ -147,10 +146,10 @@ impl managed::Manager for Manager {
                 .await?
         };
 
-        return Ok(conn);
+        Ok(conn)
     }
 
-    async fn recycle(&self, conn: &mut ArangoConnection) -> RecycleResult {
+    async fn recycle(&self, conn: &mut ArangoConnection, _metrics: &Metrics) -> RecycleResult {
         let url = Url::parse(&self.url).expect("Url should be valid at this point");
         conn.session()
             // I don't know if this is the correct way to do it, but TRACE should allow us to check if the connection is still open,

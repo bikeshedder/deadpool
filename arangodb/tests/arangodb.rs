@@ -1,3 +1,4 @@
+use config::ConfigError;
 use serde::Deserialize;
 
 use deadpool_arangodb::Runtime;
@@ -15,34 +16,35 @@ struct Config {
 }
 
 impl Config {
-    pub fn from_env() -> Self {
-        let mut cfg = config::Config::new();
-        cfg.merge(config::Environment::new().separator("__"))
+    pub fn from_env() -> Result<Self, ConfigError> {
+        let cfg = config::Config::builder()
+            .add_source(config::Environment::default().separator("__"))
+            .build()
             .unwrap();
-        let mut cfg = cfg.try_into::<Self>().unwrap();
+        let mut cfg: Self = cfg.try_deserialize()?;
         cfg.arango
             .url
             .get_or_insert("http://localhost:8529".to_string());
-        cfg
+        Ok(cfg)
     }
 }
 
 #[tokio::test]
 async fn create_database() {
-    let cfg = Config::from_env();
+    let cfg = Config::from_env().unwrap();
     let pool = cfg.arango.create_pool(Runtime::Tokio1).unwrap();
     let conn = pool.get().await.unwrap();
 
     let result = conn.create_database(&cfg.dbname).await;
     if let Err(e) = result {
-        assert!(false, "Failed to create database: {:?}", e)
+        panic!("Failed to create database: {:?}", e)
     };
     let result = conn.db(&cfg.dbname).await;
     assert!(result.is_ok());
 
     let result = conn.drop_database(&cfg.dbname).await;
     if let Err(e) = result {
-        assert!(false, "Failed to drop database: {:?}", e)
+        panic!("Failed to drop database: {:?}", e)
     };
     let result = conn.db(&cfg.dbname).await;
     assert!(result.is_err());
