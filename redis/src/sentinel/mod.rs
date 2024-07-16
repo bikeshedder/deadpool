@@ -1,59 +1,39 @@
-#![doc = include_str!("../README.md")]
-#![cfg_attr(docsrs, feature(doc_cfg))]
-#![deny(
-    nonstandard_style,
-    rust_2018_idioms,
-    rustdoc::broken_intra_doc_links,
-    rustdoc::private_intra_doc_links
-)]
-#![forbid(non_ascii_idents, unsafe_code)]
-#![warn(
-    deprecated_in_future,
-    missing_copy_implementations,
-    missing_debug_implementations,
-    missing_docs,
-    unreachable_pub,
-    unused_import_braces,
-    unused_labels,
-    unused_lifetimes,
-    unused_qualifications,
-    unused_results
-)]
-#![allow(clippy::uninlined_format_args)]
-
-#[cfg(feature = "cluster")]
-pub mod cluster;
-mod config;
-
-#[cfg(feature = "sentinel")]
-pub mod sentinel;
-
+//! This module extends the library to support Redis Cluster.
 use std::{
     ops::{Deref, DerefMut},
     sync::atomic::{AtomicUsize, Ordering},
 };
 
+use redis;
+use redis::aio::MultiplexedConnection;
+use redis::sentinel::{SentinelClient, SentinelNodeConnectionInfo};
+use redis::{aio::ConnectionLike, IntoConnectionInfo, RedisError, RedisResult};
+use tokio::sync::Mutex;
+
 use deadpool::managed;
-use redis::{
-    aio::{ConnectionLike, MultiplexedConnection},
-    Client, IntoConnectionInfo, RedisError, RedisResult,
-};
-
-pub use redis;
-
-pub use self::config::{Config, ConfigError, ConnectionAddr, ConnectionInfo, RedisConnectionInfo};
-
 pub use deadpool::managed::reexports::*;
-deadpool::managed_reexports!("redis", Manager, Connection, RedisError, ConfigError);
 
-/// Type alias for using [`deadpool::managed::RecycleResult`] with [`redis`].
+use crate::sentinel::config::SentinelServerType;
+
+pub use self::config::{Config, ConfigError};
+
+mod config;
+
+deadpool::managed_reexports!(
+    "redis_sentinel",
+    Manager,
+    Connection,
+    RedisError,
+    ConfigError
+);
+
 type RecycleResult = managed::RecycleResult<RedisError>;
 
-/// Wrapper around [`redis::aio::MultiplexedConnection`].
+/// Wrapper around [`redis::cluster_async::ClusterConnection`].
 ///
 /// This structure implements [`redis::aio::ConnectionLike`] and can therefore
-/// be used just like a regular [`redis::aio::MultiplexedConnection`].
-#[allow(missing_debug_implementations)] // `redis::aio::MultiplexedConnection: !Debug`
+/// be used just like a regular [`redis::cluster_async::ClusterConnection`].
+#[allow(missing_debug_implementations)] // `redis::cluster_async::ClusterConnection: !Debug`
 pub struct Connection {
     conn: Object,
 }
@@ -122,13 +102,21 @@ impl ConnectionLike for Connection {
     }
 }
 
-/// [`Manager`] for creating and recycling [`redis`] connections.
+/// [`Manager`] for creating and recycling [`redis::cluster_async`] connections.
 ///
 /// [`Manager`]: managed::Manager
-#[derive(Debug)]
 pub struct Manager {
-    client: Client,
+    client: Mutex<SentinelClient>,
     ping_number: AtomicUsize,
+}
+
+impl std::fmt::Debug for Manager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Manager")
+            .field("client", &format!("{:p}", &self.client))
+            .field("ping_number", &self.ping_number)
+            .finish()
+    }
 }
 
 impl Manager {
@@ -136,10 +124,20 @@ impl Manager {
     ///
     /// # Errors
     ///
-    /// If establishing a new [`Client`] fails.
-    pub fn new<T: IntoConnectionInfo>(params: T) -> RedisResult<Self> {
+    /// If establishing a new [`ClusterClient`] fails.
+    pub fn new<T: IntoConnectionInfo>(
+        param: Vec<T>,
+        service_name: String,
+        sentinel_node_connection_info: Option<SentinelNodeConnectionInfo>,
+        server_type: SentinelServerType,
+    ) -> RedisResult<Self> {
         Ok(Self {
-            client: Client::open(params)?,
+            client: Mutex::new(SentinelClient::build(
+                param,
+                service_name,
+                sentinel_node_connection_info,
+                server_type.into(),
+            )?),
             ping_number: AtomicUsize::new(0),
         })
     }
@@ -150,19 +148,16 @@ impl managed::Manager for Manager {
     type Error = RedisError;
 
     async fn create(&self) -> Result<MultiplexedConnection, RedisError> {
-        let conn = self.client.get_multiplexed_async_connection().await?;
+        let mut client = self.client.lock().await;
+        let conn = client.get_async_connection().await?;
         Ok(conn)
     }
 
     async fn recycle(&self, conn: &mut MultiplexedConnection, _: &Metrics) -> RecycleResult {
         let ping_number = self.ping_number.fetch_add(1, Ordering::Relaxed).to_string();
-        // Using pipeline to avoid roundtrip for UNWATCH
-        let (n,) = redis::Pipeline::with_capacity(2)
-            .cmd("UNWATCH")
-            .ignore()
-            .cmd("PING")
+        let n = redis::cmd("PING")
             .arg(&ping_number)
-            .query_async::<_, (String,)>(conn)
+            .query_async::<_, String>(conn)
             .await?;
         if n == ping_number {
             Ok(())
