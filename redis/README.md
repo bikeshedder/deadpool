@@ -30,7 +30,7 @@ async fn main() {
         let mut conn = pool.get().await.unwrap();
         cmd("SET")
             .arg(&["deadpool/test_key", "42"])
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await.unwrap();
     }
     {
@@ -74,7 +74,7 @@ async fn main() {
         let mut conn = pool.get().await.unwrap();
         cmd("SET")
             .arg(&["deadpool/test_key", "42"])
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await.unwrap();
     }
     {
@@ -108,7 +108,7 @@ async fn main() {
         let mut conn = pool.get().await.unwrap();
         cmd("SET")
             .arg(&["deadpool/test_key", "42"])
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await.unwrap();
     }
     {
@@ -158,7 +158,7 @@ async fn main() {
         let mut conn = pool.get().await.unwrap();
         cmd("SET")
             .arg(&["deadpool/test_key", "42"])
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await.unwrap();
     }
     {

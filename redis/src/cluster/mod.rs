@@ -144,7 +144,7 @@ impl managed::Manager for Manager {
         let ping_number = self.ping_number.fetch_add(1, Ordering::Relaxed).to_string();
         let n = redis::cmd("PING")
             .arg(&ping_number)
-            .query_async::<_, String>(conn)
+            .query_async::<String>(conn)
             .await?;
         if n == ping_number {
             Ok(())
