@@ -186,7 +186,7 @@ async fn test_recycled_with_watch() {
             .unwrap();
         assert_eq!(
             txn_result,
-            Value::Okay,
+            Value::Array(vec![Value::Okay]),
             "redis transaction in recycled connection aborted",
         );
     }
