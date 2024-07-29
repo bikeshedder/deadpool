@@ -1,6 +1,6 @@
 use std::{fmt, path::PathBuf};
 
-use redis::RedisError;
+use redis::{ProtocolVersion, RedisError};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -251,6 +251,9 @@ pub struct RedisConnectionInfo {
 
     /// Optionally a password that should be used for connection.
     pub password: Option<String>,
+
+    /// Version of the protocol to use.
+    pub protocol: ProtocolVersion,
 }
 
 impl From<RedisConnectionInfo> for redis::RedisConnectionInfo {
@@ -259,6 +262,7 @@ impl From<RedisConnectionInfo> for redis::RedisConnectionInfo {
             db: info.db,
             username: info.username,
             password: info.password,
+            protocol: info.protocol,
         }
     }
 }
@@ -269,6 +273,7 @@ impl From<redis::RedisConnectionInfo> for RedisConnectionInfo {
             db: info.db,
             username: info.username,
             password: info.password,
+            protocol: info.protocol,
         }
     }
 }
