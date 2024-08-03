@@ -2,10 +2,10 @@ name: CI
 
 on:
   push:
-    branches: ["master"]
-    tags: ["deadpool-*"]
+    branches: [ "master" ]
+    tags: [ "deadpool-*" ]
   pull_request:
-    branches: ["master"]
+    branches: [ "master" ]
 
 env:
   RUST_BACKTRACE: 1
@@ -87,8 +87,8 @@ jobs:
           toolchain: stable
 
       - run: cargo check -p deadpool
-                   --no-default-features
-                   --features ${{ matrix.feature1 }},${{ matrix.feature2 }}
+          --no-default-features
+          --features ${{ matrix.feature1 }},${{ matrix.feature2 }}
 
   check-integration:
     name: Check integration
@@ -105,7 +105,7 @@ jobs:
           - rt_tokio_1
           - rt_async-std_1
           - serde
-        include:  # additional inclusions for matrix
+        include: # additional inclusions for matrix
           - crate: diesel
             feature: mysql
           - crate: diesel
@@ -123,7 +123,7 @@ jobs:
       # We don't use `--no-default-features` here as integration crates don't
       # work with it at all.
       - run: cargo check -p deadpool-${{ matrix.crate }}
-                   --features ${{ matrix.feature }}
+          --features ${{ matrix.feature }}
 
   check-integration-wasm:
     name: Check integration (WebAssembly)
@@ -145,9 +145,9 @@ jobs:
           target: wasm32-unknown-unknown
 
       - run: cargo check -p deadpool-${{ matrix.crate }}
-                   --no-default-features
-                   ${{ matrix.feature }}
-                   --target wasm32-unknown-unknown
+          --no-default-features
+          ${{ matrix.feature }}
+          --target wasm32-unknown-unknown
 
   msrv:
     name: MSRV
@@ -210,6 +210,12 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis-sentinel:
+        image: 'bitnami/redis-sentinel:latest'
+        env:
+          ALLOW_EMPTY_PASSWORD: yes
+        ports:
+          - 26379:26379
       redis:
         image: redis:7.0-alpine
         ports:
@@ -241,6 +247,9 @@ jobs:
           PG__PASSWORD: deadpool
           PG__DBNAME: deadpool
           REDIS__URL: redis://127.0.0.1/
+          REDIS_SENTINEL__URLS: redis://127.0.0.1:26379
+          REDIS_SENTINEL__SERVER_TYPE: "master"
+          REDIS_SENTINEL__MASTER_NAME: "mymaster"
           REDIS_CLUSTER__URLS: redis://127.0.0.1:7000,redis://127.0.0.1:7001
           AMQP__URL: amqp://deadpool:deadpool@127.0.0.1/deadpool
 
