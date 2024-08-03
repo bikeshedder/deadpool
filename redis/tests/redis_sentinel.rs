@@ -9,7 +9,7 @@ use deadpool_redis::Runtime;
 #[derive(Debug, Default, Deserialize, Serialize)]
 struct Config {
     #[serde(default)]
-    redis: deadpool_redis::sentinel::Config,
+    redis_sentinel: deadpool_redis::sentinel::Config,
 }
 
 impl Config {
@@ -25,7 +25,10 @@ impl Config {
 
 fn create_pool() -> deadpool_redis::sentinel::Pool {
     let cfg = Config::from_env();
-    cfg.redis.create_pool(Some(Runtime::Tokio1)).unwrap()
+
+    cfg.redis_sentinel
+        .create_pool(Some(Runtime::Tokio1))
+        .unwrap()
 }
 
 #[tokio::test]
