@@ -1,8 +1,8 @@
 use redis::sentinel::SentinelNodeConnectionInfo;
 use redis::TlsMode;
 
-pub use crate::config::ConfigError;
 use crate::{ConnectionAddr, ConnectionInfo};
+pub use crate::config::ConfigError;
 
 use super::{CreatePoolError, Pool, PoolBuilder, PoolConfig, Runtime};
 
@@ -13,15 +13,17 @@ use super::{CreatePoolError, Pool, PoolBuilder, PoolConfig, Runtime};
 /// By enabling the `serde` feature you can read the configuration using the
 /// [`config`](https://crates.io/crates/config) crate as following:
 /// ```env
-/// REDIS_CLUSTER__URLS=redis://127.0.0.1:7000,redis://127.0.0.1:7001
-/// REDIS_CLUSTER__POOL__MAX_SIZE=16
-/// REDIS_CLUSTER__POOL__TIMEOUTS__WAIT__SECS=2
-/// REDIS_CLUSTER__POOL__TIMEOUTS__WAIT__NANOS=0
+/// REDIS_SENTINEL__URLS=redis://127.0.0.1:26379,redis://127.0.0.1:26380
+/// REDIS_SENTINEL__MASTER_NAME=mymaster
+/// REDIS_SENTINEL__SERVER_TYPE=master
+/// REDIS_SENTINEL__POOL__MAX_SIZE=16
+/// REDIS_SENTINEL__POOL__TIMEOUTS__WAIT__SECS=2
+/// REDIS_SENTINEL__POOL__TIMEOUTS__WAIT__NANOS=0
 /// ```
 /// ```rust
 /// #[derive(serde::Deserialize)]
 /// struct Config {
-///     redis_cluster: deadpool_redis::cluster::Config,
+///     redis_sentinel: deadpool_redis::sentinel::Config,
 /// }
 ///
 /// impl Config {
@@ -103,19 +105,19 @@ impl Config {
                 urls.iter().map(|url| url.as_str()).collect(),
                 self.master_name.clone(),
                 sentinel_node_connection_info,
-                self.server_type.clone(),
+                self.server_type,
             )?,
             (None, Some(connections)) => super::Manager::new(
                 connections.clone(),
                 self.master_name.clone(),
                 sentinel_node_connection_info,
-                self.server_type.clone(),
+                self.server_type,
             )?,
             (None, None) => super::Manager::new(
                 vec![ConnectionInfo::default()],
                 self.master_name.clone(),
                 sentinel_node_connection_info,
-                self.server_type.clone(),
+                self.server_type,
             )?,
             (Some(_), Some(_)) => return Err(ConfigError::UrlAndConnectionSpecified),
         };
@@ -151,8 +153,10 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Self {
-        let mut default_connection_info = ConnectionInfo::default();
-        default_connection_info.addr = ConnectionAddr::Tcp("127.0.0.1".to_string(), 26379);
+        let default_connection_info = ConnectionInfo {
+            addr: ConnectionAddr::Tcp("127.0.0.1".to_string(), 26379),
+            ..ConnectionInfo::default()
+        };
 
         Self {
             urls: None,

@@ -5,15 +5,15 @@ use std::{
 };
 
 use redis;
+use redis::{aio::ConnectionLike, IntoConnectionInfo, RedisError, RedisResult};
 use redis::aio::MultiplexedConnection;
 use redis::sentinel::{SentinelClient, SentinelNodeConnectionInfo};
-use redis::{aio::ConnectionLike, IntoConnectionInfo, RedisError, RedisResult};
 use tokio::sync::Mutex;
 
 use deadpool::managed;
 pub use deadpool::managed::reexports::*;
 
-use crate::sentinel::config::SentinelServerType;
+pub use crate::sentinel::config::SentinelServerType;
 
 pub use self::config::{Config, ConfigError};
 
@@ -29,10 +29,10 @@ deadpool::managed_reexports!(
 
 type RecycleResult = managed::RecycleResult<RedisError>;
 
-/// Wrapper around [`redis::cluster_async::ClusterConnection`].
+/// Wrapper around [`redis::aio::MultiplexedConnection`].
 ///
 /// This structure implements [`redis::aio::ConnectionLike`] and can therefore
-/// be used just like a regular [`redis::cluster_async::ClusterConnection`].
+/// be used just like a regular [`redis::aio::MultiplexedConnection`].
 #[allow(missing_debug_implementations)] // `redis::cluster_async::ClusterConnection: !Debug`
 pub struct Connection {
     conn: Object,
@@ -102,7 +102,7 @@ impl ConnectionLike for Connection {
     }
 }
 
-/// [`Manager`] for creating and recycling [`redis::cluster_async`] connections.
+/// [`Manager`] for creating and recycling [`redis::aio::MultiplexedConnection`] connections.
 ///
 /// [`Manager`]: managed::Manager
 pub struct Manager {
@@ -124,7 +124,7 @@ impl Manager {
     ///
     /// # Errors
     ///
-    /// If establishing a new [`ClusterClient`] fails.
+    /// If establishing a new [`SentinelClient`] fails.
     pub fn new<T: IntoConnectionInfo>(
         param: Vec<T>,
         service_name: String,
