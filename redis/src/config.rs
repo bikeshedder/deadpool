@@ -251,24 +251,51 @@ pub struct RedisConnectionInfo {
 
     /// Optionally a password that should be used for connection.
     pub password: Option<String>,
+
+    /// Version of the protocol to use.
+    pub protocol: ProtocolVersion,
+}
+
+/// This is a 1:1 copy of the [`redis::ProtocolVersion`] struct.
+/// Enum representing the communication protocol with the server. This enum represents the types
+/// of data that the server can send to the client, and the capabilities that the client can use.
+#[derive(Clone, Eq, PartialEq, Default, Debug, Copy)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde"))]
+pub enum ProtocolVersion {
+    /// <https://github.com/redis/redis-specifications/blob/master/protocol/RESP2.md>
+    #[default]
+    RESP2,
+    /// <https://github.com/redis/redis-specifications/blob/master/protocol/RESP3.md>
+    RESP3,
 }
 
 impl From<RedisConnectionInfo> for redis::RedisConnectionInfo {
     fn from(info: RedisConnectionInfo) -> Self {
+        let protocol = match info.protocol {
+            ProtocolVersion::RESP2 => redis::ProtocolVersion::RESP2,
+            ProtocolVersion::RESP3 => redis::ProtocolVersion::RESP3,
+        };
         Self {
             db: info.db,
             username: info.username,
             password: info.password,
+            protocol,
         }
     }
 }
 
 impl From<redis::RedisConnectionInfo> for RedisConnectionInfo {
     fn from(info: redis::RedisConnectionInfo) -> Self {
+        let protocol = match info.protocol {
+            redis::ProtocolVersion::RESP2 => ProtocolVersion::RESP2,
+            redis::ProtocolVersion::RESP3 => ProtocolVersion::RESP3,
+        };
         Self {
             db: info.db,
             username: info.username,
             password: info.password,
+            protocol,
         }
     }
 }

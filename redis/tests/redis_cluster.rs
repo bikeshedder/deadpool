@@ -76,7 +76,7 @@ async fn test_aborted_command() {
         // https://github.com/mitsuhiko/redis-rs/issues/489
         cmd("PING")
             .arg("wrong")
-            .query_async::<_, String>(&mut conn)
+            .query_async::<String>(&mut conn)
             .now_or_never();
     }
     {
@@ -99,7 +99,7 @@ async fn test_recycled() {
 
         cmd("CLIENT")
             .arg("ID")
-            .query_async::<_, i64>(&mut conn)
+            .query_async::<i64>(&mut conn)
             .await
             .unwrap()
     };
@@ -109,7 +109,7 @@ async fn test_recycled() {
 
         let new_client_id = cmd("CLIENT")
             .arg("ID")
-            .query_async::<_, i64>(&mut conn)
+            .query_async::<i64>(&mut conn)
             .await
             .unwrap();
 

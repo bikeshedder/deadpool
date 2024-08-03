@@ -162,7 +162,7 @@ impl managed::Manager for Manager {
             .ignore()
             .cmd("PING")
             .arg(&ping_number)
-            .query_async::<_, (String,)>(conn)
+            .query_async::<(String,)>(conn)
             .await?;
         if n == ping_number {
             Ok(())
