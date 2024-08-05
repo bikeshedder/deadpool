@@ -4,6 +4,8 @@ use deadpool_redis::cluster::Runtime;
 use futures::FutureExt;
 use redis::cmd;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 struct Config {
@@ -94,26 +96,40 @@ async fn test_aborted_command() {
 async fn test_recycled() {
     let pool = create_pool();
 
+    let connection_reused = Arc::new(Mutex::new(false));
+
     let client_id_1 = {
         let mut conn = pool.get().await.unwrap();
-        cmd("CLIENT")
+        let client_id: i64 = cmd("CLIENT")
             .arg("ID")
-            .query_async::<i64>(&mut conn)
+            .query_async(&mut conn)
             .await
-            .unwrap()
+            .unwrap();
+
+        let mut reused = connection_reused.lock().await;
+        *reused = true;
+
+        client_id
     };
+
+    drop(client_id_1);
 
     let client_id_2 = {
         let mut conn = pool.get().await.unwrap();
-        cmd("CLIENT")
+        let client_id: i64 = cmd("CLIENT")
             .arg("ID")
-            .query_async::<i64>(&mut conn)
+            .query_async(&mut conn)
             .await
-            .unwrap()
+            .unwrap();
+
+        let reused = connection_reused.lock().await;
+        assert!(*reused, "Connection was not reused");
+
+        client_id
     };
 
     assert_eq!(
         client_id_1, client_id_2,
-        "the redis connection was not recycled"
+        "The Redis connection was not recycled"
     );
 }
