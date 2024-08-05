@@ -96,29 +96,39 @@ async fn test_aborted_command() {
 async fn test_recycled() {
     let pool = create_pool();
 
-    let connection_reused = Arc::new(Mutex::new(false));
+    let connection_name = "unique_connection_name";
 
-    {
+    let connection_details_1 = {
         let mut conn = pool.get().await.unwrap();
-        let _client_id: i64 = cmd("CLIENT")
-            .arg("ID")
+        cmd("CLIENT")
+            .arg("SETNAME")
+            .arg(connection_name)
+            .query_async::<()>(&mut conn)
+            .await
+            .unwrap();
+
+        let current_name: Option<String> = cmd("CLIENT")
+            .arg("GETNAME")
             .query_async(&mut conn)
             .await
             .unwrap();
 
-        let mut reused = connection_reused.lock().await;
-        *reused = true;
-    }
+        current_name
+    };
 
-    {
+    let connection_details_2 = {
         let mut conn = pool.get().await.unwrap();
-        let _client_id: i64 = cmd("CLIENT")
-            .arg("ID")
+        let current_name: Option<String> = cmd("CLIENT")
+            .arg("GETNAME")
             .query_async(&mut conn)
             .await
             .unwrap();
 
-        let reused = connection_reused.lock().await;
-        assert!(*reused, "Connection was not reused");
-    }
+        current_name
+    };
+
+    assert_eq!(
+        connection_details_1, connection_details_2,
+        "The Redis connection was not recycled: different connection name"
+    );
 }
