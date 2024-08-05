@@ -4,8 +4,6 @@ use deadpool_redis::cluster::Runtime;
 use futures::FutureExt;
 use redis::cmd;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
-use tokio::sync::Mutex;
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 struct Config {
