@@ -54,6 +54,7 @@ harness = false
 
 [workspace]
 members = [
+    "arangodb",
     "diesel",
     "lapin",
     "memcached",
