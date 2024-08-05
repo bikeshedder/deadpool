@@ -94,9 +94,8 @@ async fn test_aborted_command() {
 async fn test_recycled() {
     let pool = create_pool();
 
-    let client_id = {
+    let client_id_1 = {
         let mut conn = pool.get().await.unwrap();
-
         cmd("CLIENT")
             .arg("ID")
             .query_async::<i64>(&mut conn)
@@ -104,18 +103,17 @@ async fn test_recycled() {
             .unwrap()
     };
 
-    {
+    let client_id_2 = {
         let mut conn = pool.get().await.unwrap();
-
-        let new_client_id = cmd("CLIENT")
+        cmd("CLIENT")
             .arg("ID")
             .query_async::<i64>(&mut conn)
             .await
-            .unwrap();
+            .unwrap()
+    };
 
-        assert_eq!(
-            client_id, new_client_id,
-            "the redis connection was not recycled"
-        );
-    }
+    assert_eq!(
+        client_id_1, client_id_2,
+        "the redis connection was not recycled"
+    );
 }
