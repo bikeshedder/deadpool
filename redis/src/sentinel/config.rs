@@ -50,9 +50,11 @@ pub struct Config {
     /// ServerType
     ///
     /// [`SentinelServerType`]
-    pub server_type: Option<SentinelServerType>,
+    #[serde(default)]
+    pub server_type: SentinelServerType,
     /// Sentinel setup master name. default value is `mymaster`
-    pub master_name: Option<String>,
+    #[serde(default = "default_master_name")]
+    pub master_name: String,
     /// [`redis::ConnectionInfo`] structures.
     pub connections: Option<Vec<ConnectionInfo>>,
     // SentinelNodeConnectionInfo doesn't implement debug, so we can't
@@ -100,30 +102,24 @@ impl Config {
             }
         });
 
-        if self.server_type.is_none() || self.server_type.is_none() {
-            return Err(ConfigError::NotEnoughInfo(format!(
-                "sentinel: client type '{:?}' or master name '{:?}' empty",
-                self.server_type, self.master_name)))
-        }
-
         let manager = match (&self.urls, &self.connections) {
             (Some(urls), None) => super::Manager::new(
                 urls.iter().map(|url| url.as_str()).collect(),
-                self.master_name.clone().unwrap(),
+                self.master_name.clone(),
                 sentinel_node_connection_info,
-                self.server_type.unwrap(),
+                self.server_type,
             )?,
             (None, Some(connections)) => super::Manager::new(
                 connections.clone(),
-                self.master_name.clone().unwrap(),
+                self.master_name.clone(),
                 sentinel_node_connection_info,
-                self.server_type.unwrap(),
+                self.server_type,
             )?,
             (None, None) => super::Manager::new(
                 vec![ConnectionInfo::default()],
-                self.master_name.clone().unwrap(),
+                self.master_name.clone(),
                 sentinel_node_connection_info,
-                self.server_type.unwrap(),
+                self.server_type,
             )?,
             (Some(_), Some(_)) => return Err(ConfigError::UrlAndConnectionSpecified),
         };
@@ -149,8 +145,8 @@ impl Config {
         Config {
             urls: Some(urls.into()),
             connections: None,
-            master_name: Some(master_name),
-            server_type: Some(server_type),
+            master_name,
+            server_type,
             pool: None,
             sentinel_connection_info: None,
         }
@@ -167,18 +163,23 @@ impl Default for Config {
         Self {
             urls: None,
             connections: Some(vec![default_connection_info.clone()]),
-            server_type: Some(SentinelServerType::Master),
-            master_name: Some(String::from("mymaster")),
+            server_type: SentinelServerType::Master,
+            master_name: String::from("mymaster"),
             pool: None,
             sentinel_connection_info: Some(default_connection_info),
         }
     }
 }
 
+fn default_master_name() -> String {
+    "mymaster".to_string()
+}
+
 /// This type is a wrapper for [`redis::sentinel::SentinelServerType`] for serialize/deserialize.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub enum SentinelServerType {
+    #[default]
     /// Master connections only
     Master,
     /// Replica connections only
