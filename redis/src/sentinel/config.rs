@@ -1,8 +1,8 @@
 use redis::sentinel::SentinelNodeConnectionInfo;
 use redis::TlsMode;
 
-use crate::{ConnectionAddr, ConnectionInfo};
 pub use crate::config::ConfigError;
+use crate::{ConnectionAddr, ConnectionInfo};
 
 use super::{CreatePoolError, Pool, PoolBuilder, PoolConfig, Runtime};
 
