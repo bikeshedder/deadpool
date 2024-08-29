@@ -303,7 +303,6 @@ impl From<redis::RedisConnectionInfo> for RedisConnectionInfo {
 /// This error is returned if the configuration contains an error
 #[derive(Debug)]
 pub enum ConfigError {
-    NotEnoughInfo(String),
     /// Both url and connection were specified in the config
     UrlAndConnectionSpecified,
     /// The [`redis`] crate returned an error when parsing the config
@@ -324,12 +323,6 @@ impl fmt::Display for ConfigError {
                 "url and connection must not be specified at the same time."
             ),
             Self::Redis(e) => write!(f, "Redis: {}", e),
-            Self::NotEnoughInfo(s) => {
-                write!(
-                    f,
-                    "not enough config provided: {}", s
-                )
-            }
         }
     }
 }
