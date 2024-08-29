@@ -15,7 +15,13 @@ struct Config {
 impl Config {
     pub fn from_env() -> Self {
         config::Config::builder()
-            .add_source(config::Environment::default().separator("__"))
+            .add_source(
+                config::Environment::default()
+                    .separator("__")
+                    .try_parsing(true)
+                    .list_separator(",")
+                    .with_list_parse_key("redis_sentinel.urls"),
+            )
             .build()
             .unwrap()
             .try_deserialize()
@@ -75,7 +81,7 @@ async fn test_aborted_command() {
         // https://github.com/mitsuhiko/redis-rs/issues/489
         cmd("PING")
             .arg("wrong")
-            .query_async::<_, String>(&mut conn)
+            .query_async::<String>(&mut conn)
             .now_or_never();
     }
     {
@@ -98,7 +104,7 @@ async fn test_recycled() {
 
         cmd("CLIENT")
             .arg("ID")
-            .query_async::<_, i64>(&mut conn)
+            .query_async::<i64>(&mut conn)
             .await
             .unwrap()
     };
@@ -108,7 +114,7 @@ async fn test_recycled() {
 
         let new_client_id = cmd("CLIENT")
             .arg("ID")
-            .query_async::<_, i64>(&mut conn)
+            .query_async::<i64>(&mut conn)
             .await
             .unwrap();
 
@@ -134,13 +140,13 @@ async fn test_recycled_with_watch() {
 
         let client_id = cmd("CLIENT")
             .arg("ID")
-            .query_async::<_, i64>(&mut conn)
+            .query_async::<i64>(&mut conn)
             .await
             .unwrap();
 
         cmd("WATCH")
             .arg(WATCHED_KEY)
-            .query_async::<_, ()>(&mut conn)
+            .query_async::<()>(&mut conn)
             .await
             .unwrap();
 
@@ -152,7 +158,7 @@ async fn test_recycled_with_watch() {
 
         let new_client_id = cmd("CLIENT")
             .arg("ID")
-            .query_async::<_, i64>(&mut txn_conn)
+            .query_async::<i64>(&mut txn_conn)
             .await
             .unwrap();
 
@@ -165,7 +171,7 @@ async fn test_recycled_with_watch() {
         // Start transaction on another key
         cmd("WATCH")
             .arg(TXN_KEY)
-            .query_async::<_, ()>(&mut txn_conn)
+            .query_async::<()>(&mut txn_conn)
             .await
             .unwrap();
 
@@ -176,7 +182,7 @@ async fn test_recycled_with_watch() {
             cmd("SET")
                 .arg(WATCHED_KEY)
                 .arg("v")
-                .query_async::<_, ()>(&mut writer_conn)
+                .query_async::<()>(&mut writer_conn)
                 .await
                 .unwrap();
         }
@@ -184,12 +190,12 @@ async fn test_recycled_with_watch() {
         let get_pipe = pipe()
             .atomic()
             .get("key2")
-            .query_async::<_, Value>(&mut txn_conn)
+            .query_async::<Value>(&mut txn_conn)
             .await
             .unwrap();
         let get = cmd("GET")
             .arg("key2")
-            .query_async::<_, Value>(&mut txn_conn)
+            .query_async::<Value>(&mut txn_conn)
             .await
             .unwrap();
 
@@ -197,12 +203,12 @@ async fn test_recycled_with_watch() {
         let txn_result = pipe()
             .atomic()
             .set(TXN_KEY, "foo")
-            .query_async::<_, Value>(&mut txn_conn)
+            .query_async::<Value>(&mut txn_conn)
             .await
             .unwrap();
         assert_eq!(
             txn_result,
-            Value::Bulk(vec![Value::Okay]),
+            Value::Array(vec![Value::Okay]),
             "redis transaction in recycled connection aborted",
         );
     }
