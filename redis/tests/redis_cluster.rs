@@ -94,28 +94,39 @@ async fn test_aborted_command() {
 async fn test_recycled() {
     let pool = create_pool();
 
-    let client_id = {
-        let mut conn = pool.get().await.unwrap();
+    let connection_name = "unique_connection_name";
 
+    let connection_details_1 = {
+        let mut conn = pool.get().await.unwrap();
         cmd("CLIENT")
-            .arg("ID")
-            .query_async::<i64>(&mut conn)
-            .await
-            .unwrap()
-    };
-
-    {
-        let mut conn = pool.get().await.unwrap();
-
-        let new_client_id = cmd("CLIENT")
-            .arg("ID")
-            .query_async::<i64>(&mut conn)
+            .arg("SETNAME")
+            .arg(connection_name)
+            .query_async::<()>(&mut conn)
             .await
             .unwrap();
 
-        assert_eq!(
-            client_id, new_client_id,
-            "the redis connection was not recycled"
-        );
-    }
+        let current_name: Option<String> = cmd("CLIENT")
+            .arg("GETNAME")
+            .query_async(&mut conn)
+            .await
+            .unwrap();
+
+        current_name
+    };
+
+    let connection_details_2 = {
+        let mut conn = pool.get().await.unwrap();
+        let current_name: Option<String> = cmd("CLIENT")
+            .arg("GETNAME")
+            .query_async(&mut conn)
+            .await
+            .unwrap();
+
+        current_name
+    };
+
+    assert_eq!(
+        connection_details_1, connection_details_2,
+        "The Redis connection was not recycled: different connection name"
+    );
 }
