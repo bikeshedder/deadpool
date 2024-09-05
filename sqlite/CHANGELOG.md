@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Update `rusqlite` dependency to version `0.32.1`
+- Bump up MSRV to `1.77` to match the one of `rusqlite`
+
 ## [0.8.1] - 2024-05-04
 
 - Update `deadpool` dependency to version `0.12`
