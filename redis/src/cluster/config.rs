@@ -118,13 +118,6 @@ impl Config {
             read_from_replicas: false,
         }
     }
-
-    /// Enables reading from replicas for the Redis cluster.
-    ///
-    /// This method sets `read_from_replicas` to `true`.
-    pub fn read_from_replicas(&mut self) {
-        self.read_from_replicas = true;
-    }
 }
 
 impl Default for Config {

@@ -56,7 +56,7 @@ async fn test_pipeline() {
 async fn test_read_from_replicas() {
     use deadpool_redis::redis::pipe;
     let mut cfg = Config::from_env();
-    let _ = cfg.redis_cluster.read_from_replicas();
+    cfg.redis_cluster.read_from_replicas = true;
     assert_eq!(cfg.redis_cluster.read_from_replicas, true);
 
     let pool = cfg
