@@ -10,7 +10,7 @@ use deadpool::managed;
 use redis::{aio::ConnectionLike, IntoConnectionInfo, RedisError, RedisResult};
 
 use redis;
-pub use redis::cluster::ClusterClient;
+pub use redis::cluster::{ClusterClient, ClusterClientBuilder};
 pub use redis::cluster_async::ClusterConnection;
 
 pub use self::config::{Config, ConfigError};
@@ -122,10 +122,17 @@ impl Manager {
     ///
     /// # Errors
     ///
-    /// If establishing a new [`ClusterClient`] fails.
-    pub fn new<T: IntoConnectionInfo>(params: Vec<T>) -> RedisResult<Self> {
+    /// If establishing a new [`ClusterClientBuilder`] fails.
+    pub fn new<T: IntoConnectionInfo>(
+        params: Vec<T>,
+        read_from_replicas: bool,
+    ) -> RedisResult<Self> {
+        let mut client = ClusterClientBuilder::new(params);
+        if read_from_replicas {
+            client = client.read_from_replicas();
+        }
         Ok(Self {
-            client: ClusterClient::new(params)?,
+            client: client.build()?,
             ping_number: AtomicUsize::new(0),
         })
     }

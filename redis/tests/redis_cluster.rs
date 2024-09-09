@@ -53,6 +53,31 @@ async fn test_pipeline() {
 }
 
 #[tokio::test]
+async fn test_read_from_replicas() {
+    use deadpool_redis::redis::pipe;
+    let mut cfg = Config::from_env();
+    cfg.redis_cluster.read_from_replicas = true;
+    assert_eq!(cfg.redis_cluster.read_from_replicas, true);
+
+    let pool = cfg
+        .redis_cluster
+        .create_pool(Some(Runtime::Tokio1))
+        .unwrap();
+    let mut conn = pool.get().await.unwrap();
+    let (value,): (String,) = pipe()
+        .cmd("SET")
+        .arg("deadpool/pipeline_test_key")
+        .arg("42")
+        .ignore()
+        .cmd("GET")
+        .arg("deadpool/pipeline_test_key")
+        .query_async(&mut conn)
+        .await
+        .unwrap();
+    assert_eq!(value, "42".to_string());
+}
+
+#[tokio::test]
 async fn test_high_level_commands() {
     use deadpool_redis::redis::AsyncCommands;
     let pool = create_pool();

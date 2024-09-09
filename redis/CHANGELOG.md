@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- __Breaking:__ Modified the `Config` struct to support `read_from_replicas` for Redis clusters, using the redis-rs crate's functionality.
+- Add support for enabling `read_from_replicas` via the environment variable REDIS_CLUSTER__READ_FROM_REPLICAS.
 - Add support for `redis::sentinel`
 
 ## [0.16.0] - 2024-08-05

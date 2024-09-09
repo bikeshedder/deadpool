@@ -11,6 +11,7 @@ use super::{CreatePoolError, Pool, PoolBuilder, PoolConfig, Runtime};
 /// [`config`](https://crates.io/crates/config) crate as following:
 /// ```env
 /// REDIS_CLUSTER__URLS=redis://127.0.0.1:7000,redis://127.0.0.1:7001
+/// REDIS_CLUSTER__READ_FROM_REPLICAS=true
 /// REDIS_CLUSTER__POOL__MAX_SIZE=16
 /// REDIS_CLUSTER__POOL__TIMEOUTS__WAIT__SECS=2
 /// REDIS_CLUSTER__POOL__TIMEOUTS__WAIT__NANOS=0
@@ -48,6 +49,18 @@ pub struct Config {
 
     /// Pool configuration.
     pub pool: Option<PoolConfig>,
+
+    /// Enables or disables reading from replica nodes in a Redis cluster.
+    ///
+    /// When set to `true`, read operations may be distributed across
+    /// replica nodes, which can help in load balancing read requests.
+    /// When set to `false`, all read operations will be directed to the
+    /// master node(s). This option is particularly useful in a high-availability
+    /// setup where read scalability is needed.
+    ///
+    /// Default is `false`.
+    #[serde(default)]
+    pub read_from_replicas: bool,
 }
 
 impl Config {
@@ -71,11 +84,16 @@ impl Config {
     /// See [`ConfigError`] for details.
     pub fn builder(&self) -> Result<PoolBuilder, ConfigError> {
         let manager = match (&self.urls, &self.connections) {
-            (Some(urls), None) => {
-                super::Manager::new(urls.iter().map(|url| url.as_str()).collect())?
+            (Some(urls), None) => super::Manager::new(
+                urls.iter().map(|url| url.as_str()).collect(),
+                self.read_from_replicas,
+            )?,
+            (None, Some(connections)) => {
+                super::Manager::new(connections.clone(), self.read_from_replicas)?
             }
-            (None, Some(connections)) => super::Manager::new(connections.clone())?,
-            (None, None) => super::Manager::new(vec![ConnectionInfo::default()])?,
+            (None, None) => {
+                super::Manager::new(vec![ConnectionInfo::default()], self.read_from_replicas)?
+            }
             (Some(_), Some(_)) => return Err(ConfigError::UrlAndConnectionSpecified),
         };
         let pool_config = self.get_pool_config();
@@ -97,6 +115,7 @@ impl Config {
             urls: Some(urls.into()),
             connections: None,
             pool: None,
+            read_from_replicas: false,
         }
     }
 }
@@ -107,6 +126,7 @@ impl Default for Config {
             urls: None,
             connections: Some(vec![ConnectionInfo::default()]),
             pool: None,
+            read_from_replicas: false,
         }
     }
 }
