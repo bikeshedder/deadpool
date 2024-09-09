@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Add support for `redis::sentinel`
+
 ## [0.16.0] - 2024-08-05
 
 - Update `redis` dependency to version `0.26`
