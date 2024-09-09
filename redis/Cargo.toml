@@ -33,7 +33,7 @@ redis = { version = "0.26", default-features = false, features = ["aio"] }
 serde = { package = "serde", version = "1.0", features = [
     "derive",
 ], optional = true }
-tokio = { version = "1.0", features = ["sync"] }
+tokio = { version = "1.0", default-features = false, optional = true }
 
 [dev-dependencies]
 config = { version = "0.14", features = ["json"] }
