@@ -9,8 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- __Breaking:__ Modified the `Config` struct to support `read_from_replicas` for Redis clusters, using the redis-rs crate's functionality.
-- Add support for enabling `read_from_replicas` via the environment variable REDIS_CLUSTER__READ_FROM_REPLICAS.
+## [0.17.0] - 2024-09-09
+
+- **Breaking:** Add `read_from_replicas` field to Redis cluster `Config` struct
 - Add support for `redis::sentinel`
 
 ## [0.16.0] - 2024-08-05
@@ -165,7 +166,8 @@ Release of 0.6 and 0.7 with the following feature backported:
 - First release
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.16.0...HEAD
+[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.17.0...HEAD
+[0.17.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.16.0...deadpool-redis-v0.17.0
 [0.16.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.15.1...deadpool-redis-v0.16.0
 [0.15.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.15.0...deadpool-redis-v0.15.1
 [0.15.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.14.0...deadpool-redis-v0.15.0
