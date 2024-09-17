@@ -41,7 +41,9 @@ use redis::{
 
 pub use redis;
 
-pub use self::config::{Config, ConfigError, ConnectionAddr, ConnectionInfo, RedisConnectionInfo};
+pub use self::config::{
+    Config, ConfigError, ConnectionAddr, ConnectionInfo, ProtocolVersion, RedisConnectionInfo,
+};
 
 pub use deadpool::managed::reexports::*;
 deadpool::managed_reexports!("redis", Manager, Connection, RedisError, ConfigError);
