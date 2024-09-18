@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] - 2024-09-18
+
+- Export missing config structure:
+  - `ProtocolVersion`
+
 ## [0.17.0] - 2024-09-09
 
 - **Breaking:** Add `read_from_replicas` field to Redis cluster `Config` struct
@@ -166,7 +171,8 @@ Release of 0.6 and 0.7 with the following feature backported:
 - First release
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.17.0...HEAD
+[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.17.1...HEAD
+[0.17.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.17.0...deadpool-redis-v0.17.1
 [0.17.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.16.0...deadpool-redis-v0.17.0
 [0.16.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.15.1...deadpool-redis-v0.16.0
 [0.15.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.15.0...deadpool-redis-v0.15.1
