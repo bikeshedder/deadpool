@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.2] - 2024-09-19
+
+- Fix optional `serde` dependency
+
 ## [0.17.1] - 2024-09-18
 
 - Export missing config structure:
@@ -171,8 +175,9 @@ Release of 0.6 and 0.7 with the following feature backported:
 - First release
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.17.1...HEAD
-[0.17.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.17.0...deadpool-redis-v0.17.1
+[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.17.2...HEAD
+[0.17.2]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.17.1...deadpool-redis-v0.17.2
+[0.17.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.17.0...deadpool-redis-v0.17.1
 [0.17.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.16.0...deadpool-redis-v0.17.0
 [0.16.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.15.1...deadpool-redis-v0.16.0
 [0.15.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-redis-v0.15.0...deadpool-redis-v0.15.1
