@@ -59,7 +59,7 @@ pub struct Config {
     /// setup where read scalability is needed.
     ///
     /// Default is `false`.
-    #[serde(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub read_from_replicas: bool,
 }
 
