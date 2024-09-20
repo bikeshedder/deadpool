@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2024-09-20
+
+- Update `redis` dependency to version `0.27`
+
 ## [0.17.2] - 2024-09-19
 
 - Fix optional `serde` dependency
