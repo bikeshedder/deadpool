@@ -36,7 +36,7 @@ use std::{
 use deadpool::managed;
 use redis::{
     aio::{ConnectionLike, MultiplexedConnection},
-    Client, IntoConnectionInfo, RedisError, RedisResult,
+    AsyncConnectionConfig, Client, IntoConnectionInfo, RedisError, RedisResult,
 };
 
 pub use redis;
@@ -127,10 +127,20 @@ impl ConnectionLike for Connection {
 /// [`Manager`] for creating and recycling [`redis`] connections.
 ///
 /// [`Manager`]: managed::Manager
-#[derive(Debug)]
 pub struct Manager {
     client: Client,
     ping_number: AtomicUsize,
+    connection_config: AsyncConnectionConfig,
+}
+
+// `redis::AsyncConnectionConfig: !Debug`
+impl std::fmt::Debug for Manager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Manager")
+            .field("client", &self.client)
+            .field("ping_number", &self.ping_number)
+            .finish()
+    }
 }
 
 impl Manager {
@@ -140,9 +150,22 @@ impl Manager {
     ///
     /// If establishing a new [`Client`] fails.
     pub fn new<T: IntoConnectionInfo>(params: T) -> RedisResult<Self> {
+        Self::from_config(params, AsyncConnectionConfig::default())
+    }
+
+    /// Creates a new [`Manager`] from the given `params` and [`AsyncConnectionConfig`].
+    ///
+    /// # Errors
+    ///
+    /// If establishing a new [`Client`] fails.
+    pub fn from_config<T: IntoConnectionInfo>(
+        params: T,
+        connection_config: AsyncConnectionConfig,
+    ) -> RedisResult<Self> {
         Ok(Self {
             client: Client::open(params)?,
             ping_number: AtomicUsize::new(0),
+            connection_config,
         })
     }
 }
@@ -152,7 +175,10 @@ impl managed::Manager for Manager {
     type Error = RedisError;
 
     async fn create(&self) -> Result<MultiplexedConnection, RedisError> {
-        let conn = self.client.get_multiplexed_async_connection().await?;
+        let conn = self
+            .client
+            .get_multiplexed_async_connection_with_config(&self.connection_config)
+            .await?;
         Ok(conn)
     }
 
