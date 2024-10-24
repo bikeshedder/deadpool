@@ -66,7 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First release
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.8.1...HEAD
+[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.9.0...HEAD
+[0.9.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.8.1...deadpool-sqlite-v0.9.0
 [0.8.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.8.0...deadpool-sqlite-v0.8.1
 [0.8.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.7.0...deadpool-sqlite-v0.8.0
 [0.7.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-sqlite-v0.6.0...deadpool-sqlite-v0.7.0
