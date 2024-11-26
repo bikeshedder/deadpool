@@ -6,14 +6,16 @@ use std::{
 
 use redis;
 use redis::aio::MultiplexedConnection;
-use redis::sentinel::{SentinelClient, SentinelNodeConnectionInfo};
+use redis::sentinel::SentinelClient;
 use redis::{aio::ConnectionLike, IntoConnectionInfo, RedisError, RedisResult};
 use tokio::sync::Mutex;
 
 use deadpool::managed;
 pub use deadpool::managed::reexports::*;
 
+pub use crate::sentinel::config::SentinelNodeConnectionInfo;
 pub use crate::sentinel::config::SentinelServerType;
+pub use crate::sentinel::config::TlsMode;
 
 pub use self::config::{Config, ConfigError};
 
@@ -128,14 +130,14 @@ impl Manager {
     pub fn new<T: IntoConnectionInfo>(
         param: Vec<T>,
         service_name: String,
-        sentinel_node_connection_info: Option<SentinelNodeConnectionInfo>,
+        node_connection_info: Option<SentinelNodeConnectionInfo>,
         server_type: SentinelServerType,
     ) -> RedisResult<Self> {
         Ok(Self {
             client: Mutex::new(SentinelClient::build(
                 param,
                 service_name,
-                sentinel_node_connection_info,
+                node_connection_info.map(|i| i.into()),
                 server_type.into(),
             )?),
             ping_number: AtomicUsize::new(0),

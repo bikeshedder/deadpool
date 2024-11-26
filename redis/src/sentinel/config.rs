@@ -1,8 +1,6 @@
-use redis::sentinel::SentinelNodeConnectionInfo;
-use redis::TlsMode;
-
 pub use crate::config::ConfigError;
-use crate::{ConnectionAddr, ConnectionInfo};
+use crate::{ConnectionAddr, ConnectionInfo, RedisConnectionInfo};
+use serde::{Deserialize, Serialize};
 
 use super::{CreatePoolError, Pool, PoolBuilder, PoolConfig, Runtime};
 
@@ -57,9 +55,8 @@ pub struct Config {
     pub master_name: String,
     /// [`redis::ConnectionInfo`] structures.
     pub connections: Option<Vec<ConnectionInfo>>,
-    // SentinelNodeConnectionInfo doesn't implement debug, so we can't
-    // use it as a field, also they have identical fields.
-    sentinel_connection_info: Option<ConnectionInfo>,
+    /// [`redis::sentinel::SentinelNodeConnectionInfo`] structures.
+    pub node_connection_info: Option<SentinelNodeConnectionInfo>,
     /// Pool configuration.
     pub pool: Option<PoolConfig>,
 }
@@ -84,41 +81,23 @@ impl Config {
     ///
     /// See [`ConfigError`] for details.
     pub fn builder(&self) -> Result<PoolBuilder, ConfigError> {
-        let sentinel_node_connection_info = self.sentinel_connection_info.clone().map(|c| {
-            let tls_mode = match c.addr {
-                ConnectionAddr::TcpTls { insecure: i, .. } => {
-                    if i {
-                        Some(TlsMode::Insecure)
-                    } else {
-                        Some(TlsMode::Secure)
-                    }
-                }
-                ConnectionAddr::Unix(_) | ConnectionAddr::Tcp(_, _) => None,
-            };
-
-            SentinelNodeConnectionInfo {
-                tls_mode,
-                redis_connection_info: Some(c.redis.into()),
-            }
-        });
-
         let manager = match (&self.urls, &self.connections) {
             (Some(urls), None) => super::Manager::new(
                 urls.iter().map(|url| url.as_str()).collect(),
                 self.master_name.clone(),
-                sentinel_node_connection_info,
+                self.node_connection_info.clone(),
                 self.server_type,
             )?,
             (None, Some(connections)) => super::Manager::new(
                 connections.clone(),
                 self.master_name.clone(),
-                sentinel_node_connection_info,
+                self.node_connection_info.clone(),
                 self.server_type,
             )?,
             (None, None) => super::Manager::new(
                 vec![ConnectionInfo::default()],
                 self.master_name.clone(),
-                sentinel_node_connection_info,
+                self.node_connection_info.clone(),
                 self.server_type,
             )?,
             (Some(_), Some(_)) => return Err(ConfigError::UrlAndConnectionSpecified),
@@ -148,8 +127,17 @@ impl Config {
             master_name,
             server_type,
             pool: None,
-            sentinel_connection_info: None,
+            node_connection_info: None,
         }
+    }
+
+    /// Sets the connection info used to connect to the underlying redis servers (eg: tls mode/db/username/..)
+    pub fn with_node_connection_info(
+        mut self,
+        node_connection_info: Option<SentinelNodeConnectionInfo>,
+    ) -> Self {
+        self.node_connection_info = node_connection_info;
+        self
     }
 }
 
@@ -164,9 +152,9 @@ impl Default for Config {
             urls: None,
             connections: Some(vec![default_connection_info.clone()]),
             server_type: SentinelServerType::Master,
-            master_name: String::from("mymaster"),
+            master_name: default_master_name(),
             pool: None,
-            sentinel_connection_info: Some(default_connection_info),
+            node_connection_info: None,
         }
     }
 }
@@ -200,6 +188,66 @@ impl From<SentinelServerType> for redis::sentinel::SentinelServerType {
         match value {
             SentinelServerType::Master => redis::sentinel::SentinelServerType::Master,
             SentinelServerType::Replica => redis::sentinel::SentinelServerType::Replica,
+        }
+    }
+}
+
+/// This type is a wrapper for [`redis::TlsMode`] for serialize/deserialize.
+#[derive(Debug, Clone, Copy, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+pub enum TlsMode {
+    #[default]
+    /// Secure verify certification.
+    Secure,
+    /// Insecure do not verify certification.
+    Insecure,
+}
+
+impl From<redis::TlsMode> for TlsMode {
+    fn from(value: redis::TlsMode) -> Self {
+        match value {
+            redis::TlsMode::Insecure => TlsMode::Insecure,
+            redis::TlsMode::Secure => TlsMode::Secure,
+        }
+    }
+}
+
+impl From<TlsMode> for redis::TlsMode {
+    fn from(value: TlsMode) -> Self {
+        match value {
+            TlsMode::Insecure => redis::TlsMode::Insecure,
+            TlsMode::Secure => redis::TlsMode::Secure,
+        }
+    }
+}
+
+/// This type is a wrapper for [`redis::sentinel::SentinelNodeConnectionInfo`] for serialize/deserialize/debug.
+#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[cfg_attr(feature = "serde", serde(crate = "serde"))]
+pub struct SentinelNodeConnectionInfo {
+    /// The TLS mode of the connection, or None if we do not want to connect using TLS
+    /// (just a plain TCP connection).
+    pub tls_mode: Option<TlsMode>,
+
+    /// The Redis specific/connection independent information to be used.
+    pub redis_connection_info: Option<RedisConnectionInfo>,
+}
+
+impl From<SentinelNodeConnectionInfo> for redis::sentinel::SentinelNodeConnectionInfo {
+    fn from(info: SentinelNodeConnectionInfo) -> Self {
+        Self {
+            tls_mode: info.tls_mode.map(|m| m.into()),
+            redis_connection_info: info.redis_connection_info.map(|i| i.into()),
+        }
+    }
+}
+
+impl From<redis::sentinel::SentinelNodeConnectionInfo> for SentinelNodeConnectionInfo {
+    fn from(info: redis::sentinel::SentinelNodeConnectionInfo) -> Self {
+        Self {
+            tls_mode: info.tls_mode.map(|m| m.into()),
+            redis_connection_info: info.redis_connection_info.map(|m| m.into()),
         }
     }
 }
