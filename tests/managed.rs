@@ -297,3 +297,22 @@ async fn retain() {
     pool.retain(|_, metrics| metrics.age() <= Duration::from_millis(10));
     assert_eq!(pool.status().size, 0);
 }
+
+#[tokio::test]
+async fn retain_fnmut() {
+    let mgr = Manager {};
+    let pool = Pool::builder(mgr).max_size(4).build().unwrap();
+    {
+        let _a = pool.get().await;
+        let _b = pool.get().await;
+        let _c = pool.get().await;
+        let _c = pool.get().await;
+    }
+    let mut removed = 0;
+    {
+        pool.retain(|_, _| {
+            removed += 1;
+            false
+        });
+    }
+}
