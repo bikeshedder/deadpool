@@ -519,7 +519,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     ///     }
     /// });
     /// ```
-    pub fn retain(&self, f: impl Fn(&M::Type, Metrics) -> bool) {
+    pub fn retain(&self, mut f: impl FnMut(&M::Type, Metrics) -> bool) {
         let mut guard = self.inner.slots.lock().unwrap();
         let len_before = guard.vec.len();
         guard.vec.retain_mut(|obj| {
