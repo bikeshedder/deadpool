@@ -519,18 +519,30 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
     ///     }
     /// });
     /// ```
-    pub fn retain(&self, mut f: impl FnMut(&M::Type, Metrics) -> bool) {
+    pub fn retain(
+        &self,
+        mut predicate: impl FnMut(&M::Type, Metrics) -> bool,
+    ) -> RetainResult<M::Type> {
+        let mut removed = Vec::with_capacity(self.status().size);
         let mut guard = self.inner.slots.lock().unwrap();
-        let len_before = guard.vec.len();
-        guard.vec.retain_mut(|obj| {
-            if f(&obj.obj, obj.metrics) {
-                true
+        let mut i = 0;
+        // This code can be simplified once `Vec::extract_if` lands in stable Rust.
+        // https://doc.rust-lang.org/std/vec/struct.Vec.html#method.extract_if
+        while i < guard.vec.len() {
+            let obj = &mut guard.vec[i];
+            if predicate(&mut obj.obj, obj.metrics) {
+                i += 1;
             } else {
+                let mut obj = guard.vec.remove(i).unwrap();
                 self.manager().detach(&mut obj.obj);
-                false
+                removed.push(obj.obj);
             }
-        });
-        guard.size -= len_before - guard.vec.len();
+        }
+        guard.size -= removed.len();
+        RetainResult {
+            retained: i,
+            removed,
+        }
     }
 
     /// Get current timeout configuration
@@ -659,5 +671,23 @@ async fn apply_timeout<O, E>(
             .ok_or(PoolError::Timeout(timeout_type))?
             .map_err(Into::into),
         (None, Some(_)) => Err(PoolError::NoRuntimeSpecified),
+    }
+}
+
+#[derive(Debug)]
+/// This is the result returned by `Pool::retain`
+pub struct RetainResult<T> {
+    /// Number of retained objects
+    pub retained: usize,
+    /// Objects that were removed from the pool
+    pub removed: Vec<T>,
+}
+
+impl<T> Default for RetainResult<T> {
+    fn default() -> Self {
+        Self {
+            retained: Default::default(),
+            removed: Default::default(),
+        }
     }
 }

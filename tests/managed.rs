@@ -291,10 +291,14 @@ async fn retain() {
         tokio::time::sleep(Duration::from_millis(5)).await;
     }
     assert_eq!(pool.status().size, 3);
-    pool.retain(|_, metrics| metrics.age() <= Duration::from_millis(10));
+    let retain_result = pool.retain(|_, metrics| metrics.age() <= Duration::from_millis(10));
+    assert_eq!(retain_result.retained, 1);
+    assert_eq!(retain_result.removed.len(), 2);
     assert_eq!(pool.status().size, 1);
     tokio::time::sleep(Duration::from_millis(5)).await;
-    pool.retain(|_, metrics| metrics.age() <= Duration::from_millis(10));
+    let retain_result = pool.retain(|_, metrics| metrics.age() <= Duration::from_millis(10));
+    assert_eq!(retain_result.retained, 0);
+    assert_eq!(retain_result.removed.len(), 1);
     assert_eq!(pool.status().size, 0);
 }
 
@@ -310,9 +314,12 @@ async fn retain_fnmut() {
     }
     let mut removed = 0;
     {
-        pool.retain(|_, _| {
+        let retain_result = pool.retain(|_, _| {
             removed += 1;
             false
         });
+        assert_eq!(retain_result.retained, 0);
+        assert_eq!(retain_result.removed.len(), 4);
     }
+    assert_eq!(pool.status().size, 0);
 }
