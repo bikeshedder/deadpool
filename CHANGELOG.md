@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Update `itertools` dependency to version `0.13.0`
+- Change predicate parameter of `Pool::retain` method to `FnMut`
 
 ## [0.12.1] - 2024-05-07
 
