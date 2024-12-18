@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Add missing re-export of `LoadBalanceHosts`
+
 ## [0.14.0] - 2024-06-04
 
 - Add back `async_trait` to the `GenericClient` trait.

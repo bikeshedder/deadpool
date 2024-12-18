@@ -54,7 +54,7 @@ use tokio_postgres::{
 pub use tokio_postgres;
 
 pub use self::config::{
-    ChannelBinding, Config, ConfigError, ManagerConfig, RecyclingMethod, SslMode,
+    ChannelBinding, Config, ConfigError, LoadBalanceHosts, ManagerConfig, RecyclingMethod, SslMode,
     TargetSessionAttrs,
 };
 
