@@ -552,7 +552,7 @@ impl<'a> Transaction<'a> {
     }
 }
 
-impl<'a> fmt::Debug for Transaction<'a> {
+impl fmt::Debug for Transaction<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Transaction")
             //.field("txn", &self.txn)
@@ -636,7 +636,7 @@ impl<'a> TransactionBuilder<'a> {
     }
 }
 
-impl<'a> fmt::Debug for TransactionBuilder<'a> {
+impl fmt::Debug for TransactionBuilder<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TransactionBuilder")
             //.field("builder", &self.builder)
@@ -653,7 +653,7 @@ impl<'a> Deref for TransactionBuilder<'a> {
     }
 }
 
-impl<'a> DerefMut for TransactionBuilder<'a> {
+impl DerefMut for TransactionBuilder<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.builder
     }

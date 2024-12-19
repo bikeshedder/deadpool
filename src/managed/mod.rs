@@ -151,16 +151,16 @@ struct UnreadyObject<'a, M: Manager> {
     pool: &'a PoolInner<M>,
 }
 
-impl<'a, M: Manager> UnreadyObject<'a, M> {
+impl<M: Manager> UnreadyObject<'_, M> {
     fn ready(mut self) -> ObjectInner<M> {
         self.inner.take().unwrap()
     }
     fn inner(&mut self) -> &mut ObjectInner<M> {
-        return self.inner.as_mut().unwrap();
+        self.inner.as_mut().unwrap()
     }
 }
 
-impl<'a, M: Manager> Drop for UnreadyObject<'a, M> {
+impl<M: Manager> Drop for UnreadyObject<'_, M> {
     fn drop(&mut self) {
         if let Some(mut inner) = self.inner.take() {
             self.pool.slots.lock().unwrap().size -= 1;

@@ -176,26 +176,26 @@ where
 #[derive(Debug)]
 pub struct SyncGuard<'a, T: Send>(MutexGuard<'a, Option<T>>);
 
-impl<'a, T: Send> Deref for SyncGuard<'a, T> {
+impl<T: Send> Deref for SyncGuard<'_, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         self.0.as_ref().unwrap()
     }
 }
 
-impl<'a, T: Send> DerefMut for SyncGuard<'a, T> {
+impl<T: Send> DerefMut for SyncGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.0.as_mut().unwrap()
     }
 }
 
-impl<'a, T: Send> AsRef<T> for SyncGuard<'a, T> {
+impl<T: Send> AsRef<T> for SyncGuard<'_, T> {
     fn as_ref(&self) -> &T {
         self.0.as_ref().unwrap()
     }
 }
 
-impl<'a, T: Send> AsMut<T> for SyncGuard<'a, T> {
+impl<T: Send> AsMut<T> for SyncGuard<'_, T> {
     fn as_mut(&mut self) -> &mut T {
         self.0.as_mut().unwrap()
     }

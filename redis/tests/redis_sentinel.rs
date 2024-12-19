@@ -187,13 +187,13 @@ async fn test_recycled_with_watch() {
                 .unwrap();
         }
 
-        let get_pipe = pipe()
+        let _get_pipe = pipe()
             .atomic()
             .get("key2")
             .query_async::<Value>(&mut txn_conn)
             .await
             .unwrap();
-        let get = cmd("GET")
+        let _get = cmd("GET")
             .arg("key2")
             .query_async::<Value>(&mut txn_conn)
             .await

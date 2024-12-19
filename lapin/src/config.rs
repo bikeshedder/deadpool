@@ -44,7 +44,7 @@ pub struct Config {
 }
 
 pub(crate) struct ConnProps<'a>(pub(crate) &'a lapin::ConnectionProperties);
-impl<'a> std::fmt::Debug for ConnProps<'a> {
+impl std::fmt::Debug for ConnProps<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ConnectionProperties")
             .field("locale", &self.0.locale)
