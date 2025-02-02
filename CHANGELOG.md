@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `itertools` dependency to version `0.13.0`
 - Change predicate parameter of `Pool::retain` method to `FnMut`
 - Add `RetainResult` as return value of `Pool::retain` method
+- Fix panic in `Pool::resize` method caused by shrinking and
+  growing the pool in quick sucession.
 
 ## [0.12.1] - 2024-05-07
 
