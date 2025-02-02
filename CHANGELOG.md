@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2025-02-02
+
 - Update `itertools` dependency to version `0.13.0`
 - Change predicate parameter of `Pool::retain` method to `FnMut`
 - Add `RetainResult` as return value of `Pool::retain` method
@@ -200,7 +202,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First release
 
 <!-- next-url -->
-[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.12.1...HEAD
+[Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.12.2...HEAD
+[0.12.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.12.1...deadpool-v0.12.2
 [0.12.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.12.0...deadpool-v0.12.1
 [0.12.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.11.2...deadpool-v0.12.0
 [0.11.2]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.11.1...deadpool-v0.11.2
