@@ -490,7 +490,7 @@ impl<M: Manager, W: From<Object<M>>> Pool<M, W> {
         }
         // grow pool
         if max_size > old_max_size {
-            let additional = slots.max_size - max_size;
+            let additional = slots.max_size - old_max_size;
             slots.vec.reserve_exact(additional);
             self.inner.semaphore.add_permits(additional);
         }
