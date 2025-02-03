@@ -66,3 +66,6 @@ services:
       - rabbitmq.env
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+
+  memcached:
+    image: memcached:1.6
