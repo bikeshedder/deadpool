@@ -203,7 +203,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- next-url -->
 [Unreleased]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.12.2...HEAD
-[0.12.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.12.1...deadpool-v0.12.2
+[0.12.2]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.12.1...deadpool-v0.12.2
 [0.12.1]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.12.0...deadpool-v0.12.1
 [0.12.0]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.11.2...deadpool-v0.12.0
 [0.11.2]: https://github.com/bikeshedder/deadpool/compare/deadpool-v0.11.1...deadpool-v0.11.2
